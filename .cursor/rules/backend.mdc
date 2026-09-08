@@ -1,0 +1,29 @@
+---
+description: Regole Firebase — Auth, Firestore, foto, ruoli
+globs: backend/**,**/firestore.rules,**/firestore.indexes.json,lib/data/**/*.dart,lib/core/**/*.dart
+alwaysApply: false
+---
+
+# Backend (Firebase Spark)
+
+Progetto dedicato `amici-per-la-coda`. Piano gratuito Spark.
+Auth: email + password. Database: solo Cloud Firestore. Regione: `eur3`.
+
+## Divieti
+
+- Non attivare Firebase Storage (richiede Blaze).
+- Non inventare campi: schema vincolante in `AMICI-PER-LA-CODA_SPEC.md` §5.
+- Date sempre come `Timestamp`. Ogni documento: `createdAt`, `createdBy`, `updatedAt`, `updatedBy`.
+- Nomi campi in italiano.
+
+## Foto
+
+Interfaccia `PhotoRepository` obbligatoria. JPEG compresso in Firestore:
+metadati + thumb in `photos/{id}`, full in `photos/{id}/full/data`.
+Full ≤ 700 KB, thumb ≤ 15 KB, max 20 foto per cane.
+
+## Ruoli
+
+`presidente` | `referente` | `volontario`. Solo volontari `attivo == true`.
+Scrittura: presidente e referente. Volontari: lettura + create note.
+Regole in `backend/firestore.rules`. Indici in `backend/firestore.indexes.json`.

@@ -1,0 +1,69 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "dogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "archiviato", "order": "ASCENDING" },
+        { "fieldPath": "stato", "order": "ASCENDING" },
+        { "fieldPath": "dataIngresso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "archiviato", "order": "ASCENDING" },
+        { "fieldPath": "adottabile", "order": "ASCENDING" },
+        { "fieldPath": "nome", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "health",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dogId", "order": "ASCENDING" },
+        { "fieldPath": "data", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "health",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "prossimaScadenza", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "expenses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dogId", "order": "ASCENDING" },
+        { "fieldPath": "data", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "adoptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "stato", "order": "ASCENDING" },
+        { "fieldPath": "dataRichiesta", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dogId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "inizio", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

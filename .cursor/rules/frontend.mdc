@@ -1,0 +1,31 @@
+---
+description: Regole UI Flutter — densità, tokens, no overflow
+globs: lib/**/*.dart,test/ui/**/*.dart
+alwaysApply: false
+---
+
+# Frontend (Flutter)
+
+App Android interna. Riferimento visivo: `design/reference.html`.
+Misure e colori SOLO da `lib/ui/tokens.dart` (`AppDim`, `AppText`, `AppColor`).
+
+## Divieti
+
+- Nessuno scroll orizzontale. Se non entra: `Wrap`, a capo, o font più piccolo.
+- `TabBar(isScrollable: false)`. Le 7 tab della scheda cane restano visibili a 320 dp.
+- Niente padding Material di default: usare i widget di `lib/ui/`.
+- Zero `RenderFlex overflowed`. Verificare a 320 / 360 / 411 / 430 dp.
+- Niente dati finti nei widget: tutto dai repository.
+
+## Permessi
+
+- Scroll verticale sì. Font piccolo sì (meglio 10 sp e vedere tutto).
+- Area toccabile minima: `AppDim.minTouch` (40 dp).
+
+## Componenti obbligatori
+
+`AppScaffold`, `AppHeader`, `AppCard`, `SectionTitle`, `InfoRow`, `KeyValueRow`,
+`MiniBadge`, `AppChip`, `AppButton`, `AppTextField`, `AppSegmented`, `StatTile`,
+`TimelineList`, `AppSheet`, `OptionRow`, `EmptyState`, `AppToast`.
+
+Testi in italiano, date `dd/MM/yyyy`, euro con virgola.
