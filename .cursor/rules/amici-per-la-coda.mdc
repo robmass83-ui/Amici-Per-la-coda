@@ -1,0 +1,73 @@
+---
+description: Regole di progetto Amici per la Coda: vincoli di dimensione, densita e metodo di lavoro
+globs:
+alwaysApply: true
+---
+
+Progetto: app Android in Flutter "Amici per la Coda", gestionale per un rifugio cani,
+uso interno di 3-4 volontari. Backend Firebase (Auth + Firestore, piano gratuito Spark).
+La specifica completa e vincolante è in AMICI-PER-LA-CODA_SPEC.md.
+Il riferimento visivo è design/reference.html.
+
+## Regole di dimensione — prioritarie su ogni altra considerazione estetica
+
+1. Vietato lo scroll orizzontale in qualunque schermata. Se un contenuto non entra
+   in larghezza: manda a capo (Wrap), accorcia il testo o riduci il font. Mai scorrere di lato.
+2. Le TabBar sono sempre isScrollable: false. Le 7 tab della scheda cane devono
+   stare tutte insieme sullo schermo anche a 320 dp.
+3. Font piccolo è accettato e preferito: la densità informativa viene prima
+   dell'ariosità. Meglio 10 sp e vedere tutto che 16 sp e tagliare i dati.
+4. Lo scroll verticale è permesso: le pagine sono lunghe, va bene.
+5. Padding, raggi, dimensioni di testo e icone SOLO dalle costanti in lib/ui/tokens.dart
+   (AppDim, AppText, AppColor). Nessun numero scritto a mano nelle schermate.
+6. Vietati i padding di default di Material: ListTile, Card, AppBar, TextFormField,
+   ElevatedButton vanno ridefiniti compatti nel tema o sostituiti dai componenti di lib/ui.
+7. Zero RenderFlex overflow. Ogni schermata va verificata a 320, 360, 411 e 430 dp.
+8. Aree toccabili minime 40x40 dp (non 48).
+9. Un gruppo di scelte brevi (filtri, tag, categorie, opzioni) non si rende MAI come
+   bottoni a tutta larghezza impilati. Se le scelte sono poche e alternative fra loro
+   si usa un selettore segmentato a larghezza piena, con i segmenti di larghezza
+   identica che riempiono la riga (etichetta sopra, conteggio sotto, altezza 40 dp,
+   massimo 5 segmenti). Se sono molte o multiple si usano chip in un Wrap.
+   I bottoni a tutta larghezza sono riservati all'azione principale della schermata
+   (Salva, Continua, Accedi).
+10. Budget verticale delle intestazioni di lista: ricerca + filtri + riga di riepilogo
+   non devono superare 120 dp. Su uno schermo 360x640 dp devono restare visibili
+   almeno 3 elementi della lista senza scorrere.
+11. Niente etichetta di testo sopra un campo di ricerca: basta il testo segnaposto.
+   Altezza del campo di ricerca 38 dp, non 44 o piu.
+12. È vietato scrivere Icon(Icons....) dentro una schermata. Le icone si prendono da
+    AppIcons (lib/ui/icons.dart) e si disegnano con IconBadge. Fanno eccezione solo le
+    icone di sistema: freccia indietro, chevron delle liste, lente della ricerca, icone
+    della bottom nav. Se serve un concetto non presente, si aggiunge prima ad AppIcons.
+13. Prima di programmare una schermata o un componente si scrive in cima al file il
+    contratto di layout come commento: albero dei widget con dimensioni, distanze,
+    allineamenti e maxLines. Il codice trascrive il contratto. Il contratto resta nel
+    file e si aggiorna prima del codice.
+14. Le distanze si esprimono sempre con SizedBox espliciti presi da AppDim, mai con
+    Padding messi a occhio.
+15. Ogni testo dentro una Row che può eccedere ha Expanded, maxLines e
+    TextOverflow.ellipsis.
+16. Le schermate approvate sono coperte da golden test. Un golden non si rigenera per far
+    passare il test: solo quando la modifica visiva era voluta.
+
+
+## Riferimenti rapidi
+
+Colori: verde #157A3C, verde soft #E7F4EB, sfondo #F5F7F3, card bianca bordo #E9EBE4,
+testo #16211B, muted #6E7B72. Raggio card 12, padding pagina 12, padding card 10,
+distanza fra card 9. Testi: display 26, titolo 15, sezione 13, corpo 12, valore 11.5,
+etichetta 10.5, caption 10, micro 9.
+
+## Metodo di lavoro
+
+- Si procede uno step alla volta secondo la sezione 8 della specifica.
+- Ogni step include i suoi test. Non si passa al successivo con test rossi
+  o con `flutter analyze` non pulito.
+- A fine step: riepilogo breve e stop, in attesa di approvazione.
+- Niente librerie fuori da quelle elencate nella specifica senza chiedere.
+- Niente dati finti dentro le schermate: tutto arriva dai repository.
+- Niente funzioni non richieste (onboarding, animazioni, gamification).
+- Le foto non usano Firebase Storage: compressione + salvataggio in Firestore
+  dietro l'interfaccia PhotoRepository.
+- Testi in italiano, date dd/MM/yyyy, importi in euro con la virgola.

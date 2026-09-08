@@ -43,6 +43,22 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.gradle/
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase emulator / rules unit tests
+backend/node_modules/
+backend/*.log
+
+# Golden test failure dumps
+test/golden/failures/
+test/screenshots/
+
+# Widget Preview related
+.widget_preview/
+
+# Firebase emulator / rules unit tests
+backend/node_modules/
+backend/*.log

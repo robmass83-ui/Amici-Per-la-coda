@@ -5,6 +5,7 @@ L'agente deve leggerlo per intero prima di scrivere una riga di codice e rilegge
 pertinente all'inizio di ogni step.
 
 - **Versione:** 1.0
+- **Integrazione obbligatoria:** `SPEC-integrazione-step.md` (Step 9-bis e Step 17-bis)
 - **Riferimento visivo obbligatorio:** `design/reference.html` (prototipo HTML di 29 schermate, aprirlo nel browser)
 - **Committente:** associazione *Amici per la Coda ODV* — rifugio cani
 - **Utenti reali:** 3-4 volontari. Non è un'app pubblica, non va su nessuno store.
@@ -337,6 +338,7 @@ noteCarattere: string
 fotoCopertinaId: string | null
 referenteId: string | null     // volunteers/{id}
 pubblicato: bool
+dataPubblicazione: Timestamp | null
 archiviato: bool
 storicoStati: [{stato, dal, note, autoreId}]   // max 30 voci, poi si taglia
 ```
@@ -369,6 +371,17 @@ prossimaScadenza: Timestamp | null
 costo: number | null       // se valorizzato genera anche una expense
 ```
 
+### `weights/{id}`
+```
+dogId: string
+data: Timestamp
+kg: number
+autoreId: string
+note: string               // "pesato in ambulatorio", "stima"
+```
+`dogs.pesoKg` resta come copia dell'ultimo peso registrato, aggiornata a ogni nuova
+pesata. Il grafico della tab Salute legge questa collezione ordinata per data.
+
 ### `expenses/{id}`
 ```
 dogId: string | null       // null = spesa generale del rifugio
@@ -377,6 +390,21 @@ importo: number
 data: Timestamp
 descrizione, fornitore: string
 ```
+
+### `sponsorships/{id}`
+```
+dogId: string
+sostenitore: {nome, cognome, email, telefono}
+importoMensile: number
+attiva: bool
+dal: Timestamp
+al: Timestamp | null
+note: string
+```
+Calcoli derivati per la tab Spese: contributo mensile totale = somma degli
+`importoMensile` delle attive; copertura = contributo totale × mesi di permanenza
+÷ spese totali del cane, limitata a 100%. Se non ci sono sostenitori attivi il
+riquadro mostra lo stato vuoto «Attiva un'adozione a distanza».
 
 ### `adoptions/{id}`
 ```
@@ -465,6 +493,18 @@ service cloud.firestore {
     }
     match /notes/{id}   { allow read: if attivo(); allow create: if attivo();
                           allow update, delete: if puoScrivere(); }
+    match /appointments/{id} {
+      allow read: if attivo();
+      allow create, delete: if puoScrivere();
+      allow update: if puoScrivere() || (
+        attivo()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['volontariIds'])
+        && request.resource.data.volontariIds.toSet()
+             .difference(resource.data.volontariIds.toSet())
+             .hasOnly([request.auth.uid])
+      );
+    }
     match /settings/{id}{ allow read: if attivo(); allow write: if attivo() && ruolo()=='presidente'; }
     match /{col}/{id}   { allow read: if attivo(); allow write: if puoScrivere(); }
     match /{path=**}/full/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
@@ -477,7 +517,9 @@ service cloud.firestore {
 - `dogs`: `archiviato ASC, adottabile ASC, nome ASC`
 - `health`: `dogId ASC, data DESC`
 - `health`: `prossimaScadenza ASC` (per le scadenze)
+- `weights`: `dogId ASC, data ASC`
 - `expenses`: `dogId ASC, data DESC`
+- `sponsorships`: `dogId ASC, attiva ASC`
 - `adoptions`: `stato ASC, dataRichiesta DESC`
 - `photos`: `dogId ASC, createdAt DESC`
 - `appointments`: `inizio ASC`
@@ -658,6 +700,21 @@ data corretti · tutte e 5 le tab rese senza overflow alle 4 larghezze.
 
 ---
 
+### Step 9-bis — Home / Dashboard
+
+Contenuto della schermata Home (schermata 2 della sezione 7): saluto, due contatori,
+"da fare oggi", ultimi arrivi, richieste aperte, quattro scorciatoie.
+**Il contratto di layout completo, gli aggregatori e i test sono nel documento
+`SPEC-integrazione-step.md`**, che fa parte di questa specifica a tutti gli effetti.
+
+Nota: la fascia "Ultimi arrivi" del riferimento HTML scorre in orizzontale. Nell'app
+diventa una riga di tre card di larghezza uguale — la regola 1 non ammette eccezioni.
+
+**TEST 9-bis:** vedi il documento di integrazione. Il test decisivo è quello che verifica
+l'assenza di qualunque `Scrollable` orizzontale nella home.
+
+---
+
 ### Step 10 — Foto
 `PhotoRepository` completo secondo la §6, galleria, upload da fotocamera e galleria,
 imposta copertina, elimina, limite 20 foto, cache LRU.
@@ -735,6 +792,13 @@ export CSV dell'anagrafe e report annuale in PDF.
 
 **TEST 17:** i totali coincidono con i dati Firestore (test unitario sugli aggregatori) ·
 il CSV esportato ha una riga per cane e le intestazioni corrette · l'export si apre correttamente.
+
+---
+
+### Step 17-bis — Menu Altro, Notifiche, Ricerca globale, azioni scheda
+
+Le quattro schermate di contorno (25, 24, 23, 29 della sezione 7) non coperte dagli altri
+step. **Dettaglio e test in `SPEC-integrazione-step.md`.**
 
 ---
 

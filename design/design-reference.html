@@ -1,0 +1,1183 @@
+<title>Amici per la Coda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Petit+Formal+Script&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#157A3C; --green-d:#0F5C2C; --green-s:#E7F4EB; --green-t:#F2FAF4;
+  --ink:#16211B; --ink-2:#2C3A32; --muted:#6E7B72; --faint:#9AA69E;
+  --bg:#F5F7F3; --card:#FFFFFF; --line:#E9EBE4; --line-2:#F1F3EC;
+  --blue:#2E7FD6; --blue-s:#E7F1FC;
+  --red:#E04552; --red-s:#FDECEE;
+  --purple:#7B4CC0; --purple-s:#F2EAFC;
+  --orange:#DE8A22; --orange-s:#FDF1DF;
+  --pink-s:#FCE9F1;
+  --page:#EDEFE9; --page-ink:#20291F; --page-muted:#5E6A5C; --panel:#FFFFFF; --panel-line:#E2E6DC;
+  --shadow:0 1px 2px rgba(20,35,25,.05), 0 6px 18px rgba(20,35,25,.06);
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#14170F; --page-ink:#E8EDE4; --page-muted:#9CA898; --panel:#1C201A; --panel-line:#2C322A;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#14170F; --page-ink:#E8EDE4; --page-muted:#9CA898; --panel:#1C201A; --panel-line:#2C322A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--page-ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+
+/* ---------- page shell ---------- */
+.wrap{display:flex;gap:26px;align-items:flex-start;justify-content:center;padding:22px 18px 60px;max-width:1180px;margin:0 auto}
+.side{width:236px;flex:0 0 236px;position:sticky;top:22px;background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:14px 12px;max-height:calc(100vh - 44px);overflow:auto}
+.side h1{font:600 13px/1.3 inherit;margin:2px 6px 2px;letter-spacing:.2px}
+.side p{margin:2px 6px 12px;font-size:11.5px;color:var(--page-muted)}
+.grp{font:700 10px/1 inherit;letter-spacing:.9px;text-transform:uppercase;color:var(--page-muted);margin:14px 6px 6px}
+.nav{display:block;width:100%;text-align:left;padding:7px 9px;border-radius:9px;font-size:12.5px;color:var(--page-ink);opacity:.85}
+.nav:hover{background:rgba(21,122,60,.09);opacity:1}
+.nav.on{background:var(--green);color:#fff;opacity:1;font-weight:600}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.hint{font-size:11.5px;color:var(--page-muted);text-align:center;max-width:420px}
+.topbar{display:none}
+@media (max-width:900px){
+  .wrap{flex-direction:column;align-items:center;padding-top:14px}
+  .side{position:static;width:100%;max-width:420px;flex:none;max-height:none}
+}
+
+/* ---------- phone ---------- */
+.phone{width:400px;height:848px;background:#0E120D;border-radius:46px;padding:9px;box-shadow:0 24px 60px rgba(10,20,12,.30);flex:none;position:relative}
+.screen{width:100%;height:100%;background:var(--bg);border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--ink)}
+.statusbar{height:30px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11.5px;font-weight:600;color:#1c261f;background:#fff}
+.statusbar .r{display:flex;gap:5px;align-items:center;font-size:10px}
+.body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.body::-webkit-scrollbar{width:0}
+
+/* ---------- app header ---------- */
+.hdr{background:#fff;padding:6px 12px 10px;position:sticky;top:0;z-index:20;border-bottom:1px solid var(--line-2)}
+.logo{display:flex;flex-direction:column;align-items:center;gap:0;padding:2px 0 4px}
+.logo svg{display:block}
+.logo .wm{font-family:"Petit Formal Script","Snell Roundhand","Apple Chancery",cursive;font-size:19px;color:#1a1a1a;margin-top:-4px;letter-spacing:.3px}
+.hdrrow{display:flex;align-items:center;justify-content:space-between;margin-top:-30px;height:30px;position:relative;z-index:2}
+.iconbtn{width:34px;height:34px;border-radius:50%;background:#EEF1EC;display:grid;place-items:center;font-size:14px;color:#33413a}
+.iconbtn.g{background:#E8EEE9}
+.hdr .right{display:flex;gap:7px;align-items:center}
+.back{font-size:19px;color:#2c3a32;width:26px}
+
+/* ---------- generic ---------- */
+.pad{padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}
+.sec{font:700 13.5px/1.2 inherit;margin:16px 2px 9px;display:flex;align-items:center;gap:7px;color:var(--ink)}
+.sec .more{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--green)}
+.muted{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;background:#fff;border:1px solid var(--line)}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;background:var(--green);color:#fff;border-radius:10px;padding:11px;font-size:13px;font-weight:600;width:100%}
+.btn.ghost{background:#fff;color:var(--green);border:1.4px solid var(--green)}
+.btn.grey{background:#EEF1EC;color:#2c3a32}
+.divider{height:1px;background:var(--line-2);margin:9px 0}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+
+/* ---------- detail: hero ---------- */
+.hero{display:flex;gap:12px;padding:12px 12px 0}
+.photo{width:158px;height:212px;flex:none;border-radius:12px;overflow:hidden;position:relative;background:linear-gradient(150deg,#7a6a54,#4d4436)}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo .cnt{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:4px 8px;display:flex;gap:4px;align-items:center}
+.hinfo{flex:1;min-width:0}
+.nameline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nameline h2{margin:0;font-size:30px;line-height:1;font-weight:800;letter-spacing:-.6px;color:#111c15}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--green-s);color:#136135;font-size:11px;font-weight:700;border-radius:9px;padding:6px 9px;margin-left:auto}
+.tag{font-style:italic;color:#5d6b62;font-size:12px;line-height:1.35;margin:5px 0 9px}
+.frow{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+.fic{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:13px;flex:none}
+.flab{font-size:10.5px;color:var(--muted);line-height:1.2}
+.fval{font-size:12.5px;color:#22302a;line-height:1.25}
+.fval b{font-weight:600}
+.copy{font-size:11px;color:var(--faint);margin-left:4px}
+
+.quote{margin:12px;background:var(--green-t);border:1px solid #DCEDE1;border-radius:11px;padding:11px 12px;position:relative;font-style:italic;font-size:11.5px;line-height:1.5;color:#3c4b42}
+.quote:before{content:"“";position:absolute;left:8px;top:2px;font-size:26px;color:#9dc9ad;font-style:normal}
+.quote .t{padding-left:14px;padding-right:16px}
+.quote .h{position:absolute;right:10px;bottom:8px;color:#2f9d55;font-size:13px}
+
+.stats{display:flex;gap:9px;padding:0 12px;overflow-x:auto;padding-bottom:2px}
+.stats::-webkit-scrollbar{height:0}
+.stat{flex:0 0 auto;min-width:104px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 10px;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow)}
+.stat .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:none}
+.stat .l{font-size:11.5px;font-weight:700;color:#23302a;line-height:1.15}
+.stat .s{font-size:10px;color:var(--muted)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:0;overflow-x:auto;background:#fff;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line);margin-top:12px;position:sticky;top:0;z-index:10}
+.tabs::-webkit-scrollbar{height:0}
+.tab{flex:0 0 auto;padding:9px 13px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);border-bottom:2.5px solid transparent;min-width:62px}
+.tab .i{font-size:16px;line-height:1}
+.tab.on{color:var(--green);font-weight:700;border-bottom-color:var(--green)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.grid1{padding:12px;display:flex;flex-direction:column;gap:10px}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+.pcard h4{margin:0 0 8px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;color:#1b2822}
+.pcard h4 .ic{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px}
+.pcard h4 .ar{margin-left:auto;color:#b9c2ba;font-weight:400;font-size:13px}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:10.8px;padding:2.5px 0;align-items:flex-start}
+.kv .k{color:var(--muted);flex:none}
+.kv .v{color:#22302a;text-align:right;font-weight:500}
+.kv .v.g{color:var(--green);font-weight:700}
+.kv.tot{border-top:1px solid var(--line-2);margin-top:5px;padding-top:6px;background:var(--green-t);margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px;border-radius:0 0 10px 10px}
+.kv.tot .k{font-weight:700;color:#22302a}
+.li{display:flex;gap:7px;align-items:center;font-size:10.8px;padding:3.5px 0;border-bottom:1px dashed var(--line-2)}
+.li:last-child{border-bottom:none}
+.li .n{flex:1;color:#22302a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .d{color:var(--muted);font-size:10.2px;flex:none}
+
+/* ---------- bottom nav ---------- */
+.bnav{flex:none;height:62px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around;padding:0 6px 4px;position:relative;z-index:30}
+.bn{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:#7d8a82;width:64px}
+.bn .i{font-size:17px;line-height:1;filter:grayscale(1);opacity:.75}
+.bn.on{color:var(--green);font-weight:700}
+.bn.on .i{filter:none;opacity:1}
+.fab{position:absolute;left:50%;transform:translateX(-50%);top:-22px;width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:26px;font-weight:300;box-shadow:0 6px 16px rgba(21,122,60,.4);border:4px solid var(--bg)}
+.bnspace{width:64px}
+
+/* ---------- list ---------- */
+.search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 11px;font-size:12.5px;color:var(--faint);box-shadow:var(--shadow)}
+.filters{display:flex;gap:7px;overflow-x:auto;padding:10px 12px 2px}
+.filters::-webkit-scrollbar{height:0}
+.dog{display:flex;gap:10px;padding:9px;align-items:center}
+.dog .av{width:60px;height:60px;border-radius:11px;flex:none;overflow:hidden;background:#d9d3c6}
+.dog .av img{width:100%;height:100%;object-fit:cover}
+.dog .nm{font-size:13.5px;font-weight:700;color:#18241d;display:flex;align-items:center;gap:5px}
+.dog .sb{font-size:10.8px;color:var(--muted);margin-top:1px}
+.dog .tags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.mini{font-size:9.5px;font-weight:700;padding:2.5px 7px;border-radius:20px}
+.m-g{background:var(--green-s);color:#136135}
+.m-b{background:var(--blue-s);color:#1d5f9e}
+.m-r{background:var(--red-s);color:#b0303b}
+.m-o{background:var(--orange-s);color:#9d6212}
+.m-p{background:var(--purple-s);color:#5c33a0}
+.m-n{background:#EFF1ED;color:#5f6b62}
+
+/* ---------- forms ---------- */
+.field{margin-bottom:11px}
+.field label{display:block;font-size:11px;font-weight:600;color:#4a574f;margin-bottom:4px}
+.inp{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:12.5px;color:#22302a;display:flex;align-items:center;gap:7px}
+.inp.ph{color:var(--faint)}
+.inp .r{margin-left:auto;color:var(--faint);font-size:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.steps{display:flex;align-items:center;gap:5px;padding:12px 12px 0}
+.step{flex:1;height:4px;border-radius:4px;background:#E2E7E0}
+.step.on{background:var(--green)}
+.seg{display:flex;background:#EDF0EB;border-radius:10px;padding:3px;gap:3px}
+.seg div{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:7px;border-radius:8px;color:#5f6c64}
+.seg div.on{background:#fff;color:var(--green);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.upl{border:1.5px dashed #C6D2C8;border-radius:12px;background:#FAFCF9;padding:18px;text-align:center;font-size:11.5px;color:var(--muted)}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
+.th{aspect-ratio:1;border-radius:9px;background:#d9d3c6;overflow:hidden;position:relative}
+.th img{width:100%;height:100%;object-fit:cover}
+.th .x{position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:10px;display:grid;place-items:center}
+.th.add{background:#F1F4F0;border:1.5px dashed #C6D2C8;display:grid;place-items:center;font-size:20px;color:#9fb0a3}
+.th .cover{position:absolute;left:0;bottom:0;right:0;background:rgba(21,122,60,.9);color:#fff;font-size:8.5px;font-weight:700;text-align:center;padding:2px}
+
+/* ---------- sheet / overlay ---------- */
+.ovl{position:absolute;inset:0;background:rgba(15,25,18,.42);z-index:60;display:flex;flex-direction:column;justify-content:flex-end;border-radius:38px;opacity:0;pointer-events:none;transition:opacity .18s}
+.ovl.show{opacity:1;pointer-events:auto}
+.sheet{background:#fff;border-radius:20px 20px 38px 38px;padding:8px 14px 20px;transform:translateY(14px);transition:transform .2s;max-height:82%;overflow:auto}
+.ovl.show .sheet{transform:none}
+.grab{width:38px;height:4px;border-radius:4px;background:#DDE2DA;margin:6px auto 12px}
+.sh-t{font-size:14px;font-weight:700;margin:0 0 4px}
+.opt{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line-2);font-size:12.5px}
+.opt:last-child{border-bottom:none}
+.opt .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:14px;flex:none}
+.opt .t{font-weight:600;color:#1e2b24}
+.opt .s{font-size:10.5px;color:var(--muted)}
+.opt .ar{margin-left:auto;color:#c3ccc5}
+.opt.act{background:var(--green-t);border-radius:10px}
+
+/* toast */
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:78px;background:#1d2a22;color:#fff;font-size:11.5px;padding:9px 15px;border-radius:20px;z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:88%}
+.toast.show{opacity:1}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal .dh{font-size:9.5px;color:var(--muted);font-weight:700;padding:4px 0}
+.cd{aspect-ratio:1;display:grid;place-items:center;font-size:11px;border-radius:9px;position:relative;color:#26332c}
+.cd.o{color:#c3ccc5}
+.cd.today{background:var(--green);color:#fff;font-weight:700}
+.cd.ev:after{content:"";position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--orange)}
+.cd.ev2:after{background:var(--blue)}
+
+/* timeline */
+.tl{position:relative;padding-left:24px}
+.tl:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tle{position:relative;padding-bottom:14px}
+.tle:before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2.5px solid var(--green)}
+.tle .d{font-size:10px;color:var(--muted)}
+.tle .t{font-size:12px;font-weight:600;color:#202d26}
+.tle .x{font-size:10.8px;color:var(--muted)}
+
+/* bars */
+.bar{height:7px;border-radius:6px;background:#EDF0EB;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px;background:var(--green)}
+.dcount{font-size:26px;font-weight:800;letter-spacing:-1px;color:#16211b;line-height:1}
+.dlab{font-size:10.5px;color:var(--muted)}
+
+.doc{display:flex;gap:9px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line-2)}
+.doc:last-child{border-bottom:none}
+.doc .ic{width:34px;height:38px;border-radius:7px;display:grid;place-items:center;font-size:13px;flex:none;background:#F3F5F1;border:1px solid var(--line)}
+.doc .n{font-size:12px;font-weight:600;color:#1f2c25}
+.doc .m{font-size:10px;color:var(--muted)}
+
+.note{background:#FFFDF3;border:1px solid #F0E7C8;border-radius:11px;padding:10px}
+.note .h{font-size:10.5px;color:#96844a;font-weight:700;margin-bottom:4px;display:flex;gap:6px}
+.note .b{font-size:11.5px;color:#3e4740;line-height:1.45}
+
+.avat{width:34px;height:34px;border-radius:50%;background:var(--green-s);color:var(--green-d);display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+</style>
+
+<div class="wrap">
+  <aside class="side">
+    <h1>Amici per la Coda</h1>
+    <p>Prototipo cliccabile · gestionale rifugio. Usa l'app: tab, menu e pulsanti sono attivi.</p>
+    <div class="grp">Accesso</div>
+    <button class="nav" data-go="login">1 · Login associazione</button>
+    <button class="nav" data-go="home">2 · Home / Dashboard</button>
+    <div class="grp">Gestionale cani</div>
+    <button class="nav" data-go="animali">3 · Elenco animali</button>
+    <button class="nav" data-go="scheda" data-tab="t-scheda">4 · Scheda cane</button>
+    <button class="nav" data-go="scheda" data-tab="t-salute">5 · Tab Salute</button>
+    <button class="nav" data-go="scheda" data-tab="t-adoz">6 · Tab Adozione</button>
+    <button class="nav" data-go="scheda" data-tab="t-spese">7 · Tab Spese</button>
+    <button class="nav" data-go="scheda" data-tab="t-doc">8 · Tab Documenti</button>
+    <button class="nav" data-go="scheda" data-tab="t-note">9 · Tab Note</button>
+    <button class="nav" data-go="scheda" data-tab="t-altro">10 · Tab Altro / storico</button>
+    <button class="nav" data-go="galleria">11 · Galleria e foto</button>
+    <button class="nav" data-go="stato">12 · Cambio stato cane</button>
+    <div class="grp">Creazione profilo</div>
+    <button class="nav" data-go="nuovo1">13 · Nuovo cane · anagrafica</button>
+    <button class="nav" data-go="nuovo2">14 · Nuovo cane · foto e carattere</button>
+    <button class="nav" data-go="nuovo3">15 · Nuovo cane · sanitario</button>
+    <div class="grp">Adozioni e affidi</div>
+    <button class="nav" data-go="richieste">16 · Richieste di adozione</button>
+    <button class="nav" data-go="richdett">17 · Iter richiesta</button>
+    <button class="nav" data-go="affido">18 · Documenti di affido</button>
+    <div class="grp">Rifugio</div>
+    <button class="nav" data-go="calendario">19 · Calendario</button>
+    <button class="nav" data-go="box">20 · Box e settori</button>
+    <button class="nav" data-go="volontari">21 · Volontari e turni</button>
+    <button class="nav" data-go="stats">22 · Statistiche</button>
+    <div class="grp">Sistema</div>
+    <button class="nav" data-go="ricerca">23 · Ricerca globale</button>
+    <button class="nav" data-go="notifiche">24 · Notifiche</button>
+    <button class="nav" data-go="altro">25 · Menu Altro</button>
+    <button class="nav" data-go="impostazioni">26 · Impostazioni</button>
+    <div class="grp">Menu a comparsa</div>
+    <button class="nav" data-sheet="sh-nuovo">27 · Menu "+" Nuovo</button>
+    <button class="nav" data-sheet="sh-filtri">28 · Filtri elenco</button>
+    <button class="nav" data-sheet="sh-azioni">29 · Azioni scheda (⋮)</button>
+  </aside>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span id="clock">10:24</span><span class="r">📶 ▮▮▯ 100% 🔋</span></div>
+        <div class="body" id="body"></div>
+        <div class="bnav" id="bnav"></div>
+        <div class="ovl" id="ovl"><div class="sheet" id="sheet"></div></div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+    <div class="hint">Tocca le tab, le card, il <b>+</b> verde e i tre puntini: la navigazione è reale. A sinistra l'indice delle schermate.</div>
+  </div>
+</div>
+
+<script>
+/* ===================== data ===================== */
+const IMG = {
+  fenice:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&q=70",
+};
+const dogs=[
+ {id:"fenice",nome:"Fenice",sub:"Meticcia · Femmina · ~1 anno e mezzo",st:"In rifugio",tags:[["m-g","In rifugio"],["m-b","Sterilizzata"],["m-r","Adottabile"]],col:"linear-gradient(150deg,#c8ab7d,#8a7550)"},
+ {id:"brando",nome:"Brando",sub:"Pastore mix · Maschio · 4 anni",st:"In rifugio",tags:[["m-g","In rifugio"],["m-b","Castrato"],["m-o","Solo adulti"]],col:"linear-gradient(150deg,#6b5b4a,#3d3328)"},
+ {id:"nina",nome:"Nina",sub:"Meticcia · Femmina · 7 anni",st:"In stallo",tags:[["m-p","In stallo"],["m-b","Sterilizzata"],["m-r","Adottabile"]],col:"linear-gradient(150deg,#a8a099,#6d6560)"},
+ {id:"zeus",nome:"Zeus",sub:"Maremmano mix · Maschio · 2 anni",st:"In rifugio",tags:[["m-g","In rifugio"],["m-n","Da sterilizzare"],["m-o","Taglia grande"]],col:"linear-gradient(150deg,#e0d8c8,#9c9282)"},
+ {id:"luna",nome:"Luna",sub:"Meticcia · Femmina · 5 mesi",st:"Cucciolo",tags:[["m-g","In rifugio"],["m-o","Cucciolo"],["m-r","Adottabile"]],col:"linear-gradient(150deg,#4a4239,#241f19)"},
+ {id:"otto",nome:"Otto",sub:"Segugio mix · Maschio · 8 anni",st:"Adottato",tags:[["m-n","Adottato"],["m-b","Castrato"]],col:"linear-gradient(150deg,#b08a5a,#6b4f2e)"},
+];
+
+/* ===================== helpers ===================== */
+const $=s=>document.querySelector(s);
+const body=$("#body"), bnav=$("#bnav"), ovl=$("#ovl"), sheet=$("#sheet");
+let cur="home", curTab="t-scheda";
+
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),1700);}
+function closeSheet(){ovl.classList.remove("show");}
+ovl.addEventListener("click",e=>{if(e.target===ovl)closeSheet();});
+
+function head(title,back,actions){
+  return `<div class="hdr">
+    <div class="logo">${LOGO}<div class="wm">Amici per la Coda</div></div>
+    <div class="hdrrow">
+      <button class="back" ${back?`data-go="${back}"`:""}>${back?"‹":""}</button>
+      <div class="right">${actions||""}</div>
+    </div>
+  </div>`;
+}
+function plainHead(title,back,right){
+  return `<div class="hdr" style="padding-bottom:8px">
+    <div class="hdrrow" style="margin-top:0;height:38px">
+      <button class="back" ${back?`data-go="${back}"`:""} style="width:auto">${back?"‹":""}</button>
+      <div style="font-size:15px;font-weight:700;position:absolute;left:50%;transform:translateX(-50%)">${title}</div>
+      <div class="right">${right||""}</div>
+    </div>
+  </div>`;
+}
+const LOGO=`<svg width="132" height="40" viewBox="0 0 132 40" fill="none">
+  <path d="M8 30c3-9 9-14 17-14 6 0 10 3 12 7" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M25 16c-1-4 1-7 4-8 2-.7 4 .3 4.6 2 .6 1.8-.4 3.3-2 3.6" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <ellipse cx="20" cy="19" rx="10" ry="7" stroke="#1a1a1a" stroke-width="1.6"/>
+  <path d="M12 26c-2 3-4 4-7 4" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M63 32c-4-2-8-6-8-11 0-4 3-7 7-7 3 0 5 2 6 4" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M68 18c1-2 3-4 6-4 4 0 7 3 7 7 0 5-4 9-8 11" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M96 8c1.6-2.4 5.4-2.4 6.4.6.9 2.7-2 5-3.2 6.4-1.2-1.4-4.1-3.7-3.2-6.4z" fill="#1a1a1a"/>
+  <path d="M92 34c0-8 4-14 10-16" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M104 18c4 1 7 5 8 10" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/>
+</svg>`;
+
+function nav(active){
+  const items=[["home","🏠","Home"],["animali","🐾","Animali"],["FAB","",""],["calendario","📅","Calendario"],["altro","☰","Altro"]];
+  return items.map(([id,ic,l])=>{
+    if(id==="FAB")return `<div class="bnspace"></div><button class="fab" data-sheet="sh-nuovo">+</button>`;
+    return `<button class="bn ${active===id?"on":""}" data-go="${id}"><span class="i">${ic}</span>${l}</button>`;
+  }).join("");
+}
+
+/* ===================== screens ===================== */
+const S={};
+
+/* --- 1 login --- */
+S.login=()=>({nav:null,html:`
+<div style="height:100%;display:flex;flex-direction:column;justify-content:center;padding:26px;background:linear-gradient(180deg,#fff 0%,#EFF6F1 100%)">
+  <div style="text-align:center;margin-bottom:26px">
+    <div style="transform:scale(1.5);margin-bottom:14px">${LOGO}</div>
+    <div class="wm" style="font-family:'Petit Formal Script',cursive;font-size:26px;margin-top:6px">Amici per la Coda</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:6px">Gestionale rifugio e adozioni</div>
+  </div>
+  <div class="field"><label>Email volontario</label><div class="inp">✉️ giovanna@amiciperlacoda.it</div></div>
+  <div class="field"><label>Password</label><div class="inp">🔒 ••••••••<span class="r">👁</span></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;margin:2px 2px 16px"><span class="muted">☑ Resta collegato</span><span style="color:var(--green);font-weight:600">Password dimenticata?</span></div>
+  <button class="btn" data-go="home">Accedi</button>
+  <div style="text-align:center;font-size:11px;color:var(--muted);margin:14px 0">oppure</div>
+  <button class="btn ghost" data-go="home">🔑 Accedi con codice associazione</button>
+  <div style="text-align:center;font-size:10.5px;color:var(--faint);margin-top:22px">Versione 1.0 · 6 volontari attivi</div>
+</div>`});
+
+/* --- 2 home --- */
+S.home=()=>({nav:"home",html:head()+`
+<div class="pad">
+  <div style="font-size:17px;font-weight:800;letter-spacing:-.3px">Ciao Giovanna 👋</div>
+  <div class="muted" style="font-size:11.5px;margin-bottom:12px">Martedì 8 settembre · 3 cose da fare oggi</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div class="pcard" style="padding:12px"><div class="dcount">42</div><div class="dlab">Cani in rifugio</div>
+      <div class="bar" style="margin-top:8px"><i style="width:78%"></i></div>
+      <div style="font-size:9.5px;color:var(--muted);margin-top:4px">78% dei 54 posti</div></div>
+    <div class="pcard" style="padding:12px"><div class="dcount" style="color:var(--green)">7</div><div class="dlab">Adozioni nel 2026</div>
+      <div style="font-size:9.5px;color:var(--green);margin-top:12px;font-weight:700">▲ +2 rispetto al 2025</div></div>
+  </div>
+
+  <div class="sec">⚡ Da fare oggi</div>
+  <div class="card">
+    <div style="padding:10px">
+      <div class="li"><span class="fic" style="background:var(--red-s)">💉</span><span class="n"><b>Zeus</b> · richiamo vaccino scaduto da 3 gg</span><span class="d">⚠️</span></div>
+      <div class="li"><span class="fic" style="background:var(--blue-s)">🩺</span><span class="n"><b>Nina</b> · visita veterinaria ore 16:00</span><span class="d">16:00</span></div>
+      <div class="li"><span class="fic" style="background:var(--purple-s)">📄</span><span class="n">Affido <b>Otto</b> · manca il modulo firmato</span><span class="d">→</span></div>
+    </div>
+  </div>
+
+  <div class="sec">🐾 Ultimi arrivi <span class="more" data-go="animali">Vedi tutti ›</span></div>
+  <div style="display:flex;gap:9px;overflow-x:auto;padding-bottom:4px">
+    ${dogs.slice(0,4).map(d=>`<div class="pcard" style="flex:0 0 108px;padding:7px" data-go="scheda">
+      <div style="height:78px;border-radius:9px;background:${d.col};margin-bottom:6px;position:relative">${d.id==="fenice"?`<img src="${IMG.fenice}" style="width:100%;height:100%;object-fit:cover;border-radius:9px">`:""}</div>
+      <div style="font-size:11.5px;font-weight:700">${d.nome}</div>
+      <div style="font-size:9.5px;color:var(--muted)">${d.sub.split(" · ")[2]||d.sub}</div></div>`).join("")}
+  </div>
+
+  <div class="sec">📬 Richieste di adozione <span class="more" data-go="richieste">3 nuove ›</span></div>
+  <div class="card" style="padding:10px">
+    <div style="display:flex;gap:9px;align-items:center" data-go="richdett">
+      <div class="avat">MR</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:700">Marta Rossi → Luna</div><div style="font-size:10.5px;color:var(--muted)">Inviata 2 giorni fa · in valutazione</div></div>
+      <span class="mini m-o">Da valutare</span>
+    </div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:9px;align-items:center" data-go="richdett">
+      <div class="avat" style="background:var(--blue-s);color:#1d5f9e">GF</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:700">Fam. Ferrari → Otto</div><div style="font-size:10.5px;color:var(--muted)">Preaffido attivo dal 20/08</div></div>
+      <span class="mini m-g">Preaffido</span>
+    </div>
+  </div>
+
+  <div class="sec">🧰 Scorciatoie</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+    <button class="pcard" style="text-align:left;padding:12px" data-go="nuovo1"><div style="font-size:19px">➕</div><div style="font-size:11.5px;font-weight:700;margin-top:4px">Nuovo cane</div><div style="font-size:9.5px;color:var(--muted)">Crea profilo completo</div></button>
+    <button class="pcard" style="text-align:left;padding:12px" data-go="affido"><div style="font-size:19px">📝</div><div style="font-size:11.5px;font-weight:700;margin-top:4px">Modulo affido</div><div style="font-size:9.5px;color:var(--muted)">Genera e firma</div></button>
+    <button class="pcard" style="text-align:left;padding:12px" data-go="box"><div style="font-size:19px">🏠</div><div style="font-size:11.5px;font-weight:700;margin-top:4px">Box e settori</div><div style="font-size:9.5px;color:var(--muted)">12 box · 3 liberi</div></button>
+    <button class="pcard" style="text-align:left;padding:12px" data-go="stats"><div style="font-size:19px">📊</div><div style="font-size:11.5px;font-weight:700;margin-top:4px">Statistiche</div><div style="font-size:9.5px;color:var(--muted)">Report annuale</div></button>
+  </div>
+</div>`});
+
+/* --- 3 elenco animali --- */
+S.animali=()=>({nav:"animali",html:head()+`
+<div style="padding:12px 12px 0"><div class="search">🔎 Cerca per nome, microchip, box…</div></div>
+<div class="filters">
+  <span class="chip on">Tutti · 48</span><span class="chip">🏠 In rifugio 42</span><span class="chip">🛏 In stallo 4</span>
+  <span class="chip">❤️ Adottabili 31</span><span class="chip">🐶 Cuccioli 6</span>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 4px">
+  <span style="font-size:11px;color:var(--muted)">48 risultati</span>
+  <span style="font-size:11px;font-weight:600;color:var(--green)" data-sheet="sh-filtri">⚙ Filtri e ordina</span>
+</div>
+<div class="pad" style="padding-top:4px">
+${dogs.map(d=>`<div class="card dog" style="margin-bottom:9px" data-go="scheda">
+  <div class="av" style="background:${d.col}">${d.id==="fenice"?`<img src="${IMG.fenice}">`:""}</div>
+  <div style="flex:1;min-width:0">
+    <div class="nm">${d.nome} ${d.id==="fenice"?"<span style='color:var(--red);font-size:11px'>❤</span>":""}</div>
+    <div class="sb">${d.sub}</div>
+    <div class="tags">${d.tags.map(t=>`<span class="mini ${t[0]}">${t[1]}</span>`).join("")}</div>
+  </div>
+  <span style="color:#c3ccc5">›</span>
+</div>`).join("")}
+<div style="text-align:center;font-size:11px;color:var(--faint);padding:6px 0 14px">Scorri per caricare altri 42 →</div>
+</div>`});
+
+/* --- 4-10 scheda cane con tab --- */
+const TABS=[["t-scheda","🎒","Scheda"],["t-salute","➕","Salute"],["t-adoz","❤️","Adozione"],["t-spese","🪙","Spese"],["t-doc","📄","Documenti"],["t-note","📝","Note"],["t-altro","•••","Altro"]];
+
+function tabbar(){return `<div class="tabs">${TABS.map(t=>`<button class="tab ${curTab===t[0]?"on":""}" data-tab="${t[0]}"><span class="i">${t[1]}</span>${t[2]}</button>`).join("")}</div>`;}
+
+const TABC={
+"t-scheda":`<div class="grid2">
+  <div class="pcard"><h4><span class="ic" style="background:var(--green-s)">🐾</span>Carattere e compatibilità<span class="ar">›</span></h4>
+    <div class="kv"><span class="k">Carattere</span><span class="v">Dolce, socievole, equilibrata</span></div>
+    <div class="kv"><span class="k">Con persone</span><span class="v">🐾 Molto socievole</span></div>
+    <div class="kv"><span class="k">Con cani</span><span class="v">🐾 Sì</span></div>
+    <div class="kv"><span class="k">Con gatti</span><span class="v">🐾 Sì</span></div>
+    <div class="kv"><span class="k">Con bambini</span><span class="v">🐾 Sì</span></div>
+    <div class="kv"><span class="k">Note</span><span class="v">Adatta a famiglia, ama le coccole e il contatto umano.</span></div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--red-s)">❤️</span>Stato adozione<span class="ar">›</span></h4>
+    <div class="kv"><span class="k">Adottabile</span><span class="v g">Sì</span></div>
+    <div class="kv"><span class="k">Richieste ricevute</span><span class="v">0</span></div>
+    <div class="kv"><span class="k">Preaffido</span><span class="v">—</span></div>
+    <div class="kv"><span class="k">Data adozione</span><span class="v">—</span></div>
+    <div class="kv"><span class="k">Famiglia adottante</span><span class="v">—</span></div>
+    <button class="btn" style="margin-top:9px;padding:9px;font-size:11.5px" data-go="richdett">🐾 Nuova richiesta di adozione</button>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--blue-s)">➕</span>Ultime attività sanitarie<span class="ar">›</span></h4>
+    <div class="li"><span>💉</span><span class="n">Sterilizzazione</span><span class="d">15/03/2025</span></div>
+    <div class="li"><span>💉</span><span class="n">Vaccinazione</span><span class="d">10/02/2025</span></div>
+    <div class="li"><span>💊</span><span class="n">Sverminazione</span><span class="d">10/02/2025</span></div>
+    <div class="li"><span>🛡️</span><span class="n">Antiparassitario</span><span class="d">10/02/2025</span></div>
+    <div class="li"><span>🩺</span><span class="n">Controllo veterinario</span><span class="d">10/12/2025</span></div>
+  </div>
+  <div class="pcard" style="padding-bottom:0"><h4><span class="ic" style="background:var(--orange-s)">🪙</span>Spese sostenute<span class="ar">›</span></h4>
+    <div class="kv"><span class="k">Visite veterinarie</span><span class="v">€ 320,00</span></div>
+    <div class="kv"><span class="k">Sterilizzazione</span><span class="v">€ 180,00</span></div>
+    <div class="kv"><span class="k">Farmaci</span><span class="v">€ 95,00</span></div>
+    <div class="kv"><span class="k">Esami</span><span class="v">€ 120,00</span></div>
+    <div class="kv tot"><span class="k">Totale</span><span class="v g">€ 715,00</span></div>
+  </div>
+</div>`,
+
+"t-salute":`<div class="grid1">
+  <div class="pcard"><h4><span class="ic" style="background:var(--red-s)">⏰</span>Prossime scadenze</h4>
+    <div class="li"><span>💉</span><span class="n">Richiamo vaccino polivalente</span><span class="d" style="color:var(--orange);font-weight:700">tra 24 gg</span></div>
+    <div class="li"><span>🛡️</span><span class="n">Antiparassitario mensile</span><span class="d" style="color:var(--red);font-weight:700">tra 3 gg</span></div>
+    <div class="li"><span>🩺</span><span class="n">Controllo annuale</span><span class="d">10/12/2026</span></div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--blue-s)">📋</span>Libretto sanitario</h4>
+    <div class="tl">
+      <div class="tle"><div class="d">15/03/2025 · Dott.ssa Pinna</div><div class="t">💉 Sterilizzazione</div><div class="x">Intervento regolare, punti rimossi il 25/03. Nessuna complicanza.</div></div>
+      <div class="tle"><div class="d">10/02/2025 · Amb. Veterinario Sassari</div><div class="t">💉 Vaccino polivalente + antirabbica</div><div class="x">Lotto 44B-2025 · richiamo a 12 mesi</div></div>
+      <div class="tle"><div class="d">10/02/2025</div><div class="t">💊 Sverminazione</div><div class="x">Milbemax · peso 21,4 kg</div></div>
+      <div class="tle"><div class="d">28/06/2024 · ingresso</div><div class="t">🩺 Visita di accettazione</div><div class="x">Magra (17 kg), dermatite lieve, test leishmania negativo.</div></div>
+    </div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--green-s)">⚖️</span>Andamento peso</h4>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:72px;padding:6px 0">
+      ${[38,46,54,62,70,76,82,86].map((h,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;height:${h}%;background:${i===7?'var(--green)':'#CFE6D6'};border-radius:5px 5px 0 0"></div><span style="font-size:8px;color:var(--muted)">${['G','L','A','S','O','N','D','S'][i]}</span></div>`).join("")}
+    </div>
+    <div style="font-size:10.5px;color:var(--muted)">Da 17,0 kg (ingresso) a <b style="color:var(--green)">22,0 kg</b> · peso forma raggiunto</div>
+  </div>
+  <button class="btn ghost" data-toast="Nuova voce sanitaria">➕ Aggiungi trattamento</button>
+</div>`,
+
+"t-adoz":`<div class="grid1">
+  <div class="pcard" style="border-color:#CFE6D6;background:var(--green-t)"><h4><span class="ic" style="background:#fff">❤️</span>Fenice è adottabile</h4>
+    <div style="font-size:11.5px;color:#3d4b43;line-height:1.5">Pubblicata sul sito e sui social dal 01/07/2024. Richiesta idealmente una famiglia con giardino recintato e disponibilità a due uscite al giorno.</div>
+    <button class="btn" style="margin-top:10px" data-go="richdett">🐾 Registra nuova richiesta</button>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--purple-s)">🧭</span>Iter di adozione</h4>
+    <div class="tl">
+      <div class="tle"><div class="t">1 · Richiesta ricevuta</div><div class="x">Modulo online o in sede</div></div>
+      <div class="tle"><div class="t">2 · Colloquio conoscitivo</div><div class="x">Con il volontario referente</div></div>
+      <div class="tle"><div class="t">3 · Visita pre-affido</div><div class="x">Controllo casa e recinzione</div></div>
+      <div class="tle"><div class="t">4 · Preaffido 30 giorni</div><div class="x">Modulo firmato + documento identità</div></div>
+      <div class="tle"><div class="t">5 · Adozione definitiva</div><div class="x">Passaggio microchip in anagrafe canina</div></div>
+    </div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--orange-s)">📢</span>Annuncio pubblico</h4>
+    <div class="kv"><span class="k">Sito associazione</span><span class="v g">Pubblicato</span></div>
+    <div class="kv"><span class="k">Facebook / Instagram</span><span class="v g">Pubblicato</span></div>
+    <div class="kv"><span class="k">Visualizzazioni</span><span class="v">1.284</span></div>
+    <button class="btn grey" style="margin-top:9px;padding:9px;font-size:11.5px" data-toast="Link scheda copiato">🔗 Condividi scheda pubblica</button>
+  </div>
+</div>`,
+
+"t-spese":`<div class="grid1">
+  <div class="pcard" style="text-align:center;padding:14px">
+    <div class="dlab">Totale sostenuto per Fenice</div>
+    <div style="font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--green);margin:4px 0">€ 715,00</div>
+    <div style="font-size:10.5px;color:var(--muted)">dal 25/06/2024 · media € 49/mese</div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--orange-s)">📊</span>Ripartizione</h4>
+    ${[["Visite veterinarie",320,"45%"],["Sterilizzazione",180,"25%"],["Esami di laboratorio",120,"17%"],["Farmaci",95,"13%"]].map(r=>`
+    <div style="margin-bottom:9px"><div class="kv"><span class="k">${r[0]}</span><span class="v">€ ${r[1]},00</span></div><div class="bar"><i style="width:${r[2]}"></i></div></div>`).join("")}
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--blue-s)">🧾</span>Movimenti</h4>
+    <div class="li"><span>🩺</span><span class="n">Controllo veterinario · Amb. Sassari</span><span class="d">€ 45,00</span></div>
+    <div class="li"><span>💊</span><span class="n">Antiparassitario 3 mesi</span><span class="d">€ 28,00</span></div>
+    <div class="li"><span>🔬</span><span class="n">Test leishmania</span><span class="d">€ 60,00</span></div>
+    <div class="li"><span>💉</span><span class="n">Sterilizzazione (conv. ASL)</span><span class="d">€ 180,00</span></div>
+  </div>
+  <div class="pcard" style="background:var(--green-t);border-color:#CFE6D6"><h4><span class="ic" style="background:#fff">💚</span>Adozione a distanza</h4>
+    <div class="kv"><span class="k">Sostenitori attivi</span><span class="v">2</span></div>
+    <div class="kv"><span class="k">Contributo mensile</span><span class="v">€ 30,00</span></div>
+    <div class="kv"><span class="k">Copertura spese</span><span class="v g">61%</span></div>
+  </div>
+  <button class="btn ghost" data-toast="Nuova spesa registrata">➕ Registra spesa</button>
+</div>`,
+
+"t-doc":`<div class="grid1">
+  <div class="pcard"><h4><span class="ic" style="background:var(--purple-s)">📄</span>Documenti del cane</h4>
+    <div class="doc"><span class="ic">📕</span><div style="flex:1"><div class="n">Libretto sanitario</div><div class="m">PDF · 2,1 MB · agg. 10/12/2025</div></div><span style="color:#c3ccc5">⋮</span></div>
+    <div class="doc"><span class="ic">🪪</span><div style="flex:1"><div class="n">Certificato iscrizione anagrafe canina</div><div class="m">PDF · 480 KB · 30/06/2024</div></div><span style="color:#c3ccc5">⋮</span></div>
+    <div class="doc"><span class="ic">📷</span><div style="flex:1"><div class="n">Foto ingresso (5)</div><div class="m">JPG · 25/06/2024</div></div><span style="color:#c3ccc5">⋮</span></div>
+    <div class="doc"><span class="ic">📝</span><div style="flex:1"><div class="n">Verbale di recupero cane vagante</div><div class="m">PDF · 310 KB · 25/06/2024</div></div><span style="color:#c3ccc5">⋮</span></div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--green-s)">🖊</span>Modulistica affido</h4>
+    <div class="doc" data-go="affido"><span class="ic">📋</span><div style="flex:1"><div class="n">Modulo di preaffido</div><div class="m">Genera precompilato</div></div><span style="color:var(--green);font-weight:700;font-size:11px">Genera</span></div>
+    <div class="doc" data-go="affido"><span class="ic">📋</span><div style="flex:1"><div class="n">Contratto di adozione</div><div class="m">Genera precompilato</div></div><span style="color:var(--green);font-weight:700;font-size:11px">Genera</span></div>
+    <div class="doc" data-go="affido"><span class="ic">📋</span><div style="flex:1"><div class="n">Passaggio proprietà microchip</div><div class="m">Modello ASL</div></div><span style="color:var(--green);font-weight:700;font-size:11px">Genera</span></div>
+  </div>
+  <button class="btn ghost" data-toast="Scegli file dal telefono">📎 Carica documento</button>
+</div>`,
+
+"t-note":`<div class="grid1">
+  <div class="note"><div class="h">👤 Giovanna · 02/09/2026</div><div class="b">Oggi ha giocato con Luna per la prima volta senza tensione. Sta sciogliendosi molto, ottimo segnale per l'inserimento in famiglia con altri cani.</div></div>
+  <div class="note" style="background:#F5FAF6;border-color:#DCEDE1"><div class="h" style="color:#4d7a5c">👤 Marco (volontario) · 21/08/2026</div><div class="b">Passeggiata di 40 minuti. Al guinzaglio tira poco, si siede al comando. Ha paura dei motorini: consigliata desensibilizzazione graduale.</div></div>
+  <div class="note" style="background:#FDF4F4;border-color:#F3DADA"><div class="h" style="color:#a55">⚠️ Comportamento · 04/07/2026</div><div class="b">Ansia da separazione lieve quando resta sola in box. Migliorata con kong e coperta con odore familiare.</div></div>
+  <div class="note" style="background:#F4F7FB;border-color:#DAE5F2"><div class="h" style="color:#3f6ea5">🍽 Alimentazione · aggiornata</div><div class="b">Crocchette medium adult, 320 g/die in due pasti. Nessuna intolleranza rilevata.</div></div>
+  <button class="btn ghost" data-toast="Nuova nota">✍️ Aggiungi nota</button>
+</div>`,
+
+"t-altro":`<div class="grid1">
+  <div class="pcard" style="padding:4px 10px">
+    <div class="opt" data-go="galleria"><span class="ic" style="background:var(--blue-s)">🖼</span><div><div class="t">Galleria foto e video</div><div class="s">5 foto · 1 video</div></div><span class="ar">›</span></div>
+    <div class="opt" data-go="stato"><span class="ic" style="background:var(--green-s)">🔄</span><div><div class="t">Cambia stato del cane</div><div class="s">Attuale: In rifugio · Box 7</div></div><span class="ar">›</span></div>
+    <div class="opt" data-go="box"><span class="ic" style="background:var(--orange-s)">🏠</span><div><div class="t">Box e collocazione</div><div class="s">Settore B · Box 7 · con Nina</div></div><span class="ar">›</span></div>
+    <div class="opt" data-sheet="sh-azioni"><span class="ic" style="background:var(--purple-s)">🧑‍🤝‍🧑</span><div><div class="t">Volontario referente</div><div class="s">Marco P. · dal 01/07/2024</div></div><span class="ar">›</span></div>
+  </div>
+  <div class="pcard"><h4><span class="ic" style="background:var(--green-s)">🕓</span>Storico completo</h4>
+    <div class="tl">
+      <div class="tle"><div class="d">02/09/2026</div><div class="t">Nota comportamentale aggiunta</div><div class="x">da Giovanna</div></div>
+      <div class="tle"><div class="d">01/07/2024</div><div class="t">Dichiarata adottabile</div><div class="x">Pubblicata sul sito</div></div>
+      <div class="tle"><div class="d">30/06/2024</div><div class="t">Iscrizione anagrafe canina</div><div class="x">Microchip 380260170123456</div></div>
+      <div class="tle"><div class="d">25/06/2024</div><div class="t">Ingresso in rifugio</div><div class="x">Recupero da Corleto Perticara (PZ)</div></div>
+    </div>
+  </div>
+  <div class="pcard" style="padding:4px 10px">
+    <div class="opt" data-toast="Scheda PDF in generazione…"><span class="ic" style="background:#F1F3EF">📤</span><div class="t">Esporta scheda in PDF</div><span class="ar">›</span></div>
+    <div class="opt" data-toast="Trasferimento ad altra struttura"><span class="ic" style="background:#F1F3EF">🚐</span><div class="t">Trasferisci ad altra struttura</div><span class="ar">›</span></div>
+    <div class="opt" style="color:var(--red)"><span class="ic" style="background:var(--red-s)">🗄</span><div class="t" style="color:var(--red)">Archivia scheda</div><span class="ar">›</span></div>
+  </div>
+</div>`
+};
+
+S.scheda=()=>({nav:"animali",html:head("","animali",`<button class="iconbtn g">✏️</button><button class="iconbtn g" data-toast="Condividi scheda">↗️</button><button class="iconbtn g" data-sheet="sh-azioni">⋮</button>`)+`
+<div class="hero">
+  <div class="photo"><img src="${IMG.fenice}" alt="Fenice"><span class="cnt">🖼 1/5</span></div>
+  <div class="hinfo">
+    <div class="nameline"><h2>Fenice</h2><span style="color:var(--red);font-size:17px">❤</span><span class="pill" data-go="stato">🏠 In rifugio</span></div>
+    <div class="tag">Dolce, forte, speciale.<br>In attesa della sua famiglia.</div>
+    <div class="frow"><span class="fic" style="background:var(--pink-s)">♀️</span><div><div class="fval">Femmina</div></div></div>
+    <div class="frow"><span class="fic" style="background:var(--blue-s)">📅</span><div><div class="fval">Circa 1 anno e mezzo</div><div class="flab">(01/01/2023 presunta)</div></div></div>
+    <div class="frow"><span class="fic" style="background:#EEF1EC">🐕</span><div><div class="fval">Meticcia&nbsp; | &nbsp;Taglia media</div></div></div>
+    <div class="frow"><span class="fic" style="background:#EEF1EC">⚖️</span><div><div class="fval">Circa 22 kg</div></div></div>
+    <div class="frow"><span class="fic" style="background:#EEF1EC">▮▮▯</span><div><div class="flab">Microchip</div><div class="fval">380260170123456<span class="copy" data-toast="Microchip copiato">⧉</span></div></div></div>
+    <div class="frow"><span class="fic" style="background:var(--red-s)">📍</span><div><div class="flab">Provenienza</div><div class="fval">Corleto Perticara (PZ)</div></div></div>
+    <div class="frow"><span class="fic" style="background:var(--blue-s)">📅</span><div><div class="flab">Data di ingresso</div><div class="fval">25/06/2024</div></div></div>
+  </div>
+</div>
+<div class="quote"><div class="t">Fenice è una cagnolina meravigliosa, dolce, socievole e piena di vita. Dopo tutto quello che ha passato sta rinascendo e ora aspetta solo una famiglia che le dia l'amore che merita.</div><span class="h">💚</span></div>
+<div class="stats">
+  <div class="stat" data-go="stato"><span class="ic" style="background:var(--green-s)">🏠</span><div><div class="l">In rifugio</div><div class="s">Stato attuale</div></div></div>
+  <div class="stat" data-tab="t-salute"><span class="ic" style="background:var(--blue-s)">💉</span><div><div class="l">Sterilizzata</div><div class="s">Sì</div></div></div>
+  <div class="stat" data-tab="t-adoz"><span class="ic" style="background:var(--red-s)">❤️</span><div><div class="l">Adottabile</div><div class="s">Sì</div></div></div>
+  <div class="stat" data-go="richieste"><span class="ic" style="background:var(--purple-s)">👥</span><div><div class="l">Richieste</div><div class="s">0</div></div></div>
+</div>
+${tabbar()}
+${TABC[curTab]}
+<div style="height:10px"></div>`});
+
+/* --- 11 galleria --- */
+S.galleria=()=>({nav:"animali",html:plainHead("Foto di Fenice","scheda",`<button class="iconbtn g" data-toast="Seleziona foto">☑</button>`)+`
+<div style="background:#0E120D;padding:0"><div style="height:300px;position:relative"><img src="${IMG.fenice}" style="width:100%;height:100%;object-fit:cover">
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff">
+    <div style="font-size:12px;font-weight:700">Foto principale · 12/08/2026</div><div style="font-size:10.5px;opacity:.8">Scattata da Marco durante la passeggiata</div></div>
+  <div style="position:absolute;right:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:10.5px;padding:4px 9px;border-radius:20px">1 / 5</div>
+</div></div>
+<div class="pad">
+  <div class="thumbs">
+    <div class="th"><img src="${IMG.fenice}"><span class="cover">COPERTINA</span></div>
+    <div class="th" style="background:linear-gradient(150deg,#c8ab7d,#8a7550)"><span class="x">✕</span></div>
+    <div class="th" style="background:linear-gradient(150deg,#8fa07d,#4e5a41)"><span class="x">✕</span></div>
+    <div class="th" style="background:linear-gradient(150deg,#b9a68d,#7b6a52)"><span class="x">✕</span></div>
+    <div class="th" style="background:linear-gradient(150deg,#6e7a68,#3b4238)"><span class="x">✕</span></div>
+    <div class="th add" data-sheet="sh-foto">+</div>
+  </div>
+  <div class="sec">📤 Carica nuove foto</div>
+  <div class="upl" data-sheet="sh-foto"><div style="font-size:26px">🖼</div><div style="margin-top:6px">Tocca per scattare o scegliere dalla galleria</div><div style="font-size:10px;color:var(--faint);margin-top:3px">JPG o PNG · max 10 MB · fino a 20 foto per cane</div></div>
+  <div class="sec">🎬 Video</div>
+  <div class="card" style="padding:10px;display:flex;gap:10px;align-items:center">
+    <div style="width:64px;height:44px;border-radius:8px;background:linear-gradient(150deg,#5d6b52,#2f3729);display:grid;place-items:center;color:#fff;font-size:15px">▶</div>
+    <div style="flex:1"><div style="font-size:12px;font-weight:700">Fenice gioca in area sgambamento</div><div style="font-size:10.5px;color:var(--muted)">0:38 · 14 MB</div></div>
+  </div>
+  <div style="display:flex;gap:9px;margin:14px 0">
+    <button class="btn ghost" data-toast="Impostata come copertina">⭐ Imposta copertina</button>
+    <button class="btn grey" data-toast="Foto usata nell'annuncio">📢 Usa per annuncio</button>
+  </div>
+</div>`});
+
+/* --- 12 stato --- */
+S.stato=()=>({nav:"animali",html:plainHead("Stato di Fenice","scheda")+`
+<div class="pad">
+  <div class="card" style="padding:12px;display:flex;gap:10px;align-items:center;background:var(--green-t);border-color:#CFE6D6">
+    <span class="fic" style="background:#fff;width:38px;height:38px;font-size:17px">🏠</span>
+    <div><div style="font-size:13px;font-weight:800">In rifugio</div><div style="font-size:10.5px;color:var(--muted)">Settore B · Box 7 · dal 25/06/2024 (441 giorni)</div></div>
+  </div>
+  <div class="sec">🔄 Cambia stato</div>
+  <div class="card" style="padding:4px 10px">
+    <div class="opt act"><span class="ic" style="background:var(--green-s)">🏠</span><div><div class="t">In rifugio</div><div class="s">Presente in struttura</div></div><span class="ar">●</span></div>
+    <div class="opt" data-toast="Stato: In stallo"><span class="ic" style="background:var(--purple-s)">🛏</span><div><div class="t">In stallo</div><div class="s">Ospitato da un volontario o famiglia</div></div><span class="ar">○</span></div>
+    <div class="opt" data-toast="Stato: Preaffido"><span class="ic" style="background:var(--orange-s)">🤝</span><div><div class="t">In preaffido</div><div class="s">Periodo di prova 30 giorni</div></div><span class="ar">○</span></div>
+    <div class="opt" data-toast="Stato: Adottato"><span class="ic" style="background:var(--red-s)">❤️</span><div><div class="t">Adottato</div><div class="s">Adozione definitiva conclusa</div></div><span class="ar">○</span></div>
+    <div class="opt" data-toast="Stato: In cura"><span class="ic" style="background:var(--blue-s)">🩺</span><div><div class="t">In cura / degenza</div><div class="s">Presso clinica veterinaria</div></div><span class="ar">○</span></div>
+    <div class="opt" data-toast="Stato: Restituito al proprietario"><span class="ic" style="background:#EEF1EC">🔙</span><div><div class="t">Restituito al proprietario</div><div class="s">Cane smarrito ritrovato</div></div><span class="ar">○</span></div>
+    <div class="opt" data-toast="Stato: Deceduto"><span class="ic" style="background:#EEF1EC">🕊</span><div><div class="t">Deceduto</div><div class="s">Archivia la scheda con data</div></div><span class="ar">○</span></div>
+  </div>
+  <div class="sec">📝 Dettagli del cambio</div>
+  <div class="field"><label>Data effettiva</label><div class="inp">📅 08/09/2026<span class="r">▾</span></div></div>
+  <div class="field"><label>Motivazione / note</label><div class="inp ph" style="height:64px;align-items:flex-start">Es. trasferita in stallo da Marta R. per socializzazione…</div></div>
+  <div class="field"><label>Volontario che registra</label><div class="inp">👤 Giovanna<span class="r">▾</span></div></div>
+  <button class="btn" data-go="scheda" style="margin:6px 0 16px">✓ Salva nuovo stato</button>
+</div>`});
+
+/* --- 13-15 nuovo cane --- */
+S.nuovo1=()=>({nav:"animali",html:plainHead("Nuovo cane · 1 di 3","animali",`<span style="font-size:11.5px;color:var(--muted)">Salva bozza</span>`)+`
+<div class="steps"><div class="step on"></div><div class="step"></div><div class="step"></div></div>
+<div class="pad">
+  <div class="sec">🐕 Anagrafica</div>
+  <div class="field"><label>Nome del cane *</label><div class="inp">🐾 Fenice</div></div>
+  <div class="field"><label>Sesso *</label><div class="seg"><div class="on">♀️ Femmina</div><div>♂️ Maschio</div></div></div>
+  <div class="row2">
+    <div class="field"><label>Data di nascita</label><div class="inp">📅 01/01/2023</div></div>
+    <div class="field"><label>Precisione</label><div class="inp">Presunta<span class="r">▾</span></div></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Razza / tipo</label><div class="inp">Meticcia<span class="r">▾</span></div></div>
+    <div class="field"><label>Taglia</label><div class="inp">Media<span class="r">▾</span></div></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Peso attuale (kg)</label><div class="inp">⚖️ 22</div></div>
+    <div class="field"><label>Mantello</label><div class="inp ph">Es. fulvo chiaro</div></div>
+  </div>
+  <div class="sec">🔖 Identificazione</div>
+  <div class="field"><label>Microchip</label><div class="inp">▮▮▯ 380260170123456<span class="r" data-toast="Apertura scanner…">📷</span></div></div>
+  <div class="field"><label>Iscritto in anagrafe canina</label><div class="seg"><div class="on">Sì</div><div>No</div><div>Da verificare</div></div></div>
+  <div class="sec">📍 Provenienza e ingresso</div>
+  <div class="field"><label>Luogo di provenienza</label><div class="inp">📍 Corleto Perticara (PZ)</div></div>
+  <div class="field"><label>Modalità di ingresso</label><div class="inp">Recupero cane vagante<span class="r">▾</span></div></div>
+  <div class="row2">
+    <div class="field"><label>Data di ingresso *</label><div class="inp">📅 25/06/2024</div></div>
+    <div class="field"><label>Box assegnato</label><div class="inp">B · 7<span class="r">▾</span></div></div>
+  </div>
+  <button class="btn" data-go="nuovo2" style="margin:8px 0 16px">Continua →</button>
+</div>`});
+
+S.nuovo2=()=>({nav:"animali",html:plainHead("Nuovo cane · 2 di 3","nuovo1")+`
+<div class="steps"><div class="step on"></div><div class="step on"></div><div class="step"></div></div>
+<div class="pad">
+  <div class="sec">📷 Foto del profilo</div>
+  <div class="upl" data-sheet="sh-foto"><div style="font-size:26px">📸</div><div style="margin-top:6px">Scatta o carica le foto di Fenice</div></div>
+  <div class="thumbs">
+    <div class="th"><img src="${IMG.fenice}"><span class="cover">COPERTINA</span></div>
+    <div class="th" style="background:linear-gradient(150deg,#c8ab7d,#8a7550)"><span class="x">✕</span></div>
+    <div class="th add" data-sheet="sh-foto">+</div>
+  </div>
+  <div class="sec">💬 Presentazione</div>
+  <div class="field"><label>Slogan (2 righe in scheda)</label><div class="inp" style="height:52px;align-items:flex-start">Dolce, forte, speciale. In attesa della sua famiglia.</div></div>
+  <div class="field"><label>Descrizione per l'annuncio</label><div class="inp" style="height:80px;align-items:flex-start;font-style:italic;font-size:11.5px">Fenice è una cagnolina meravigliosa, dolce, socievole e piena di vita. Dopo tutto quello che ha passato sta rinascendo e ora aspetta solo una famiglia che le dia l'amore che merita.</div></div>
+  <div class="sec">🐾 Carattere e compatibilità</div>
+  <div class="field"><label>Carattere</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip on">Dolce</span><span class="chip on">Socievole</span><span class="chip on">Equilibrata</span><span class="chip">Timida</span><span class="chip">Vivace</span><span class="chip">Protettiva</span><span class="chip">+</span></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Con le persone</label><div class="seg"><div class="on">Molto socievole</div><div>Selettiva</div><div>Diffidente</div></div></div>
+  <div class="field"><label>Con altri cani</label><div class="seg"><div class="on">Sì</div><div>Solo femmine</div><div>No</div></div></div>
+  <div class="field"><label>Con i gatti</label><div class="seg"><div class="on">Sì</div><div>Da testare</div><div>No</div></div></div>
+  <div class="field"><label>Con i bambini</label><div class="seg"><div class="on">Sì</div><div>Solo grandi</div><div>No</div></div></div>
+  <div class="field"><label>Note sul carattere</label><div class="inp" style="height:56px;align-items:flex-start;font-size:11.5px">Adatta a famiglia, ama le coccole e il contatto umano.</div></div>
+  <div style="display:flex;gap:9px;margin:8px 0 16px"><button class="btn grey" data-go="nuovo1">← Indietro</button><button class="btn" data-go="nuovo3">Continua →</button></div>
+</div>`});
+
+S.nuovo3=()=>({nav:"animali",html:plainHead("Nuovo cane · 3 di 3","nuovo2")+`
+<div class="steps"><div class="step on"></div><div class="step on"></div><div class="step on"></div></div>
+<div class="pad">
+  <div class="sec">💉 Situazione sanitaria</div>
+  <div class="field"><label>Sterilizzata / castrato</label><div class="seg"><div class="on">Sì</div><div>No</div><div>Programmata</div></div></div>
+  <div class="field"><label>Data intervento</label><div class="inp">📅 15/03/2025</div></div>
+  <div class="card" style="padding:10px;margin-bottom:11px">
+    <div style="font-size:11.5px;font-weight:700;margin-bottom:7px">Vaccinazioni e trattamenti</div>
+    <div class="li"><span>💉</span><span class="n">Polivalente + antirabbica</span><span class="d">10/02/2025</span></div>
+    <div class="li"><span>💊</span><span class="n">Sverminazione</span><span class="d">10/02/2025</span></div>
+    <div class="li"><span>🛡️</span><span class="n">Antiparassitario</span><span class="d">10/02/2025</span></div>
+    <button class="btn ghost" style="margin-top:9px;padding:8px;font-size:11.5px" data-toast="Aggiungi trattamento">➕ Aggiungi</button>
+  </div>
+  <div class="field"><label>Test effettuati</label><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip on">Leishmania ✓</span><span class="chip on">Filaria ✓</span><span class="chip">Ehrlichia</span></div></div>
+  <div class="field" style="margin-top:12px"><label>Terapie in corso</label><div class="inp ph">Nessuna</div></div>
+  <div class="sec">❤️ Adozione</div>
+  <div class="field"><label>Adottabile</label><div class="seg"><div class="on">Sì</div><div>Non ancora</div><div>Non adottabile</div></div></div>
+  <div class="field"><label>Pubblica su sito e social</label><div class="seg"><div class="on">Sì, subito</div><div>Solo interno</div></div></div>
+  <div class="field"><label>Volontario referente</label><div class="inp">👤 Marco P.<span class="r">▾</span></div></div>
+  <div class="card" style="padding:11px;background:var(--green-t);border-color:#CFE6D6;margin-bottom:12px">
+    <div style="font-size:11.5px;font-weight:700;margin-bottom:5px">Riepilogo</div>
+    <div class="kv"><span class="k">Nome</span><span class="v">Fenice · Femmina · Meticcia</span></div>
+    <div class="kv"><span class="k">Microchip</span><span class="v">380260170123456</span></div>
+    <div class="kv"><span class="k">Ingresso</span><span class="v">25/06/2024 · Box B7</span></div>
+    <div class="kv"><span class="k">Foto caricate</span><span class="v">2</span></div>
+  </div>
+  <div style="display:flex;gap:9px;margin-bottom:16px"><button class="btn grey" data-go="nuovo2">← Indietro</button><button class="btn" data-go="scheda">✓ Crea profilo</button></div>
+</div>`});
+
+/* --- 16 richieste --- */
+S.richieste=()=>({nav:"home",html:plainHead("Richieste di adozione","home",`<button class="iconbtn g" data-sheet="sh-filtri">⚙</button>`)+`
+<div class="filters" style="padding-top:12px"><span class="chip on">Tutte · 9</span><span class="chip">Da valutare 3</span><span class="chip">Colloquio 2</span><span class="chip">Preaffido 2</span><span class="chip">Concluse 2</span></div>
+<div class="pad" style="padding-top:8px">
+${[["MR","Marta Rossi","Luna · cucciola 5 mesi","Inviata 2 giorni fa","m-o","Da valutare","var(--orange-s)","#9d6212"],
+   ["GF","Fam. Ferrari","Otto · segugio 8 anni","Preaffido dal 20/08 · scade tra 12 gg","m-g","Preaffido","var(--green-s)","#136135"],
+   ["LC","Luca Cossu","Brando · pastore mix","Colloquio fissato 12/09 ore 17:00","m-b","Colloquio","var(--blue-s)","#1d5f9e"],
+   ["AP","Anna Pili","Nina · meticcia 7 anni","Visita pre-affido effettuata ✓","m-p","Visita ok","var(--purple-s)","#5c33a0"],
+   ["SD","Sara Deiana","Zeus · maremmano mix","Richiesta non idonea · no recinzione","m-n","Respinta","#EFF1ED","#5f6b62"]].map(r=>`
+<div class="card" style="padding:11px;margin-bottom:9px;display:flex;gap:10px;align-items:center" data-go="richdett">
+  <div class="avat" style="background:${r[6]};color:${r[7]}">${r[0]}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:12.5px;font-weight:700">${r[1]}</div>
+    <div style="font-size:11px;color:#3f4d45">${r[2]}</div>
+    <div style="font-size:10.2px;color:var(--muted);margin-top:2px">${r[3]}</div>
+  </div>
+  <span class="mini ${r[4]}">${r[5]}</span>
+</div>`).join("")}
+<button class="btn ghost" style="margin:4px 0 16px" data-toast="Nuova richiesta manuale">➕ Registra richiesta</button>
+</div>`});
+
+/* --- 17 dettaglio richiesta --- */
+S.richdett=()=>({nav:"home",html:plainHead("Richiesta · Luna","richieste",`<button class="iconbtn g" data-sheet="sh-azioni">⋮</button>`)+`
+<div class="pad">
+  <div class="card" style="padding:12px;display:flex;gap:11px;align-items:center">
+    <div class="avat" style="width:44px;height:44px;font-size:14px">MR</div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:800">Marta Rossi</div><div style="font-size:11px;color:var(--muted)">Sassari (SS) · 34 anni</div></div>
+    <span class="mini m-o">Da valutare</span>
+  </div>
+  <div style="display:flex;gap:9px;margin-top:9px">
+    <button class="btn ghost" style="padding:9px;font-size:11.5px" data-toast="Chiamata a Marta Rossi">📞 Chiama</button>
+    <button class="btn grey" style="padding:9px;font-size:11.5px" data-toast="Email aperta">✉️ Email</button>
+  </div>
+
+  <div class="sec">🐕 Cane richiesto</div>
+  <div class="card dog" data-go="scheda"><div class="av" style="background:linear-gradient(150deg,#4a4239,#241f19)"></div>
+    <div style="flex:1"><div class="nm">Luna</div><div class="sb">Meticcia · Femmina · 5 mesi</div><div class="tags"><span class="mini m-g">In rifugio</span><span class="mini m-r">Adottabile</span></div></div><span style="color:#c3ccc5">›</span></div>
+
+  <div class="sec">🧭 Avanzamento iter</div>
+  <div class="card" style="padding:12px">
+    <div class="tl">
+      <div class="tle"><div class="d">06/09/2026 · completato</div><div class="t">✅ Richiesta ricevuta</div><div class="x">Modulo online dal sito</div></div>
+      <div class="tle"><div class="d">in corso</div><div class="t">🔎 Colloquio conoscitivo</div><div class="x">Da fissare con il referente</div></div>
+      <div class="tle" style="opacity:.5"><div class="t">🏡 Visita pre-affido</div></div>
+      <div class="tle" style="opacity:.5"><div class="t">📄 Preaffido 30 giorni</div></div>
+      <div class="tle" style="opacity:.5"><div class="t">❤️ Adozione definitiva</div></div>
+    </div>
+  </div>
+
+  <div class="sec">📋 Questionario</div>
+  <div class="card" style="padding:11px">
+    <div class="kv"><span class="k">Abitazione</span><span class="v">Villetta con giardino 300 m²</span></div>
+    <div class="kv"><span class="k">Giardino recintato</span><span class="v g">Sì · 1,8 m</span></div>
+    <div class="kv"><span class="k">Altri animali</span><span class="v">1 gatto</span></div>
+    <div class="kv"><span class="k">Bambini in casa</span><span class="v">Sì · 8 e 11 anni</span></div>
+    <div class="kv"><span class="k">Ore da solo</span><span class="v">Max 4 ore</span></div>
+    <div class="kv"><span class="k">Esperienza cani</span><span class="v">Sì, precedente meticcio</span></div>
+    <div class="kv"><span class="k">Dove dormirà</span><span class="v">In casa</span></div>
+  </div>
+
+  <div class="sec">📎 Documenti</div>
+  <div class="card" style="padding:4px 11px">
+    <div class="doc"><span class="ic">🪪</span><div style="flex:1"><div class="n">Documento d'identità</div><div class="m">Caricato 06/09/2026</div></div><span style="color:var(--green);font-size:11px;font-weight:700">✓</span></div>
+    <div class="doc"><span class="ic">📋</span><div style="flex:1"><div class="n">Modulo di preaffido</div><div class="m">Non ancora generato</div></div><span style="color:var(--green);font-size:11px;font-weight:700" data-go="affido">Genera</span></div>
+  </div>
+
+  <div style="display:flex;gap:9px;margin:14px 0 16px">
+    <button class="btn ghost" data-toast="Richiesta respinta">✕ Respingi</button>
+    <button class="btn" data-go="affido">✓ Avanza a preaffido</button>
+  </div>
+</div>`});
+
+/* --- 18 documenti affido --- */
+S.affido=()=>({nav:"home",html:plainHead("Documenti di affido","richdett")+`
+<div class="pad">
+  <div class="card" style="padding:11px;background:var(--green-t);border-color:#CFE6D6;display:flex;gap:10px;align-items:center">
+    <span class="fic" style="background:#fff;width:36px;height:36px;font-size:16px">📄</span>
+    <div style="font-size:11.5px;line-height:1.45;color:#3d4b43">I moduli vengono precompilati con i dati del cane e dell'adottante. Firma direttamente sul telefono o stampa.</div>
+  </div>
+
+  <div class="sec">🖊 Modulo da generare</div>
+  <div class="card" style="padding:4px 11px">
+    <div class="opt act"><span class="ic" style="background:#fff">📋</span><div><div class="t">Modulo di preaffido (30 gg)</div><div class="s">Consegna in prova con verifica</div></div><span class="ar">●</span></div>
+    <div class="opt"><span class="ic" style="background:#F1F3EF">❤️</span><div><div class="t">Contratto di adozione definitiva</div><div class="s">Con clausole di controllo post-adozione</div></div><span class="ar">○</span></div>
+    <div class="opt"><span class="ic" style="background:#F1F3EF">🔁</span><div><div class="t">Passaggio proprietà microchip</div><div class="s">Modello anagrafe canina ASL</div></div><span class="ar">○</span></div>
+    <div class="opt"><span class="ic" style="background:#F1F3EF">💚</span><div><div class="t">Adozione a distanza</div><div class="s">Sostegno economico mensile</div></div><span class="ar">○</span></div>
+  </div>
+
+  <div class="sec">✍️ Dati precompilati</div>
+  <div class="card" style="padding:11px">
+    <div class="kv"><span class="k">Cane</span><span class="v">Luna · chip 380260170998877</span></div>
+    <div class="kv"><span class="k">Affidataria</span><span class="v">Marta Rossi</span></div>
+    <div class="kv"><span class="k">Documento</span><span class="v">CI AX1234567</span></div>
+    <div class="kv"><span class="k">Indirizzo</span><span class="v">Via Roma 12, Sassari</span></div>
+    <div class="kv"><span class="k">Periodo</span><span class="v">08/09/2026 → 08/10/2026</span></div>
+    <div class="kv"><span class="k">Referente associazione</span><span class="v">Giovanna</span></div>
+  </div>
+
+  <div class="sec">🖋 Firme</div>
+  <div class="card" style="padding:11px">
+    <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Firma dell'affidataria</div>
+    <div style="height:78px;border:1.5px dashed #C6D2C8;border-radius:10px;background:#FAFCF9;display:grid;place-items:center;font-size:11px;color:var(--faint)" data-toast="Firma acquisita">Firma qui con il dito</div>
+    <div class="divider"></div>
+    <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Firma del referente</div>
+    <div style="height:60px;border:1px solid var(--line);border-radius:10px;background:#fff;display:grid;place-items:center;font-family:'Petit Formal Script',cursive;font-size:19px;color:#2a3a30">Giovanna</div>
+  </div>
+
+  <div style="display:flex;gap:9px;margin:14px 0">
+    <button class="btn grey" data-toast="Anteprima PDF">👁 Anteprima</button>
+    <button class="btn" data-toast="Modulo generato e allegato alla scheda">📄 Genera PDF</button>
+  </div>
+  <button class="btn ghost" style="margin-bottom:16px" data-toast="Inviato via email a Marta Rossi">✉️ Invia all'adottante</button>
+</div>`});
+
+/* --- 19 calendario --- */
+S.calendario=()=>({nav:"calendario",html:head()+`
+<div class="pad">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:15px;font-weight:800">Settembre 2026</span>
+    <span style="display:flex;gap:12px;color:var(--muted)">‹ ›</span>
+  </div>
+  <div class="card" style="padding:10px">
+    <div class="cal">
+      ${["L","M","M","G","V","S","D"].map(d=>`<div class="dh">${d}</div>`).join("")}
+      ${[31].map(d=>`<div class="cd o">${d}</div>`).join("")}
+      ${Array.from({length:30},(_,i)=>{const d=i+1;const cls=d===8?"cd today":(d===12||d===20?"cd ev":(d===15||d===24?"cd ev2":"cd"));return `<div class="${cls}">${d}</div>`}).join("")}
+      ${[1,2,3,4].map(d=>`<div class="cd o">${d}</div>`).join("")}
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin:8px 2px">
+    <span>● <span style="color:var(--orange)">Adozioni/affidi</span></span><span>● <span style="color:var(--blue)">Veterinario</span></span>
+  </div>
+
+  <div class="sec">📌 Oggi · martedì 8</div>
+  <div class="card" style="padding:11px">
+    <div style="display:flex;gap:10px"><div style="font-size:11px;font-weight:700;color:var(--blue);width:42px">16:00</div>
+      <div style="flex:1;border-left:2.5px solid var(--blue);padding-left:9px"><div style="font-size:12px;font-weight:700">Visita veterinaria · Nina</div><div style="font-size:10.5px;color:var(--muted)">Amb. Veterinario Sassari · con Marco</div></div></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:10px"><div style="font-size:11px;font-weight:700;color:var(--green);width:42px">18:30</div>
+      <div style="flex:1;border-left:2.5px solid var(--green);padding-left:9px"><div style="font-size:12px;font-weight:700">Turno pulizia settore B</div><div style="font-size:10.5px;color:var(--muted)">3 volontari assegnati</div></div></div>
+  </div>
+
+  <div class="sec">🗓 Prossimi giorni</div>
+  <div class="card" style="padding:11px">
+    <div class="li"><span>🤝</span><span class="n"><b>12/09</b> · Colloquio Luca Cossu per Brando</span><span class="d">17:00</span></div>
+    <div class="li"><span>💉</span><span class="n"><b>15/09</b> · Richiamo vaccino Zeus</span><span class="d">10:30</span></div>
+    <div class="li"><span>🏡</span><span class="n"><b>20/09</b> · Fine preaffido Otto · verifica</span><span class="d">tutto il g.</span></div>
+    <div class="li"><span>🩺</span><span class="n"><b>24/09</b> · Controllo post-operatorio Nina</span><span class="d">09:00</span></div>
+  </div>
+  <button class="btn ghost" style="margin:12px 0 16px" data-toast="Nuovo appuntamento">➕ Nuovo appuntamento</button>
+</div>`});
+
+/* --- 20 box --- */
+S.box=()=>({nav:"altro",html:plainHead("Box e settori","altro")+`
+<div class="pad">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+    <div class="pcard" style="padding:10px;text-align:center"><div class="dcount">54</div><div class="dlab">Posti</div></div>
+    <div class="pcard" style="padding:10px;text-align:center"><div class="dcount" style="color:var(--orange)">42</div><div class="dlab">Occupati</div></div>
+    <div class="pcard" style="padding:10px;text-align:center"><div class="dcount" style="color:var(--green)">12</div><div class="dlab">Liberi</div></div>
+  </div>
+  <div class="sec">🏠 Settore A · cuccioli e piccola taglia</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    ${[["A1","Luna + 2","2/3","m-o"],["A2","Libero","0/3","m-g"],["A3","Bianca, Kira","2/3","m-o"],["A4","Manutenzione","—","m-n"]].map(b=>`
+    <div class="pcard" style="padding:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:12.5px">${b[0]}</b><span class="mini ${b[3]}">${b[2]}</span></div><div style="font-size:10.5px;color:var(--muted);margin-top:3px">${b[1]}</div></div>`).join("")}
+  </div>
+  <div class="sec">🏠 Settore B · media e grande taglia</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    ${[["B5","Zeus","1/2","m-o"],["B6","Brando","1/2","m-o"],["B7","Fenice, Nina","2/2","m-r"],["B8","Libero","0/2","m-g"]].map(b=>`
+    <div class="pcard" style="padding:10px" ${b[0]==="B7"?'data-go="scheda"':''}><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:12.5px">${b[0]}</b><span class="mini ${b[3]}">${b[2]}</span></div><div style="font-size:10.5px;color:var(--muted);margin-top:3px">${b[1]}</div></div>`).join("")}
+  </div>
+  <div class="sec">🩺 Infermeria</div>
+  <div class="card" style="padding:11px">
+    <div class="li"><span>🩺</span><span class="n">Box degenza 1 · <b>Tobia</b> post-operatorio</span><span class="d">3 gg</span></div>
+    <div class="li"><span>🦠</span><span class="n">Box isolamento · libero</span><span class="d">—</span></div>
+  </div>
+  <button class="btn ghost" style="margin:12px 0 16px" data-toast="Sposta cane di box">🔄 Sposta un cane</button>
+</div>`});
+
+/* --- 21 volontari --- */
+S.volontari=()=>({nav:"altro",html:plainHead("Volontari e turni","altro",`<button class="iconbtn g" data-toast="Invita volontario">➕</button>`)+`
+<div class="pad">
+  <div class="sec">👥 Squadra · 6 attivi</div>
+  ${[["G","Giovanna","Presidente · referente adozioni","var(--green-s)","#136135"],
+     ["MP","Marco P.","Volontario · referente Fenice, Zeus","var(--blue-s)","#1d5f9e"],
+     ["AL","Anna L.","Volontaria · pulizie e alimentazione","var(--orange-s)","#9d6212"],
+     ["RS","Rita S.","Veterinaria convenzionata","var(--red-s)","#b0303b"],
+     ["PC","Paolo C.","Volontario · trasporti","var(--purple-s)","#5c33a0"]].map(v=>`
+  <div class="card" style="padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:center">
+    <div class="avat" style="background:${v[3]};color:${v[4]}">${v[0]}</div>
+    <div style="flex:1"><div style="font-size:12.5px;font-weight:700">${v[1]}</div><div style="font-size:10.5px;color:var(--muted)">${v[2]}</div></div>
+    <span style="color:#c3ccc5">›</span>
+  </div>`).join("")}
+  <div class="sec">📅 Turni di questa settimana</div>
+  <div class="card" style="padding:11px">
+    <div class="li"><span>🌅</span><span class="n"><b>Lun-Mer-Ven</b> mattina · Anna, Paolo</span><span class="d">7:30</span></div>
+    <div class="li"><span>🌇</span><span class="n"><b>Tutti i giorni</b> sera · a rotazione</span><span class="d">18:30</span></div>
+    <div class="li"><span>🚶</span><span class="n"><b>Sabato</b> uscite e passeggiate · 4 volontari</span><span class="d">9:00</span></div>
+    <div class="li" style="color:var(--red)"><span>⚠️</span><span class="n"><b>Domenica</b> mattina · scoperto</span><span class="d">—</span></div>
+  </div>
+  <button class="btn ghost" style="margin:12px 0 16px" data-toast="Ti sei iscritta al turno">✋ Iscriviti a un turno</button>
+</div>`});
+
+/* --- 22 statistiche --- */
+S.stats=()=>({nav:"altro",html:plainHead("Statistiche","altro",`<span style="font-size:11.5px;color:var(--green);font-weight:600">2026 ▾</span>`)+`
+<div class="pad">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div class="pcard" style="padding:12px"><div class="dcount" style="color:var(--green)">7</div><div class="dlab">Adozioni concluse</div></div>
+    <div class="pcard" style="padding:12px"><div class="dcount">11</div><div class="dlab">Nuovi ingressi</div></div>
+    <div class="pcard" style="padding:12px"><div class="dcount">193</div><div class="dlab">Giorni medi in rifugio</div></div>
+    <div class="pcard" style="padding:12px"><div class="dcount" style="color:var(--orange)">2</div><div class="dlab">Rientri dopo affido</div></div>
+  </div>
+  <div class="sec">📈 Adozioni per mese</div>
+  <div class="card" style="padding:12px">
+    <div style="display:flex;align-items:flex-end;gap:5px;height:96px">
+      ${[[20,"G"],[0,"F"],[40,"M"],[60,"A"],[20,"M"],[80,"G"],[100,"L"],[60,"A"],[40,"S"]].map(b=>`
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end">
+        <div style="width:100%;height:${Math.max(b[0],5)}%;background:${b[0]>=80?'var(--green)':'#CFE6D6'};border-radius:5px 5px 0 0"></div>
+        <span style="font-size:8.5px;color:var(--muted)">${b[1]}</span></div>`).join("")}
+    </div>
+  </div>
+  <div class="sec">🐕 Composizione del rifugio</div>
+  <div class="card" style="padding:12px">
+    ${[["Taglia media","52%"],["Taglia grande","31%"],["Taglia piccola","12%"],["Cuccioli","5%"]].map(r=>`
+    <div style="margin-bottom:9px"><div class="kv"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div><div class="bar"><i style="width:${r[1]}"></i></div></div>`).join("")}
+  </div>
+  <div class="sec">💰 Bilancio spese sanitarie</div>
+  <div class="card" style="padding:12px">
+    <div class="kv"><span class="k">Spese totali 2026</span><span class="v">€ 14.280</span></div>
+    <div class="kv"><span class="k">Donazioni ricevute</span><span class="v g">€ 11.950</span></div>
+    <div class="kv"><span class="k">Adozioni a distanza</span><span class="v g">€ 3.600</span></div>
+    <div class="kv tot"><span class="k">Saldo</span><span class="v g">+ € 1.270</span></div>
+  </div>
+  <button class="btn ghost" style="margin:12px 0 16px" data-toast="Report PDF in generazione…">📤 Esporta report annuale</button>
+</div>`});
+
+/* --- 23 ricerca --- */
+S.ricerca=()=>({nav:"animali",html:plainHead("Cerca","animali")+`
+<div class="pad">
+  <div class="search" style="color:#22302a">🔎 fen<span style="color:var(--green);margin-left:auto;font-weight:600;font-size:11px">Annulla</span></div>
+  <div class="sec">🐾 Cani (1)</div>
+  <div class="card dog" data-go="scheda"><div class="av"><img src="${IMG.fenice}"></div>
+    <div style="flex:1"><div class="nm">Fenice</div><div class="sb">Meticcia · Femmina · Box B7</div></div><span style="color:#c3ccc5">›</span></div>
+  <div class="sec">📄 Documenti (2)</div>
+  <div class="card" style="padding:4px 11px">
+    <div class="doc"><span class="ic">📕</span><div style="flex:1"><div class="n">Libretto sanitario Fenice</div><div class="m">PDF · agg. 10/12/2025</div></div></div>
+    <div class="doc"><span class="ic">📝</span><div style="flex:1"><div class="n">Verbale recupero Fenice</div><div class="m">PDF · 25/06/2024</div></div></div>
+  </div>
+  <div class="sec">🕓 Ricerche recenti</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">380260170123456</span><span class="chip">Box B7</span><span class="chip">adottabili taglia media</span><span class="chip">vaccini scaduti</span></div>
+  <div class="sec">💡 Cerca anche per</div>
+  <div class="card" style="padding:4px 11px">
+    <div class="opt"><span class="ic" style="background:var(--blue-s)">▮▮▯</span><div class="t">Numero microchip</div><span class="ar">›</span></div>
+    <div class="opt"><span class="ic" style="background:var(--orange-s)">🏠</span><div class="t">Box o settore</div><span class="ar">›</span></div>
+    <div class="opt"><span class="ic" style="background:var(--purple-s)">👤</span><div class="t">Adottante o volontario</div><span class="ar">›</span></div>
+  </div>
+</div>`});
+
+/* --- 24 notifiche --- */
+S.notifiche=()=>({nav:"altro",html:plainHead("Notifiche","altro",`<span style="font-size:11.5px;color:var(--green);font-weight:600" data-toast="Tutte lette">Segna lette</span>`)+`
+<div class="pad">
+  <div class="sec" style="margin-top:4px">Oggi</div>
+  <div class="card" style="padding:11px;margin-bottom:8px;border-left:3px solid var(--red)">
+    <div style="display:flex;gap:9px"><span style="font-size:16px">💉</span><div><div style="font-size:12px;font-weight:700">Vaccino scaduto · Zeus</div><div style="font-size:10.8px;color:var(--muted)">Il richiamo era previsto per il 05/09. Programma la visita.</div><div style="font-size:9.5px;color:var(--faint);margin-top:3px">2 ore fa</div></div></div>
+  </div>
+  <div class="card" style="padding:11px;margin-bottom:8px;border-left:3px solid var(--orange)" data-go="richdett">
+    <div style="display:flex;gap:9px"><span style="font-size:16px">📬</span><div><div style="font-size:12px;font-weight:700">Nuova richiesta di adozione</div><div style="font-size:10.8px;color:var(--muted)">Marta Rossi ha inviato una richiesta per Luna.</div><div style="font-size:9.5px;color:var(--faint);margin-top:3px">5 ore fa</div></div></div>
+  </div>
+  <div class="sec">Ieri</div>
+  <div class="card" style="padding:11px;margin-bottom:8px">
+    <div style="display:flex;gap:9px"><span style="font-size:16px">💚</span><div><div style="font-size:12px;font-weight:700">Nuova adozione a distanza</div><div style="font-size:10.8px;color:var(--muted)">Fenice ha un nuovo sostenitore: € 15/mese.</div><div style="font-size:9.5px;color:var(--faint);margin-top:3px">Ieri, 19:12</div></div></div>
+  </div>
+  <div class="card" style="padding:11px;margin-bottom:8px">
+    <div style="display:flex;gap:9px"><span style="font-size:16px">📄</span><div><div style="font-size:12px;font-weight:700">Preaffido in scadenza</div><div style="font-size:10.8px;color:var(--muted)">Il preaffido di Otto scade tra 12 giorni: pianifica la verifica.</div><div style="font-size:9.5px;color:var(--faint);margin-top:3px">Ieri, 08:00</div></div></div>
+  </div>
+  <div class="card" style="padding:11px;margin-bottom:16px">
+    <div style="display:flex;gap:9px"><span style="font-size:16px">🧹</span><div><div style="font-size:12px;font-weight:700">Turno domenica scoperto</div><div style="font-size:10.8px;color:var(--muted)">Nessun volontario iscritto per domenica mattina.</div><div style="font-size:9.5px;color:var(--faint);margin-top:3px">Ieri, 07:30</div></div></div>
+  </div>
+</div>`});
+
+/* --- 25 altro --- */
+S.altro=()=>({nav:"altro",html:head()+`
+<div class="pad">
+  <div class="card" style="padding:12px;display:flex;gap:11px;align-items:center;margin-bottom:14px" data-go="impostazioni">
+    <div class="avat" style="width:44px;height:44px;font-size:15px">G</div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:800">Giovanna</div><div style="font-size:10.8px;color:var(--muted)">Presidente · Amici per la Coda ODV</div></div>
+    <span style="color:#c3ccc5">›</span>
+  </div>
+  <div class="grp" style="font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 2px 6px">Gestione</div>
+  <div class="card" style="padding:4px 11px;margin-bottom:14px">
+    <div class="opt" data-go="animali"><span class="ic" style="background:var(--green-s)">🐾</span><div class="t">Anagrafe cani</div><span class="ar">›</span></div>
+    <div class="opt" data-go="richieste"><span class="ic" style="background:var(--red-s)">❤️</span><div class="t">Richieste e adozioni</div><span class="ar">›</span></div>
+    <div class="opt" data-go="box"><span class="ic" style="background:var(--orange-s)">🏠</span><div class="t">Box e settori</div><span class="ar">›</span></div>
+    <div class="opt" data-go="volontari"><span class="ic" style="background:var(--purple-s)">👥</span><div class="t">Volontari e turni</div><span class="ar">›</span></div>
+    <div class="opt" data-go="calendario"><span class="ic" style="background:var(--blue-s)">📅</span><div class="t">Calendario</div><span class="ar">›</span></div>
+  </div>
+  <div class="grp" style="font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 2px 6px">Archivio</div>
+  <div class="card" style="padding:4px 11px;margin-bottom:14px">
+    <div class="opt" data-toast="Archivio documenti"><span class="ic" style="background:#F1F3EF">📄</span><div class="t">Documenti e modulistica</div><span class="ar">›</span></div>
+    <div class="opt" data-toast="Anagrafica adottanti"><span class="ic" style="background:#F1F3EF">🧑‍🤝‍🧑</span><div class="t">Famiglie adottanti</div><span class="ar">›</span></div>
+    <div class="opt" data-toast="Fornitori e veterinari"><span class="ic" style="background:#F1F3EF">🩺</span><div class="t">Veterinari e fornitori</div><span class="ar">›</span></div>
+    <div class="opt" data-toast="Cani archiviati: 87"><span class="ic" style="background:#F1F3EF">🗄</span><div class="t">Cani archiviati</div><span class="ar">›</span></div>
+  </div>
+  <div class="grp" style="font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 2px 6px">App</div>
+  <div class="card" style="padding:4px 11px;margin-bottom:16px">
+    <div class="opt" data-go="stats"><span class="ic" style="background:#F1F3EF">📊</span><div class="t">Statistiche e report</div><span class="ar">›</span></div>
+    <div class="opt" data-go="notifiche"><span class="ic" style="background:#F1F3EF">🔔</span><div class="t">Notifiche</div><span class="ar">›</span></div>
+    <div class="opt" data-go="impostazioni"><span class="ic" style="background:#F1F3EF">⚙️</span><div class="t">Impostazioni</div><span class="ar">›</span></div>
+    <div class="opt" data-go="login"><span class="ic" style="background:var(--red-s)">🚪</span><div class="t" style="color:var(--red)">Esci</div><span class="ar">›</span></div>
+  </div>
+</div>`});
+
+/* --- 26 impostazioni --- */
+S.impostazioni=()=>({nav:"altro",html:plainHead("Impostazioni","altro")+`
+<div class="pad">
+  <div class="sec" style="margin-top:2px">🏛 Associazione</div>
+  <div class="card" style="padding:11px">
+    <div class="kv"><span class="k">Denominazione</span><span class="v">Amici per la Coda ODV</span></div>
+    <div class="kv"><span class="k">Codice fiscale</span><span class="v">92xxxxxx901</span></div>
+    <div class="kv"><span class="k">Sede</span><span class="v">Sassari (SS)</span></div>
+    <div class="kv"><span class="k">Capienza autorizzata</span><span class="v">54 posti</span></div>
+    <button class="btn grey" style="margin-top:9px;padding:8px;font-size:11.5px" data-toast="Modifica dati">✏️ Modifica dati</button>
+  </div>
+  <div class="sec">🔔 Notifiche</div>
+  <div class="card" style="padding:4px 11px">
+    ${[["Scadenze sanitarie","on"],["Nuove richieste di adozione","on"],["Scadenza preaffidi","on"],["Turni scoperti","on"],["Riepilogo settimanale","off"]].map(t=>`
+    <div class="opt"><div style="flex:1"><div class="t" style="font-weight:500;font-size:12px">${t[0]}</div></div>
+      <div style="width:38px;height:22px;border-radius:20px;background:${t[1]==="on"?"var(--green)":"#DDE2DA"};position:relative"><span style="position:absolute;top:2px;${t[1]==="on"?"right:2px":"left:2px"};width:18px;height:18px;border-radius:50%;background:#fff"></span></div></div>`).join("")}
+  </div>
+  <div class="sec">🎨 Aspetto e dati</div>
+  <div class="card" style="padding:4px 11px">
+    <div class="opt"><span class="ic" style="background:#F1F3EF">🌗</span><div class="t">Tema</div><span class="ar" style="color:var(--muted);font-size:11.5px">Chiaro ›</span></div>
+    <div class="opt"><span class="ic" style="background:#F1F3EF">🌍</span><div class="t">Lingua</div><span class="ar" style="color:var(--muted);font-size:11.5px">Italiano ›</span></div>
+    <div class="opt" data-toast="Backup completato"><span class="ic" style="background:#F1F3EF">☁️</span><div><div class="t">Backup dati</div><div class="s">Ultimo: oggi 07:00</div></div><span class="ar">›</span></div>
+    <div class="opt" data-toast="Export CSV pronto"><span class="ic" style="background:#F1F3EF">📥</span><div class="t">Esporta anagrafe (CSV)</div><span class="ar">›</span></div>
+    <div class="opt"><span class="ic" style="background:#F1F3EF">📴</span><div><div class="t">Modalità offline</div><div class="s">Sincronizza al rientro del segnale</div></div><span class="ar">›</span></div>
+  </div>
+  <div class="sec">👥 Permessi volontari</div>
+  <div class="card" style="padding:11px">
+    <div class="kv"><span class="k">Presidente</span><span class="v">Tutti i permessi</span></div>
+    <div class="kv"><span class="k">Referente</span><span class="v">Schede, salute, adozioni</span></div>
+    <div class="kv"><span class="k">Volontario</span><span class="v">Sola lettura + note</span></div>
+  </div>
+  <div style="text-align:center;font-size:10px;color:var(--faint);padding:18px 0">Amici per la Coda · v1.0 (build 26)</div>
+</div>`});
+
+/* ===================== sheets ===================== */
+const SH={
+"sh-nuovo":`<div class="grab"></div><div class="sh-t">Cosa vuoi creare?</div>
+  <div class="opt" data-go="nuovo1"><span class="ic" style="background:var(--green-s)">🐕</span><div><div class="t">Nuovo cane</div><div class="s">Profilo completo in 3 passaggi</div></div><span class="ar">›</span></div>
+  <div class="opt" data-go="richdett"><span class="ic" style="background:var(--red-s)">❤️</span><div><div class="t">Richiesta di adozione</div><div class="s">Registra un potenziale adottante</div></div><span class="ar">›</span></div>
+  <div class="opt" data-go="scheda"><span class="ic" style="background:var(--blue-s)">💉</span><div><div class="t">Trattamento sanitario</div><div class="s">Vaccino, farmaco, visita</div></div><span class="ar">›</span></div>
+  <div class="opt" data-toast="Nuova spesa"><span class="ic" style="background:var(--orange-s)">🪙</span><div><div class="t">Spesa</div><div class="s">Veterinario, cibo, farmaci</div></div><span class="ar">›</span></div>
+  <div class="opt" data-go="calendario"><span class="ic" style="background:var(--purple-s)">📅</span><div><div class="t">Appuntamento</div><div class="s">Visita, colloquio, turno</div></div><span class="ar">›</span></div>
+  <div class="opt" data-sheet="sh-foto"><span class="ic" style="background:#F1F3EF">📷</span><div><div class="t">Foto rapida</div><div class="s">Scatta e assegna a un cane</div></div><span class="ar">›</span></div>`,
+
+"sh-filtri":`<div class="grab"></div><div class="sh-t">Filtri e ordinamento</div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:12px 0 6px">Stato</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip on">In rifugio</span><span class="chip">In stallo</span><span class="chip">Preaffido</span><span class="chip">Adottato</span><span class="chip">In cura</span></div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:14px 0 6px">Taglia</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Piccola</span><span class="chip on">Media</span><span class="chip">Grande</span></div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:14px 0 6px">Sesso ed età</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">♀️ Femmine</span><span class="chip">♂️ Maschi</span><span class="chip">Cuccioli</span><span class="chip">Senior 8+</span></div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:14px 0 6px">Sanitario</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Sterilizzati</span><span class="chip">Da sterilizzare</span><span class="chip on">Vaccini scaduti</span><span class="chip">In terapia</span></div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:14px 0 6px">Compatibilità</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Con cani</span><span class="chip">Con gatti</span><span class="chip">Con bambini</span></div>
+  <div style="font-size:11px;font-weight:700;color:#4a574f;margin:14px 0 6px">Ordina per</div>
+  <div class="seg"><div class="on">Ingresso ↓</div><div>Nome A-Z</div><div>Permanenza</div></div>
+  <div style="display:flex;gap:9px;margin-top:16px"><button class="btn grey" data-close>Azzera</button><button class="btn" data-close data-toast="Filtri applicati · 12 risultati">Applica</button></div>`,
+
+"sh-azioni":`<div class="grab"></div><div class="sh-t">Azioni su Fenice</div>
+  <div class="opt" data-close><span class="ic" style="background:var(--green-s)">✏️</span><div class="t">Modifica scheda</div><span class="ar">›</span></div>
+  <div class="opt" data-go="galleria"><span class="ic" style="background:var(--blue-s)">📷</span><div class="t">Gestisci foto</div><span class="ar">›</span></div>
+  <div class="opt" data-go="stato"><span class="ic" style="background:var(--orange-s)">🔄</span><div class="t">Cambia stato</div><span class="ar">›</span></div>
+  <div class="opt" data-go="affido"><span class="ic" style="background:var(--purple-s)">📄</span><div class="t">Genera modulo di affido</div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="Scheda PDF generata"><span class="ic" style="background:#F1F3EF">📤</span><div class="t">Esporta scheda PDF</div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="Link pubblico copiato"><span class="ic" style="background:#F1F3EF">🔗</span><div class="t">Copia link scheda pubblica</div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="Duplicata come nuova scheda"><span class="ic" style="background:#F1F3EF">⧉</span><div class="t">Duplica scheda</div><span class="ar">›</span></div>
+  <div class="opt" data-close><span class="ic" style="background:var(--red-s)">🗄</span><div class="t" style="color:var(--red)">Archivia</div><span class="ar">›</span></div>`,
+
+"sh-foto":`<div class="grab"></div><div class="sh-t">Aggiungi foto</div>
+  <div class="opt" data-close data-toast="Fotocamera aperta"><span class="ic" style="background:var(--green-s)">📷</span><div><div class="t">Scatta una foto</div><div class="s">Usa la fotocamera</div></div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="3 foto selezionate"><span class="ic" style="background:var(--blue-s)">🖼</span><div><div class="t">Scegli dalla galleria</div><div class="s">Selezione multipla</div></div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="Video caricato"><span class="ic" style="background:var(--purple-s)">🎬</span><div><div class="t">Carica un video</div><div class="s">Max 60 secondi</div></div><span class="ar">›</span></div>
+  <div class="opt" data-close data-toast="Documento allegato"><span class="ic" style="background:var(--orange-s)">📎</span><div><div class="t">Allega documento</div><div class="s">PDF del libretto, certificati…</div></div><span class="ar">›</span></div>`
+};
+
+/* ===================== router ===================== */
+function render(){
+  const s=(S[cur]||S.home)();
+  body.innerHTML=s.html;
+  bnav.innerHTML=s.nav?nav(s.nav):"";
+  bnav.style.display=s.nav?"flex":"none";
+  body.scrollTop=0;
+  document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("on",n.dataset.go===cur&&(!n.dataset.tab||n.dataset.tab===curTab)));
+}
+function go(id){ if(!S[id])return; cur=id; if(id==="scheda"&&!curTab)curTab="t-scheda"; closeSheet(); render(); }
+function openSheet(id){ sheet.innerHTML=SH[id]||""; ovl.classList.add("show"); }
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-go],[data-tab],[data-sheet],[data-toast],[data-close]");
+  if(!t)return;
+  if(t.dataset.close!==undefined)closeSheet();
+  if(t.dataset.sheet){openSheet(t.dataset.sheet);return;}
+  if(t.dataset.toast)toast(t.dataset.toast);
+  if(t.dataset.tab){curTab=t.dataset.tab; if(cur!=="scheda"){cur="scheda";} closeSheet(); render(); const tb=body.querySelector(".tabs"); if(tb)tb.scrollIntoView({block:"start"}); return;}
+  if(t.dataset.go){go(t.dataset.go);}
+});
+
+render();
+</script>

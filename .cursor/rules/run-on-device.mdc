@@ -1,0 +1,14 @@
+---
+description: Reinstall and show the Android app after every UI/code change
+alwaysApply: true
+---
+
+# Mostrare l'app dopo ogni modifica
+
+Dopo ogni modifica all'app (UI, risorse, icone, codice), **reinstalla e avvia** su un dispositivo/emulatore Android collegato, così l'utente vede il risultato.
+
+- Usa `C:\Users\masal\flutter\bin\flutter.bat` e l'SDK in `C:\Users\masal\AppData\Local\Android\sdk`.
+- Se serve l'icona launcher o un'installazione pulita: `adb uninstall it.amiciperlacoda.amici_per_la_coda` poi `flutter run`.
+- Altrimenti `flutter run` (hot restart se è già in esecuzione e il cambio è solo Dart).
+- Non chiedere conferma: lancia l'app e lascia il processo in esecuzione.
+- **Eccezione:** se l'utente chiede solo git/GitHub (commit, push, PR), non reinstallare e non avviare l'app.

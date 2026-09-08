@@ -17,7 +17,22 @@ service cloud.firestore {
     }
     match /notes/{id}   { allow read: if attivo(); allow create: if attivo();
                           allow update, delete: if puoScrivere(); }
+    match /appointments/{id} {
+      allow read: if attivo();
+      allow create, delete: if puoScrivere();
+      allow update: if puoScrivere() || (
+        attivo()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['volontariIds'])
+        && request.resource.data.volontariIds.toSet()
+             .difference(resource.data.volontariIds.toSet())
+             .hasOnly([request.auth.uid])
+      );
+    }
     match /settings/{id}{ allow read: if attivo(); allow write: if attivo() && ruolo()=='presidente'; }
+    match /dogDrafts/{uid} {
+      allow read, write: if attivo() && request.auth.uid == uid;
+    }
     match /{col}/{id}   { allow read: if attivo(); allow write: if puoScrivere(); }
     match /{path=**}/full/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
   }

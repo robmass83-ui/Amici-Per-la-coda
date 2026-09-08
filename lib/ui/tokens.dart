@@ -27,6 +27,13 @@ abstract final class AppColor {
   static const orangeSoft = Color(0xFFFDF1DF);
   static const pinkSoft = Color(0xFFFCE9F1);
   static const neutralSoft = Color(0xFFEFF1ED);
+  static const barTrack = Color(0xFFEDF0EB);
+
+  /// Ombra tenue delle card, ~8% di [ink].
+  static const shadow = Color(0x1416211B);
+
+  /// Cuore del marchio ufficiale.
+  static const logoHeart = Color(0xFFED1B24);
 }
 
 /// Dimensioni testo, in sp. NON inventarne altre.
@@ -39,6 +46,10 @@ abstract final class AppText {
   static const label = 10.5; // etichette, sottotitoli
   static const caption = 10.0; // date, note secondarie
   static const micro = 9.0; // badge, label delle tab
+  static const hello = 17.0; // saluto home
+  static const todo = 10.8; // voce "da fare oggi"
+  static const todoTrail = 10.2; // trailing della voce
+  static const statNote = 9.5; // note sotto le stat home
 }
 
 /// Spaziature, raggi, misure fisse.
@@ -69,6 +80,49 @@ abstract final class AppDim {
   static const fabSize = 52.0;
   static const appBarH = 44.0;
   static const minTouch = 40.0;
+  static const searchH = 38.0;
+  static const listAvatar = 44.0;
+  static const gapHair = 1.0;
+
+  /// Misure della §3.2, mancanti nel blocco originale.
+  static const headerBtn = 34.0;
+  static const chipH = 28.0;
+  static const segmentedH = 34.0;
+  static const logoLoginW = 248.0;
+  static const logoLoginH = 180.0;
+  static const logoHeaderH = 32.0;
+  static const logoBarH = 52.0;
+
+  /// Foto copertina nella scheda cane (riferimento HTML 158×212, ridotta per 320 dp).
+  static const photoW = 120.0;
+  static const photoH = 168.0;
+
+  /// Altezza del grafico peso nella tab Salute (riferimento HTML).
+  static const chartH = 72.0;
+
+  /// Hero della galleria foto (riferimento HTML 300).
+  static const galleryHeroH = 300.0;
 
   static const lineH = 1.28; // altezza riga standard
+
+  /// Home / dashboard (Step 9-bis).
+  static const helloGap = 2.0;
+  static const helloTracking = -0.3;
+  static const displayTracking = -1.0;
+  static const statBarH = 7.0;
+  static const statBarR = 6.0;
+  static const statBarGap = 8.0;
+  static const todoPadV = 3.5;
+  static const todoGap = 7.0;
+  static const arriviPad = 7.0;
+  static const arriviRadius = 9.0;
+  static const emptyTodoH = 56.0;
+  static const offlineBannerH = 22.0;
+  static const homeAvatar = 34.0;
+  static const shortcutAspect = 2.05;
+
+  /// Wizard nuovo cane (Step 11).
+  static const dashW = 1.5;
+  static const descFieldH = 80.0;
+  static const coverBadgePad = 2.0;
 }
