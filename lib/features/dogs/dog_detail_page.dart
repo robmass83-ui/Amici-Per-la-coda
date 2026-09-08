@@ -82,6 +82,7 @@ class DogDetailPage extends ConsumerStatefulWidget {
   static const tabBarKey = Key('dog-tab-bar');
   static const coverKey = Key('dog-cover');
   static const coverImageKey = Key('dog-cover-image');
+  static const statoPillKey = Key('dog-stato-pill');
 
   static Key tabBodyKey(DogSheetTab tab) => Key('dog-tab-${tab.name}');
 
@@ -398,6 +399,7 @@ class _NameLine extends StatelessWidget {
         ),
         const SizedBox(width: AppDim.gapS),
         MiniBadge(
+          key: DogDetailPage.statoPillKey,
           label: dogStatoLabel(dog.stato),
           variant: dogStatoBadge(dog.stato),
         ),

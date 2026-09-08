@@ -22,6 +22,40 @@ String dogStatoLabel(DogStato stato) {
   };
 }
 
+String dogStatoChoiceTitle(DogStato stato) {
+  return switch (stato) {
+    DogStato.inRifugio => 'In rifugio',
+    DogStato.inStallo => 'In stallo',
+    DogStato.preaffido => 'In preaffido',
+    DogStato.adottato => 'Adottato',
+    DogStato.inCura => 'In cura / degenza',
+    DogStato.restituito => 'Restituito al proprietario',
+    DogStato.deceduto => 'Deceduto',
+  };
+}
+
+String dogStatoChoiceSubtitle(DogStato stato) {
+  return switch (stato) {
+    DogStato.inRifugio => 'Presente in struttura',
+    DogStato.inStallo => 'Ospitato da un volontario o famiglia',
+    DogStato.preaffido => 'Periodo di prova 30 giorni',
+    DogStato.adottato => 'Adozione definitiva conclusa',
+    DogStato.inCura => 'Presso clinica veterinaria',
+    DogStato.restituito => 'Cane smarrito ritrovato',
+    DogStato.deceduto => 'Archivia la scheda con data',
+  };
+}
+
+String statoDalDettaglio(Dog dog, DateTime now) {
+  final days = now.difference(dog.statoDal).inDays;
+  final giorni = days == 1 ? '1 giorno' : '$days giorni';
+  return [
+    if (dog.settore.isNotEmpty) 'Settore ${dog.settore}',
+    if (dog.box.isNotEmpty) 'Box ${dog.box}',
+    'dal ${formatItalianDate(dog.statoDal)} ($giorni)',
+  ].join(' · ');
+}
+
 MiniBadgeVariant dogStatoBadge(DogStato stato) {
   return switch (stato) {
     DogStato.inRifugio => MiniBadgeVariant.green,

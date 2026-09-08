@@ -10,6 +10,7 @@ import 'features/calendar/calendar_placeholder_page.dart';
 import 'features/dashboard/home_page.dart';
 import 'features/dashboard/placeholder_feature_page.dart';
 import 'features/debug/debug_ui_page.dart';
+import 'features/dogs/change_status_page.dart';
 import 'features/dogs/dog_detail_page.dart';
 import 'features/dogs/dog_gallery_page.dart';
 import 'features/dogs/dogs_page.dart';
@@ -33,6 +34,7 @@ abstract final class AppRoutes {
 
   static String dog(String id) => '$animali/$id';
   static String dogFoto(String id) => '$animali/$id/foto';
+  static String dogStato(String id) => '$animali/$id/stato';
 }
 
 final initialLocationProvider = Provider<String>((ref) => AppRoutes.home);
@@ -122,6 +124,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) {
                           final id = state.pathParameters['dogId']!;
                           return DogGalleryPage(dogId: id);
+                        },
+                      ),
+                      GoRoute(
+                        path: 'stato',
+                        builder: (context, state) {
+                          final id = state.pathParameters['dogId']!;
+                          return ChangeStatusPage(dogId: id);
                         },
                       ),
                     ],

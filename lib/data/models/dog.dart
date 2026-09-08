@@ -282,4 +282,50 @@ class Dog {
       audit: audit ?? this.audit,
     );
   }
+
+  Dog withStato({
+    required DogStato stato,
+    required DateTime statoDal,
+    required List<StatoVoce> storicoStati,
+    Audit? audit,
+  }) {
+    return Dog(
+      id: id,
+      nome: nome,
+      sesso: sesso,
+      dataNascita: dataNascita,
+      nascitaPresunta: nascitaPresunta,
+      razza: razza,
+      taglia: taglia,
+      pesoKg: pesoKg,
+      mantello: mantello,
+      microchip: microchip,
+      iscrittoAnagrafe: iscrittoAnagrafe,
+      provenienza: provenienza,
+      modalitaIngresso: modalitaIngresso,
+      dataIngresso: dataIngresso,
+      settore: settore,
+      box: box,
+      stato: stato,
+      statoDal: statoDal,
+      adottabile: adottabile,
+      sterilizzato: sterilizzato,
+      dataSterilizzazione: dataSterilizzazione,
+      slogan: slogan,
+      descrizione: descrizione,
+      carattere: carattere,
+      conPersone: conPersone,
+      conCani: conCani,
+      conGatti: conGatti,
+      conBambini: conBambini,
+      noteCarattere: noteCarattere,
+      fotoCopertinaId: fotoCopertinaId,
+      referenteId: referenteId,
+      pubblicato: pubblicato,
+      dataPubblicazione: dataPubblicazione,
+      archiviato: archiviato,
+      storicoStati: storicoStati,
+      audit: audit ?? this.audit,
+    );
+  }
 }

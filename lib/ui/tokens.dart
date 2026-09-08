@@ -125,4 +125,7 @@ abstract final class AppDim {
   static const dashW = 1.5;
   static const descFieldH = 80.0;
   static const coverBadgePad = 2.0;
+
+  /// Campo note del cambio stato (riferimento HTML 64).
+  static const statoNoteH = 64.0;
 }

@@ -81,10 +81,7 @@ class DogAltroTab extends ConsumerWidget {
                 ),
                 title: 'Cambia stato del cane',
                 subtitle: 'Attuale: ${dogStatoLabel(dog.stato)}',
-                onTap: () => AppToast.show(
-                  context,
-                  'Cambio stato: disponibile negli step successivi.',
-                ),
+                onTap: () => context.push(AppRoutes.dogStato(dog.id)),
               ),
               OptionRow(
                 icon: const IconBadge(AppIcons.box, size: IconBadge.inMenu),
