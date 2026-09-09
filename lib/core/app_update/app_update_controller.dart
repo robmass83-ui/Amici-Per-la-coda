@@ -192,6 +192,9 @@ String _italianError(Object error) {
   if (text.contains('404')) {
     return 'Nessuna release trovata su GitHub.';
   }
+  if (text.contains('non è un APK')) {
+    return 'Il file scaricato non è un APK valido. Riprova.';
+  }
   return 'Aggiornamento non riuscito. Riprova.';
 }
 

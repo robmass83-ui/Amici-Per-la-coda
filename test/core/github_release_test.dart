@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:amici_per_la_coda/core/app_update/app_update_controller.dart';
 import 'package:amici_per_la_coda/core/app_update/github_release.dart';
+import 'package:amici_per_la_coda/core/app_update/github_release_feed.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -91,6 +93,24 @@ void main() {
       italianUpdateError(Exception('GitHub ha risposto 401')),
       'GitHub ha rifiutato l\'accesso alla release.',
     );
+    expect(
+      italianUpdateError(const FormatException('Il file scaricato non è un APK valido.')),
+      'Il file scaricato non è un APK valido. Riprova.',
+    );
+  });
+
+  test('isApkFile accetta solo ZIP abbastanza grandi', () async {
+    final dir = Directory.systemTemp.createTempSync('amici-apk');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final tooSmall = File('${dir.path}/small.apk')
+      ..writeAsBytesSync(List<int>.filled(100, 0x50));
+    final notZip = File('${dir.path}/html.apk')
+      ..writeAsBytesSync(List<int>.filled(2 * 1024 * 1024, 0x3C));
+    final ok = File('${dir.path}/ok.apk')
+      ..writeAsBytesSync([0x50, 0x4B, ...List<int>.filled(2 * 1024 * 1024, 0)]);
+    expect(await isApkFile(tooSmall), isFalse);
+    expect(await isApkFile(notZip), isFalse);
+    expect(await isApkFile(ok), isTrue);
   });
 }
 

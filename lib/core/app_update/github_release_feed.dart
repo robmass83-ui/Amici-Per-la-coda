@@ -89,6 +89,9 @@ class GithubReleaseFeed {
       final total = response.contentLength >= 0 ? response.contentLength : null;
       final file = File(savePath);
       await file.parent.create(recursive: true);
+      if (file.existsSync()) {
+        await file.delete();
+      }
       final sink = file.openWrite();
       var received = 0;
       try {
@@ -100,6 +103,10 @@ class GithubReleaseFeed {
         await sink.flush();
       } finally {
         await sink.close();
+      }
+      if (!await isApkFile(file)) {
+        await file.delete();
+        throw const FormatException('Il file scaricato non è un APK valido.');
       }
     } finally {
       if (owned) {
@@ -119,5 +126,19 @@ class GithubReleaseFeed {
     if (token.isNotEmpty) {
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
     }
+  }
+}
+
+/// Un APK è uno ZIP: inizia con "PK" e pesa almeno 1 MB.
+Future<bool> isApkFile(File file) async {
+  if (!file.existsSync() || file.lengthSync() < 1024 * 1024) {
+    return false;
+  }
+  final raf = file.openSync();
+  try {
+    final header = raf.readSync(2);
+    return header.length == 2 && header[0] == 0x50 && header[1] == 0x4B;
+  } finally {
+    raf.closeSync();
   }
 }
