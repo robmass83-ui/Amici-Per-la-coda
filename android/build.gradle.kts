@@ -21,12 +21,11 @@ subprojects {
 
 // file_picker still ships compileSdk 34; flutter_plugin_android_lifecycle wants 36.
 subprojects {
-    afterEvaluate {
-        val android = extensions.findByName("android") ?: return@afterEvaluate
-        val setCompileSdk = android.javaClass.methods.firstOrNull { method ->
-            method.name == "setCompileSdk" && method.parameterCount == 1
-        }
-        setCompileSdk?.invoke(android, 36)
+    pluginManager.withPlugin("com.android.library") {
+        val android = extensions.getByName("android")
+        android.javaClass.methods
+            .firstOrNull { it.name == "setCompileSdk" && it.parameterCount == 1 }
+            ?.invoke(android, 36)
     }
 }
 
