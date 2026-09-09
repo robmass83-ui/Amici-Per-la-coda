@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -6,6 +8,13 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Stessa chiave su CI e sui telefoni. Se manca, la release non deve
+// cadere sul debug keystore generato dal runner (firma diversa = "App not installed").
+val uploadKeystoreFile = File(
+    System.getenv("ANDROID_KEYSTORE_PATH")
+        ?: "${System.getProperty("user.home")}/.android/debug.keystore",
+)
 
 android {
     namespace = "it.amiciperlacoda.amici_per_la_coda"
@@ -18,25 +27,32 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "it.amiciperlacoda.amici_per_la_coda"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("upload") {
+            storeFile = uploadKeystoreFile
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "androiddebugkey"
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: "android"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (uploadKeystoreFile.isFile) {
+                signingConfigs.getByName("upload")
+            } else {
+                throw GradleException(
+                    "Manca il keystore di firma in ${uploadKeystoreFile.absolutePath}. " +
+                        "Senza la stessa chiave i telefoni rifiutano l'aggiornamento.",
+                )
+            }
         }
     }
 }

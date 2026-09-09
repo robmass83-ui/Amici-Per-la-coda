@@ -9,39 +9,126 @@ on:
 permissions:
   contents: write
 
+env:
+  # SHA-256 della chiave già sui telefoni (debug.keystore di sviluppo).
+  # Se il secret non è quella chiave, la build deve fallire: non spedire un APK ininstallabile.
+  EXPECTED_CERT_SHA256: 1aa1211e900e794873ea1632ed09f5ce116e20f87010d96a9ecbf699c9d68fe2
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore the same keystore used on the phones
+
+      - name: Restore the upload keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "Manca il secret ANDROID_DEBUG_KEYSTORE_BASE64."
-            echo "Senza di esso GitHub firmerebbe l'APK con una chiave nuova e i telefoni rifiuterebbero l'aggiornamento."
             exit 1
           fi
-          mkdir -p "$HOME/.android"
-          echo "$KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
-          chmod 600 "$HOME/.android/debug.keystore"
+          KEYSTORE_FILE="$GITHUB_WORKSPACE/android/upload-keystore.jks"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+          chmod 600 "$KEYSTORE_FILE"
+          SIZE=$(stat -c%s "$KEYSTORE_FILE")
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "Keystore ripristinato troppo piccolo ($SIZE byte)."
+            exit 1
+          fi
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_FILE" >> "$GITHUB_ENV"
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - run: flutter pub get
-      - run: flutter build apk --release
-      - name: Read version
+
+      - name: Next versionCode (strictly newer than pubspec and last GitHub release)
         id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          RAW=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          NAME="${RAW%%+*}"
+          PUBSPEC_CODE="${RAW##*+}"
+          if ! [[ "$PUBSPEC_CODE" =~ ^[0-9]+$ ]]; then
+            PUBSPEC_CODE=0
+          fi
+          PREV_CODE=0
+          PREV_JSON=$(curl -sS -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" || true)
+          PREV_TAG=$(printf '%s' "$PREV_JSON" | jq -r '.tag_name // empty')
+          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "null" ]; then
+            PREV_RAW="${PREV_TAG#v}"
+            PREV_CODE="${PREV_RAW##*+}"
+            if ! [[ "$PREV_CODE" =~ ^[0-9]+$ ]]; then
+              PREV_CODE=0
+            fi
+          fi
+          MAX=$PUBSPEC_CODE
+          if [ "$PREV_CODE" -gt "$MAX" ]; then
+            MAX=$PREV_CODE
+          fi
+          CODE=$((MAX + 1))
+          echo "pubspec=$RAW pubspec_code=$PUBSPEC_CODE prev_tag=$PREV_TAG prev_code=$PREV_CODE -> $NAME+$CODE"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "version=$NAME+$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME+$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Build ABI APKs
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-name="${{ steps.ver.outputs.name }}" \
+            --build-number="${{ steps.ver.outputs.code }}" \
+            -Pforce-version-code-ignoring-abi=true
+
+      - name: Verify signature, versionCode and size
+        run: |
+          set -euo pipefail
+          EXPECTED="${EXPECTED_CERT_SHA256,,}"
+          shopt -s nullglob
+          APKS=(build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+                build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk)
+          COUNT=0
+          for APK in "${APKS[@]}"; do
+            if [ ! -f "$APK" ]; then
+              echo "Manca $APK"
+              exit 1
+            fi
+            SIZE=$(stat -c%s "$APK")
+            echo "APK $APK size=$SIZE"
+            if [ "$SIZE" -gt 31457280 ]; then
+              echo "APK sopra 30 MB: $SIZE"
+              exit 1
+            fi
+            CERT=$(keytool -printcert -jarfile "$APK" 2>/dev/null \
+              | tr 'A-F' 'a-f' \
+              | grep -oE '[0-9a-f]{2}(:[0-9a-f]{2}){31}' \
+              | tr -d ':' \
+              | head -1)
+            echo "cert $CERT"
+            if [ "$CERT" != "$EXPECTED" ]; then
+              echo "Firma $CERT diversa da quella dei telefoni $EXPECTED"
+              exit 1
+            fi
+            COUNT=$((COUNT + 1))
+          done
+          if [ "$COUNT" -lt 2 ]; then
+            echo "Servono gli APK arm64 e armeabi-v7a"
+            exit 1
+          fi
+
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || steps.ver.outputs.tag }}
+          tag_name: ${{ steps.ver.outputs.tag }}
           name: Amici per la Coda ${{ steps.ver.outputs.version }}
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           generate_release_notes: true
           fail_on_unmatched_files: true

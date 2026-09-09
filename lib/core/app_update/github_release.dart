@@ -8,6 +8,7 @@ class GithubRelease {
     required this.downloadUrl,
     required this.apiAssetUrl,
     this.notes = '',
+    this.size = 0,
   });
 
   final String tagName;
@@ -17,18 +18,11 @@ class GithubRelease {
   final String downloadUrl;
   final String apiAssetUrl;
   final String notes;
+  final int size;
 
-  bool isNewerThan({required int installedCode, required String installedName}) {
-    if (versionCode > installedCode) {
-      return true;
-    }
-    if (versionCode > 0 && versionCode == installedCode) {
-      return compareSemver(versionName, installedName) > 0;
-    }
-    if (versionCode <= 0) {
-      return compareSemver(versionName, installedName) > 0;
-    }
-    return false;
+  /// Android installa solo un versionCode strettamente maggiore.
+  bool isNewerThan({required int installedCode}) {
+    return versionCode > installedCode;
   }
 }
 
@@ -37,11 +31,13 @@ class GithubAsset {
     required this.name,
     required this.downloadUrl,
     required this.apiUrl,
+    this.size = 0,
   });
 
   final String name;
   final String downloadUrl;
   final String apiUrl;
+  final int size;
 
   bool get isApk => name.toLowerCase().endsWith('.apk');
 }
@@ -60,27 +56,6 @@ class GithubAsset {
     versionCode = int.tryParse(raw.substring(plus + 1).trim()) ?? 0;
   }
   return (versionName: versionName, versionCode: versionCode);
-}
-
-int compareSemver(String a, String b) {
-  final left = _semverParts(a);
-  final right = _semverParts(b);
-  final n = left.length > right.length ? left.length : right.length;
-  for (var i = 0; i < n; i++) {
-    final l = i < left.length ? left[i] : 0;
-    final r = i < right.length ? right[i] : 0;
-    if (l != r) {
-      return l.compareTo(r);
-    }
-  }
-  return 0;
-}
-
-List<int> _semverParts(String version) {
-  final cleaned = version.split(RegExp(r'[-+]')).first;
-  return [
-    for (final part in cleaned.split('.')) int.tryParse(part.trim()) ?? 0,
-  ];
 }
 
 GithubAsset? pickApkAsset(
@@ -135,11 +110,18 @@ GithubRelease? parseGithubReleaseJson(
       final name = map['name'] as String? ?? '';
       final download = map['browser_download_url'] as String? ?? '';
       final apiUrl = map['url'] as String? ?? download;
+      final sizeRaw = map['size'];
+      final size = sizeRaw is num ? sizeRaw.toInt() : 0;
       if (name.isEmpty || download.isEmpty) {
         continue;
       }
       assets.add(
-        GithubAsset(name: name, downloadUrl: download, apiUrl: apiUrl),
+        GithubAsset(
+          name: name,
+          downloadUrl: download,
+          apiUrl: apiUrl,
+          size: size,
+        ),
       );
     }
   }
@@ -155,5 +137,6 @@ GithubRelease? parseGithubReleaseJson(
     downloadUrl: asset.downloadUrl,
     apiAssetUrl: asset.apiUrl,
     notes: json['body'] as String? ?? '',
+    size: asset.size,
   );
 }

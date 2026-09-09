@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_install_channel.dart';
@@ -45,10 +46,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
       final feed = ref.read(githubReleaseFeedProvider);
       final release = await feed.fetchLatest(preferredAbis: installed.abis);
       if (release == null ||
-          !release.isNewerThan(
-            installedCode: installed.versionCode,
-            installedName: installed.versionName,
-          )) {
+          !release.isNewerThan(installedCode: installed.versionCode)) {
         state = AppUpdateState(
           phase: userInitiated
               ? AppUpdatePhase.upToDate
@@ -182,6 +180,12 @@ class AppUpdateController extends Notifier<AppUpdateState> {
 }
 
 String _italianError(Object error) {
+  if (error is PlatformException) {
+    final message = error.message?.trim();
+    if (message != null && message.isNotEmpty) {
+      return message;
+    }
+  }
   final text = error.toString();
   if (text.contains('SocketException') || text.contains('Failed host lookup')) {
     return 'Nessuna connessione. Riprova quando hai rete.';
@@ -192,8 +196,15 @@ String _italianError(Object error) {
   if (text.contains('404')) {
     return 'Nessuna release trovata su GitHub.';
   }
-  if (text.contains('non è un APK')) {
+  if (text.contains('non è un APK') || text.contains('Download incompleto')) {
     return 'Il file scaricato non è un APK valido. Riprova.';
+  }
+  if (text.contains('firma')) {
+    return 'La firma di questa build non coincide con l\'app installata. '
+        'I dati restano su Firebase: disinstalla e reinstalla una volta sola.';
+  }
+  if (text.contains('più vecchia') || text.contains('versionCode')) {
+    return 'Android non installa una versione uguale o più vecchia.';
   }
   return 'Aggiornamento non riuscito. Riprova.';
 }

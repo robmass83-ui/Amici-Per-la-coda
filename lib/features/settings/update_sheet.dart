@@ -11,10 +11,10 @@ import '../../ui/tokens.dart';
 // ── CONTRATTO DI LAYOUT · Aggiornamento app ────────────────────────────────
 // AppSheet titolo
 // Column
-// ├ testo corpo 12sp  maxLines=4
+// ├ testo corpo 12sp  maxLines=6
 // ├ SizedBox 9
 // ├ (se download) LinearProgressIndicator h=7  + percentuale 10sp
-// ├ (se errore) testo red 10.5sp  maxLines=3
+// ├ (se errore) testo red 10.5sp  maxLines=6
 // ├ SizedBox 12
 // └ Row gap=9
 //    ├ Expanded AppButton grey "Dopo"
@@ -53,7 +53,7 @@ class UpdateSheet extends ConsumerWidget {
       children: [
         Text(
           body,
-          maxLines: 4,
+          maxLines: 6,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontFamily: 'Roboto',
@@ -92,7 +92,7 @@ class UpdateSheet extends ConsumerWidget {
           const SizedBox(height: AppDim.gapM),
           Text(
             state.error!,
-            maxLines: 3,
+            maxLines: 6,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Roboto',
