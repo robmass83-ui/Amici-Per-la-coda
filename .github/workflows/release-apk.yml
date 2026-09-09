@@ -106,14 +106,17 @@ jobs:
               echo "APK sopra 30 MB: $SIZE"
               exit 1
             fi
-            RAW=$(keytool -printcert -jarfile "$APK")
+            APKSIGNER=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/apksigner 2>/dev/null | tail -1)
+            if [ -z "$APKSIGNER" ]; then
+              echo "apksigner non trovato."
+              exit 1
+            fi
+            RAW=$("$APKSIGNER" verify --print-certs "$APK")
             echo "$RAW"
             CERT=$(printf '%s\n' "$RAW" \
+              | awk '/SHA-256 digest:/{print $NF; exit}' \
               | tr 'A-F' 'a-f' \
-              | tr -c '0-9a-f:\n' ' ' \
-              | grep -oE '[0-9a-f]{2}(:[0-9a-f]{2}){31}' \
-              | tr -d ':' \
-              | tail -1 || true)
+              | tr -d ':')
             echo "cert $CERT"
             if [ -z "$CERT" ]; then
               echo "Non riesco a leggere la firma dell'APK."
