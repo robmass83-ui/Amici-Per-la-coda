@@ -19,15 +19,14 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// file_picker (e plugin simili) dichiarano compileSdk 34, ma
-// flutter_plugin_android_lifecycle chiede 36: senza questo CI rifiuta la release.
+// file_picker still ships compileSdk 34; flutter_plugin_android_lifecycle wants 36.
 subprojects {
     afterEvaluate {
-        extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
-            if (compileSdk != null && compileSdk!! < 36) {
-                compileSdk = 36
-            }
+        val android = extensions.findByName("android") ?: return@afterEvaluate
+        val setCompileSdk = android.javaClass.methods.firstOrNull { method ->
+            method.name == "setCompileSdk" && method.parameterCount == 1
         }
+        setCompileSdk?.invoke(android, 36)
     }
 }
 
