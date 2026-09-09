@@ -21,6 +21,9 @@ String documentTipoLabel(DocumentTipo tipo) {
     DocumentTipo.preaffido => 'Modulo di preaffido',
     DocumentTipo.adozione => 'Contratto di adozione',
     DocumentTipo.microchip => 'Passaggio microchip',
+    DocumentTipo.preaffidoFirmato => 'Preaffido firmato',
+    DocumentTipo.adozioneFirmato => 'Adozione firmata',
+    DocumentTipo.documentoIdentita => 'Documento d\'identità',
     DocumentTipo.altro => 'Documento',
   };
 }

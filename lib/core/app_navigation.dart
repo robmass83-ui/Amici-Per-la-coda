@@ -64,6 +64,7 @@ String? parentLocation(String location) {
   const overlays = {
     '/nuovo',
     '/affido',
+    '/impostazioni',
     '/box',
     '/statistiche',
     '/richieste',

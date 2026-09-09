@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 
+import '../documents/template_assets.dart';
 import '../models/adopter.dart';
 import '../models/adoption.dart';
 import '../models/app_document.dart';
 import '../models/appointment.dart';
 import '../models/association_settings.dart';
+import '../models/document_template.dart';
 import '../models/dog.dart';
 import '../models/expense.dart';
 import '../models/health_record.dart';
@@ -69,7 +71,23 @@ abstract interface class AdoptionRepository {
 
 abstract interface class DocumentRepository {
   Stream<List<AppDocument>> watchByDog(String dogId);
+  Stream<List<AppDocument>> watchByAdopter(String adopterId);
+  Stream<List<AppDocument>> watchByAdoption(String adoptionId);
   Future<void> save(AppDocument document);
+  Future<AppDocument> saveBytes(AppDocument document, Uint8List bytes);
+  Future<Uint8List> loadBytes(String id);
+  Future<void> delete(String id);
+}
+
+abstract interface class TemplateRepository {
+  Stream<List<DocumentTemplate>> watchAll();
+  Future<DocumentTemplate?> getById(String id);
+  Future<void> save(DocumentTemplate template);
+  Future<void> ensureDefaults({
+    required AssetBytesLoader loader,
+    required String uid,
+    DateTime? now,
+  });
 }
 
 abstract interface class NoteRepository {

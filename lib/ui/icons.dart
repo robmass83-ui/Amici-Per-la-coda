@@ -111,6 +111,9 @@ abstract final class AppIcons {
   static const offline       = AppIconSpec(Icons.wifi_off_rounded,        AppColor.neutralSoft, _grey);
   static const lingua        = AppIconSpec(Icons.language_rounded,        AppColor.neutralSoft, _grey);
   static const tema          = AppIconSpec(Icons.brightness_6_rounded,    AppColor.neutralSoft, _grey);
+  static const condividi     = AppIconSpec(Icons.ios_share_rounded,       AppColor.greenSoft,   _green);
+  static const apri          = AppIconSpec(Icons.open_in_new_rounded,      AppColor.blueSoft,    _blue);
+  static const carica        = AppIconSpec(Icons.upload_file_rounded,     AppColor.greenSoft,   _green);
 
   // ---------- concetti usati dalle schermate, assenti nel catalogo originale ----------
   static const catalogo        = AppIconSpec(Icons.palette_rounded,          AppColor.greenSoft,   _green);
@@ -165,6 +168,9 @@ abstract final class AppIcons {
     'preaffido' => modulo,
     'adozione' => modulo,
     'microchip' => microchip,
+    'preaffido_firmato' => modulo,
+    'adozione_firmato' => modulo,
+    'documento_identita' => anagrafe,
     _ => allegato,
   };
 

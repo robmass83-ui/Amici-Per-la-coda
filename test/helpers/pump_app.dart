@@ -1,6 +1,9 @@
 import 'package:amici_per_la_coda/app.dart';
 import 'package:amici_per_la_coda/core/app_update/app_update_controller.dart';
 import 'package:amici_per_la_coda/data/data_providers.dart';
+import 'package:amici_per_la_coda/data/documents/document_file_picker.dart';
+import 'package:amici_per_la_coda/data/documents/file_actions.dart';
+import 'package:amici_per_la_coda/data/documents/template_assets.dart';
 import 'package:amici_per_la_coda/data/photos/photo_picker.dart';
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/features/auth/auth_providers.dart';
@@ -38,6 +41,7 @@ Future<void> pumpApp(
   AdoptionRepository? adoptions,
   NoteRepository? notes,
   DocumentRepository? documents,
+  TemplateRepository? templates,
   VolunteerRepository? volunteers,
   PhotoRepository? photos,
   WeightRepository? weights,
@@ -46,6 +50,10 @@ Future<void> pumpApp(
   BoxRepository? boxes,
   AdopterRepository? adopters,
   PhotoPicker? picker,
+  DocumentFilePicker? documentPicker,
+  FileShare? fileShare,
+  FileOpener? fileOpener,
+  AssetBytesLoader? assets,
   DogDraftStore? drafts,
   MicrochipScanner? scanner,
   DateTime? dogListNow,
@@ -78,6 +86,8 @@ Future<void> pumpApp(
           noteRepositoryProvider.overrideWith((ref) => notes),
         if (documents != null)
           documentRepositoryProvider.overrideWith((ref) => documents),
+        if (templates != null)
+          templateRepositoryProvider.overrideWith((ref) => templates),
         if (volunteers != null)
           volunteerRepositoryProvider.overrideWith((ref) => volunteers),
         if (photos != null)
@@ -94,6 +104,14 @@ Future<void> pumpApp(
           adopterRepositoryProvider.overrideWith((ref) => adopters),
         if (picker != null)
           photoPickerProvider.overrideWith((ref) => picker),
+        if (documentPicker != null)
+          documentFilePickerProvider.overrideWith((ref) => documentPicker),
+        if (fileShare != null)
+          fileShareProvider.overrideWith((ref) => fileShare),
+        if (fileOpener != null)
+          fileOpenerProvider.overrideWith((ref) => fileOpener),
+        if (assets != null)
+          assetBytesLoaderProvider.overrideWith((ref) => assets),
         if (drafts != null)
           dogDraftStoreProvider.overrideWith((ref) => drafts),
         if (scanner != null)

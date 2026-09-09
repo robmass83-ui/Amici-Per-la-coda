@@ -51,11 +51,8 @@ class AltroPage extends ConsumerWidget {
                   size: IconBadge.inMenu,
                 ),
                 title: 'Impostazioni',
-                subtitle: 'Associazione, notifiche, backup',
-                onTap: () => AppToast.show(
-                  context,
-                  'Impostazioni: disponibili più avanti.',
-                ),
+                subtitle: 'Associazione, moduli, backup',
+                onTap: () => context.push(AppRoutes.impostazioni),
               ),
               OptionRow(
                 icon: const IconBadge(

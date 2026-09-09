@@ -30,10 +30,16 @@ service cloud.firestore {
       );
     }
     match /settings/{id}{ allow read: if attivo(); allow write: if attivo() && ruolo()=='presidente'; }
+    match /templates/{id} {
+      allow read: if attivo();
+      allow create: if puoScrivere();
+      allow update, delete: if attivo() && ruolo() == 'presidente';
+    }
     match /dogDrafts/{uid} {
       allow read, write: if attivo() && request.auth.uid == uid;
     }
     match /{col}/{id}   { allow read: if attivo(); allow write: if puoScrivere(); }
     match /{path=**}/full/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
+    match /{path=**}/chunks/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
   }
 }

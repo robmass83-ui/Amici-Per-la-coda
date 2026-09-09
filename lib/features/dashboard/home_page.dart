@@ -427,7 +427,7 @@ class _HomeDashboard extends ConsumerWidget {
                   key: HomePage.shortcutAffidoKey,
                   icon: AppIcons.modulo,
                   title: 'Modulo affido',
-                  subtitle: 'Genera e firma',
+                  subtitle: 'Invia e carica',
                   onTap: () => context.push(AppRoutes.affido),
                 ),
                 _ShortcutCard(

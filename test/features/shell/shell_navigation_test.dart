@@ -1,4 +1,5 @@
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
+import 'package:amici_per_la_coda/features/affido/affido_page.dart';
 import 'package:amici_per_la_coda/features/calendar/calendar_placeholder_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
@@ -244,7 +245,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(HomePage.shortcutAffidoKey));
     await tester.pumpAndSettle();
-    expect(find.byType(PlaceholderFeaturePage), findsOneWidget);
+    expect(find.byType(AffidoPage), findsOneWidget);
 
     expect(await tapSystemBack(tester), isTrue);
     expect(find.byType(HomePage), findsOneWidget);

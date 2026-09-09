@@ -4,6 +4,7 @@ import 'package:amici_per_la_coda/data/models/adoption.dart';
 import 'package:amici_per_la_coda/data/models/app_document.dart';
 import 'package:amici_per_la_coda/data/models/appointment.dart';
 import 'package:amici_per_la_coda/data/models/association_settings.dart';
+import 'package:amici_per_la_coda/data/models/document_template.dart';
 import 'package:amici_per_la_coda/data/models/dog.dart';
 import 'package:amici_per_la_coda/data/models/enums.dart';
 import 'package:amici_per_la_coda/data/models/expense.dart';
@@ -229,17 +230,41 @@ void main() {
       id: 'd1',
       dogId: 'fenice',
       adoptionId: null,
+      adopterId: '',
       tipo: DocumentTipo.verbale,
       nome: 'Verbale',
       mime: 'application/pdf',
-      pdfB64: null,
-      firmaAffidatarioB64: null,
-      firmaReferenteB64: null,
-      createdAt: at,
-      createdBy: 'u1',
+      chunkCount: 0,
+      contenutoB64: null,
+      caricatoIl: at,
+      caricatoDa: 'u1',
     );
     expect(AppDocument.fromMap(doc.id, doc.toMap()).adoptionId, isNull);
-    expect(AppDocument.fromMap(doc.id, doc.toMap()).pdfB64, isNull);
+    expect(AppDocument.fromMap(doc.id, doc.toMap()).contenutoB64, isNull);
+    expect(AppDocument.fromMap(doc.id, doc.toMap()).chunkCount, 0);
+
+    final inviato = AdoptionStatoVoce.moduloInviato(
+      moduloId: 'preaffido',
+      data: at,
+      autoreId: 'u1',
+    );
+    final inviatoAgain = AdoptionStatoVoce.fromMap(inviato.toMap());
+    expect(inviatoAgain.isModuloInviato, isTrue);
+    expect(inviatoAgain.moduloId, 'preaffido');
+    expect(inviatoAgain.toMap()['stato'], 'modulo_inviato');
+
+    final template = DocumentTemplate(
+      id: 'preaffido',
+      nome: 'Modulo di preaffido',
+      descrizione: 'In bianco',
+      fileName: 'modulo-preaffido.pdf',
+      mime: 'application/pdf',
+      pdfB64: 'abc',
+      versione: 1,
+      aggiornatoIl: at,
+      aggiornatoDa: 'u1',
+    );
+    expect(DocumentTemplate.fromMap(template.id, template.toMap()).versione, 1);
 
     final note = Note(
       id: 'n1',

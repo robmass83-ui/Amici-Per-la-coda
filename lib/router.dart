@@ -8,6 +8,7 @@ import 'core/app_navigation.dart';
 import 'features/adoptions/adoption_detail_page.dart';
 import 'features/adoptions/adoptions_page.dart';
 import 'features/adoptions/new_adoption_page.dart';
+import 'features/affido/affido_page.dart';
 import 'features/auth/auth_providers.dart';
 import 'features/auth/login_page.dart';
 import 'features/calendar/calendar_placeholder_page.dart';
@@ -21,6 +22,7 @@ import 'features/dogs/dogs_page.dart';
 import 'features/dogs/new_dog/new_dog_wizard_page.dart';
 import 'features/settings/altro_page.dart';
 import 'features/settings/app_update_listener.dart';
+import 'features/settings/settings_page.dart';
 import 'features/shell/app_shell.dart';
 
 abstract final class AppRoutes {
@@ -32,6 +34,7 @@ abstract final class AppRoutes {
   static const debugUi = '/debug/ui';
   static const nuovo = '/nuovo';
   static const affido = '/affido';
+  static const impostazioni = '/impostazioni';
   static const box = '/box';
   static const statistiche = '/statistiche';
   static const richieste = '/richieste';
@@ -43,6 +46,16 @@ abstract final class AppRoutes {
   static String richiesta(String id) => '$richieste/$id';
   static String nuovaRichiestaPer(String dogId) =>
       '$nuovaRichiesta?dogId=${Uri.encodeQueryComponent(dogId)}';
+  static String affidoPer({String? adoptionId, String? dogId}) {
+    final params = <String, String>{
+      'adoptionId': ?adoptionId,
+      'dogId': ?dogId,
+    };
+    if (params.isEmpty) {
+      return affido;
+    }
+    return Uri(path: affido, queryParameters: params).toString();
+  }
 }
 
 final initialLocationProvider = Provider<String>((ref) => AppRoutes.home);
@@ -86,8 +99,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.affido,
-        builder: (context, state) =>
-            const PlaceholderFeaturePage(title: 'Modulo affido'),
+        builder: (context, state) => AffidoPage(
+          adoptionId: state.uri.queryParameters['adoptionId'],
+          dogId: state.uri.queryParameters['dogId'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.impostazioni,
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: AppRoutes.box,

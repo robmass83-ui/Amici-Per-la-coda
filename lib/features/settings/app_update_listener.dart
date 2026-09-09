@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_update/app_update_controller.dart';
 import '../../core/app_update/app_update_state.dart';
 import '../../ui/components.dart';
+import '../affido/affido_providers.dart';
 import 'update_sheet.dart';
 
 /// Controlla GitHub all'apertura e alla ripresa dell'app, mostra il foglio
@@ -82,6 +83,7 @@ class _AppUpdateListenerState extends ConsumerState<AppUpdateListener>
         AppToast.show(context, next.error!);
       }
     });
+    ref.watch(templatesStreamProvider);
     return widget.child;
   }
 }

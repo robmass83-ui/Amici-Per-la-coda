@@ -204,9 +204,24 @@ enum DocumentTipo {
   preaffido,
   adozione,
   microchip,
+  preaffidoFirmato,
+  adozioneFirmato,
+  documentoIdentita,
   altro;
 
-  String get wire => name;
+  String get wire => switch (this) {
+    libretto => 'libretto',
+    anagrafe => 'anagrafe',
+    verbale => 'verbale',
+    preaffido => 'preaffido',
+    adozione => 'adozione',
+    microchip => 'microchip',
+    preaffidoFirmato => 'preaffido_firmato',
+    adozioneFirmato => 'adozione_firmato',
+    documentoIdentita => 'documento_identita',
+    altro => 'altro',
+  };
+
   static DocumentTipo parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, DocumentTipo.altro);
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format_it.dart';
 import '../../data/models/app_document.dart';
 import '../../data/models/dog.dart';
+import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'add_document_sheet.dart';
@@ -15,7 +17,7 @@ import 'tab_labels.dart';
 // ├ AppCard  Documenti del cane
 // │  riga: IconBadge 27 · Expanded nome+meta maxLines=1 · chevron 18
 // ├ SizedBox 9
-// ├ AppCard  Modulistica  OptionRow ×3
+// ├ AppCard  Modulistica  OptionRow Invia modulo
 // ├ SizedBox 9
 // └ AppButton ghost  Carica documento
 // ───────────────────────────────────────────────────────────────────────────
@@ -76,25 +78,13 @@ class DogDocumentiTab extends ConsumerWidget {
             children: [
               const SectionTitle(
                 title: 'Modulistica affido',
-                icon: IconBadge(AppIcons.firma, size: IconBadge.inTitle),
+                icon: IconBadge(AppIcons.modulo, size: IconBadge.inTitle),
               ),
               OptionRow(
                 icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
-                title: 'Modulo di preaffido',
-                subtitle: 'Genera precompilato',
-                onTap: () => _soon(context, 'Genera modulo'),
-              ),
-              OptionRow(
-                icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
-                title: 'Contratto di adozione',
-                subtitle: 'Genera precompilato',
-                onTap: () => _soon(context, 'Genera contratto'),
-              ),
-              OptionRow(
-                icon: const IconBadge(AppIcons.microchip, size: IconBadge.inMenu),
-                title: 'Passaggio proprietà microchip',
-                subtitle: 'Modello ASL',
-                onTap: () => _soon(context, 'Genera passaggio microchip'),
+                title: 'Invia modulo',
+                subtitle: 'Preaffido o adozione in bianco',
+                onTap: () => context.push(AppRoutes.affidoPer(dogId: dog.id)),
               ),
             ],
           ),
@@ -109,10 +99,6 @@ class DogDocumentiTab extends ConsumerWidget {
       ],
     );
   }
-}
-
-void _soon(BuildContext context, String label) {
-  AppToast.show(context, '$label: disponibile negli step successivi.');
 }
 
 class _DocRow extends StatelessWidget {

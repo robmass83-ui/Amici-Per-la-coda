@@ -3,6 +3,7 @@ import 'package:amici_per_la_coda/data/models/appointment.dart';
 import 'package:amici_per_la_coda/data/models/dog.dart';
 import 'package:amici_per_la_coda/data/models/health_record.dart';
 import 'package:amici_per_la_coda/data/models/shelter_box.dart';
+import 'package:amici_per_la_coda/features/affido/affido_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dogs_page.dart';
@@ -173,7 +174,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
 
-    await tapShortcut(HomePage.shortcutAffidoKey, 'Modulo affido');
+    await revealShortcuts(tester);
+    await tester.tap(find.byKey(HomePage.shortcutAffidoKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(AffidoPage), findsOneWidget);
+    expect(find.text('Documenti di affido'), findsWidgets);
+    await tester.tap(find.byTooltip('Indietro'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomePage), findsOneWidget);
+
     await tapShortcut(HomePage.shortcutBoxKey, 'Box e settori');
     await tapShortcut(HomePage.shortcutStatsKey, 'Statistiche');
   });

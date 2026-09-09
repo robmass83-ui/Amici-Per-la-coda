@@ -10,6 +10,8 @@ class InMemoryAdoptionRepository implements AdoptionRepository {
   final List<Adoption> _items;
   final _controller = StreamController<List<Adoption>>.broadcast();
 
+  List<Adoption> get items => List.unmodifiable(_items);
+
   @override
   Stream<List<Adoption>> watchAll() async* {
     yield List<Adoption>.unmodifiable(_items);

@@ -2,6 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'documents/device_document_file_picker.dart';
+import 'documents/device_file_actions.dart';
+import 'documents/document_file_picker.dart';
+import 'documents/file_actions.dart';
+import 'documents/template_assets.dart';
 import 'firestore/firestore_repositories.dart';
 import 'repositories/data_repositories.dart';
 
@@ -76,3 +81,25 @@ final appointmentRepositoryProvider = Provider<AppointmentRepository?>((ref) {
   final db = ref.watch(firestoreProvider);
   return db == null ? null : FirestoreAppointmentRepository(db);
 });
+
+final settingsRepositoryProvider = Provider<SettingsRepository?>((ref) {
+  final db = ref.watch(firestoreProvider);
+  return db == null ? null : FirestoreSettingsRepository(db);
+});
+
+final templateRepositoryProvider = Provider<TemplateRepository?>((ref) {
+  final db = ref.watch(firestoreProvider);
+  return db == null ? null : FirestoreTemplateRepository(db);
+});
+
+final assetBytesLoaderProvider = Provider<AssetBytesLoader>(
+  (ref) => const RootBundleAssetLoader(),
+);
+
+final documentFilePickerProvider = Provider<DocumentFilePicker>(
+  (ref) => DeviceDocumentFilePicker(),
+);
+
+final fileShareProvider = Provider<FileShare>((ref) => SharePlusFileShare());
+
+final fileOpenerProvider = Provider<FileOpener>((ref) => OpenFilexOpener());

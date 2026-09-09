@@ -115,28 +115,69 @@ class AdoptionStatoVoce {
     required this.data,
     required this.note,
     required this.autoreId,
+    this.evento,
+    this.moduloId,
   });
+
+  static const eventoModuloInviato = 'modulo_inviato';
+
+  factory AdoptionStatoVoce.moduloInviato({
+    required String moduloId,
+    required DateTime data,
+    required String autoreId,
+  }) {
+    return AdoptionStatoVoce(
+      stato: AdoptionStato.ricevuta,
+      data: data,
+      note: '',
+      autoreId: autoreId,
+      evento: eventoModuloInviato,
+      moduloId: moduloId,
+    );
+  }
 
   final AdoptionStato stato;
   final DateTime data;
   final String note;
   final String autoreId;
+  final String? evento;
+  final String? moduloId;
+
+  bool get isModuloInviato => evento == eventoModuloInviato;
 
   factory AdoptionStatoVoce.fromMap(Map<String, dynamic> map) {
+    final raw = map['stato'] as String?;
+    final evento = raw == eventoModuloInviato
+        ? eventoModuloInviato
+        : map['evento'] as String?;
     return AdoptionStatoVoce(
-      stato: AdoptionStato.parse(map['stato'] as String?),
+      stato: raw == eventoModuloInviato
+          ? AdoptionStato.ricevuta
+          : AdoptionStato.parse(raw),
       data: dateTimeRequired(map['data']),
       note: map['note'] as String? ?? '',
       autoreId: map['autoreId'] as String? ?? '',
+      evento: evento,
+      moduloId: map['moduloId'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() {
+    if (evento == eventoModuloInviato) {
+      return {
+        'stato': eventoModuloInviato,
+        'moduloId': moduloId,
+        'data': dateTimeTo(data),
+        'note': note,
+        'autoreId': autoreId,
+      };
+    }
     return {
       'stato': stato.wire,
       'data': dateTimeTo(data),
       'note': note,
       'autoreId': autoreId,
+      if (moduloId != null) 'moduloId': moduloId,
     };
   }
 }

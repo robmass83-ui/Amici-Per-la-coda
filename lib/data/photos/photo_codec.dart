@@ -13,6 +13,9 @@ const photoFullMaxBytes = 700 * 1024;
 const photoThumbMaxBytes = 15 * 1024;
 const photoQualityStep = 5;
 const photoMaxQualityAttempts = 6;
+const documentImageMaxSide = 1600;
+const documentImageQuality = 70;
+const documentImageMaxBytes = 300 * 1024;
 
 class CompressedPhoto {
   const CompressedPhoto({
@@ -181,4 +184,25 @@ Future<(int, int)> _decodeSize(Uint8List bytes) async {
   final h = frame.image.height;
   frame.image.dispose();
   return (w, h);
+}
+
+/// Pipeline moduli firmati: 1600 px lato lungo, qualità 70, sotto i 300 KB.
+Future<Uint8List> compressDocumentImage(Uint8List source) async {
+  var side = documentImageMaxSide;
+  var quality = documentImageQuality;
+  Uint8List? last;
+  for (var i = 0; i < photoMaxQualityAttempts + 6; i++) {
+    last = await _compress(
+      source,
+      maxSide: side,
+      quality: quality,
+      maxBytes: documentImageMaxBytes,
+    );
+    if (last.lengthInBytes <= documentImageMaxBytes) {
+      return last;
+    }
+    quality = (quality - 10).clamp(photoQualityStep, documentImageQuality);
+    side = (side * 0.75).round().clamp(80, documentImageMaxSide);
+  }
+  return last ?? source;
 }

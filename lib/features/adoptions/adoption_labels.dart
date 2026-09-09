@@ -151,7 +151,7 @@ String _iterSubtitle(
   }
   if (index < currentIndex) {
     final match = adoption.storicoStati.where(
-      (voce) => voce.stato == iterTappe[index],
+      (voce) => !voce.isModuloInviato && voce.stato == iterTappe[index],
     );
     if (match.isNotEmpty) {
       return '${formatItalianDate(match.last.data)} · completato';

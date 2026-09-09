@@ -508,3 +508,233 @@ Non fare gli altri punti del documento: li faremo agli step relativi.
 Gli altri punti si affrontano quando arrivi allo step indicato. Tienili come lista di
 controllo: quando Cursor ti dice «Step 13 completato», controlla che abbia fatto anche il
 punto 4, e così via.
+
+---
+
+# PARTE 3 — Revisione dello Step 14: moduli di affido
+
+**Decisione del committente, sostituisce integralmente lo Step 14 della sezione 8.**
+
+L'app **non genera** i moduli e **non raccoglie firme**. I moduli sono due PDF già pronti,
+scritti dall'associazione. Il flusso reale è:
+
+1. I due moduli in bianco (preaffido e adozione) stanno dentro l'app.
+2. Quando si registra un possibile adottante, la volontaria apre il modulo e lo **condivide**
+   con il foglio di condivisione del telefono: WhatsApp, email, Telegram, quello che serve.
+3. L'adottante compila e firma **fuori dall'app**, su carta o sul PDF, e lo rimanda indietro.
+4. La volontaria **carica il file compilato e firmato** nell'app, e quel documento resta
+   attaccato sia alla scheda del cane sia a quella dell'adottante.
+
+Niente compilazione guidata, niente firma con il dito, niente generazione di PDF.
+
+## 14.1 Dove stanno i moduli in bianco
+
+**Non come asset dentro l'APK.** I moduli cambiano — cambia una clausola, cambia
+l'intestazione — e ogni volta servirebbe ricompilare e reinstallare l'app sui telefoni.
+Stanno in Firestore, sostituibili dalle impostazioni:
+
+```
+templates/{id}          // due soli documenti: 'preaffido' e 'adozione'
+  nome: string          // "Modulo di preaffido"
+  descrizione: string
+  fileName: string      // "modulo-preaffido.pdf"
+  mime: 'application/pdf'
+  pdfB64: string        // il PDF in bianco, < 700 KB
+  versione: int
+  aggiornatoIl: Timestamp
+  aggiornatoDa: string
+```
+
+In **Impostazioni** compare una sezione «Moduli»: le due voci con nome, versione e data,
+e l'azione «Sostituisci file» riservata al presidente. Al primo avvio, se i documenti non
+esistono, l'app carica i due PDF inclusi in `assets/moduli/` come versione 1: così l'app
+funziona subito e i moduli restano comunque aggiornabili senza reinstallare niente.
+
+## 14.2 Condividere il modulo
+
+Dalla schermata della richiesta di adozione e dalla tab Documenti del cane:
+azione **«Invia modulo»** → si sceglie quale dei due → si apre il foglio di condivisione
+di sistema (`share_plus`), con il PDF allegato e un testo predefinito già pronto, del tipo:
+
+> Ciao <nome>, in allegato il modulo di preaffido per <cane>. Compilalo, firmalo e
+> rimandacelo quando puoi. Grazie! — Amici per la Coda
+
+L'invio **si registra**: nello `storicoStati` della richiesta si appende una voce
+`modulo_inviato` con quale modulo, la data e chi l'ha mandato. Serve perché fra due
+settimane nessuno si ricorda se il modulo è stato spedito o no, e nella schermata della
+richiesta compare «Modulo preaffido inviato il 12/09 da Giovanna · in attesa di ritorno».
+
+## 14.3 Caricare il modulo compilato — il punto delicato
+
+Un modulo firmato torna indietro come **PDF scansionato o come foto**, e pesa quasi sempre
+**più di 1 MB**: il limite di un documento Firestore. Senza gestirlo, il caricamento fallisce
+e basta. Regole:
+
+- Si accettano PDF (`file_picker`) e immagini (`image_picker`, anche più pagine).
+- Le **immagini** passano dalla stessa pipeline delle foto: 1600 px lato lungo, qualità 70.
+  Una pagina A4 fotografata scende sotto i 300 KB e resta perfettamente leggibile.
+- I **PDF** si salvano a pezzi: il base64 viene spezzato in blocchi da 600 KB in una
+  sottocollezione `documents/{id}/chunks/{n}`, con `chunkCount` nel documento padre, e
+  ricomposto alla lettura. Limite massimo 10 MB per file, oltre il quale l'app dice
+  chiaramente di ridurre la scansione.
+- Il documento risultante:
+
+```
+documents/{id}
+  tipo: 'preaffido_firmato' | 'adozione_firmato' | 'documento_identita' | 'altro'
+  adoptionId: string        // il legame che tiene insieme cane e adottante
+  dogId: string             // ridondante ma comodo per le query della scheda cane
+  adopterId: string
+  nome: string
+  mime: string
+  chunkCount: int           // 0 se il contenuto sta tutto nel padre
+  contenutoB64: string|null // usato solo quando sta in un documento solo
+  caricatoIl: Timestamp
+  caricatoDa: string
+```
+
+**Un solo file, non due copie.** Lo stesso documento compare nella tab Documenti del cane
+e nella scheda dell'adottante perché entrambe lo cercano per `dogId` e per `adopterId`.
+Duplicarlo significherebbe raddoppiare lo spazio e ritrovarsi due versioni che divergono.
+
+Al caricamento del preaffido firmato, l'app propone di far avanzare la richiesta allo stato
+`preaffido` — propone, non lo fa da sola.
+
+## 14.4 Conseguenze sul resto del progetto
+
+- **Si toglie** la dipendenza `signature`: non serve più.
+- **Restano** `pdf` e `printing`, che servono ancora per l'export del report annuale
+  (Step 17) e per «Esporta scheda PDF».
+- **Si aggiunge** `file_picker` per scegliere un PDF dal telefono, e `open_filex` per
+  aprire un documento con il visualizzatore del telefono.
+- Nella sezione 7, la schermata 18 «Documenti di affido» cambia natura: non più scelta
+  del modulo + dati precompilati + firme, ma **due elenchi** — i moduli da inviare
+  (con «Invia») e i documenti ricevuti (con «Apri», «Condividi», «Elimina»).
+- Il riferimento HTML su questa schermata è superato da questa parte del documento.
+
+## 14.5 Test dello Step 14 rivisto
+
+1. Al primo avvio, senza documenti in `templates`, l'app li crea dai PDF in `assets/moduli/`
+   e le due voci compaiono in Impostazioni con versione 1.
+2. Sostituendo un modulo dalle impostazioni, la versione passa a 2 e la condivisione manda
+   il file nuovo.
+3. «Invia modulo» apre il foglio di condivisione con il PDF allegato e il testo precompilato
+   contenente il nome dell'adottante e quello del cane.
+4. Dopo l'invio, la richiesta mostra «Modulo preaffido inviato il <data> da <nome>» e la voce
+   compare nello storico.
+5. Caricando un PDF da 4 MB il documento viene salvato in 7 blocchi e riletto identico
+   (confronto byte a byte del base64 ricomposto).
+6. Caricando una foto da 6 MB, viene compressa sotto i 300 KB e salvata in un documento solo.
+7. Un file da 12 MB viene rifiutato con un messaggio chiaro, non con un errore tecnico.
+8. Lo stesso documento compare sia nella tab Documenti del cane sia nella scheda
+   dell'adottante, ed è **un solo** documento in Firestore.
+9. Funziona senza rete: il caricamento va in coda e si sincronizza al ritorno del segnale.
+
+---
+
+# PARTE 4 — Step 14-bis: modificare quello che è già stato inserito
+
+**Lacuna del piano originale.** Nessuno dei 20 step costruisce la modifica. Si può creare un
+cane, un trattamento, una spesa, una nota — e poi niente si può correggere. Il pulsante ✏️
+nell'header della scheda e la voce «Modifica scheda» nel menu ⋮ sono disegnati nel
+riferimento ma non implementati da nessuna parte.
+
+Va fatto **subito dopo lo Step 14**, prima di proseguire, per un motivo pratico: i 49 cani
+reali entrano nell'app con solo nome, sesso, data di nascita e sterilizzazione. Tutto il
+resto — razza, taglia, peso, microchip, box, carattere, provenienza — si compila a mano
+cane per cane. Senza questa schermata l'anagrafe vera non è utilizzabile.
+
+## 14-bis.1 · Modifica del profilo del cane
+
+**Non riusare il wizard.** Creare un cane è un percorso guidato in tre passaggi; correggere
+un dato è un'altra cosa. Chi entra per cambiare il peso non deve attraversare tre schermate
+con avanti-avanti-salva: è esattamente il attrito che fa smettere le persone di tenere
+aggiornati i dati.
+
+Una schermata unica, con le stesse sezioni del wizard messe una sotto l'altra.
+
+```
+SCHERMATA MODIFICA CANE   (rotta /cane/:id/modifica)
+└ AppBar compatta h=44
+   ├ ← indietro   (se ci sono modifiche non salvate: chiede conferma)
+   ├ Titolo "Modifica <nome>"  15sp w700
+   └ Azione "Salva"  13sp w700 AppColor.green
+        DISABILITATA finché non cambia almeno un campo
+└ ListView padding=12
+   ├ SectionTitle "Anagrafica"
+   │   nome · sesso · data di nascita + presunta · razza · taglia · mantello
+   ├ SectionTitle "Identificazione"
+   │   microchip (con validazione 15 cifre) · iscritto in anagrafe
+   ├ SectionTitle "Provenienza e ingresso"
+   │   provenienza · modalità di ingresso · data di ingresso · settore · box
+   ├ SectionTitle "Presentazione"
+   │   slogan · descrizione per l'annuncio
+   ├ SectionTitle "Carattere e compatibilità"
+   │   chip del carattere · con persone · con cani · con gatti · con bambini · note
+   ├ SectionTitle "Adozione"
+   │   adottabile · pubblicato · volontario referente
+   └ Riga finale, 10sp AppColor.muted:
+       "Ultima modifica: <nome>, <data>"      da updatedBy / updatedAt
+```
+
+I campi sono **gli stessi widget del wizard** dello Step 11: si riusano, non si riscrivono.
+Se un widget del wizard non è estraibile perché legato al flusso a passaggi, va estratto
+adesso — e il wizard usa quello estratto.
+
+**Fuori da questa schermata**, perché hanno già la loro: lo stato del cane (Step 12), le
+foto (Step 10), i trattamenti sanitari, le spese e le note (paragrafo seguente).
+
+### Due comportamenti che sembrano dettagli e non lo sono
+
+**Salva attivo solo se qualcosa è cambiato.** Si confronta l'oggetto in modifica con quello
+originale. Evita scritture inutili su Firestore e, soprattutto, evita di sovrascrivere il
+lavoro di un altro volontario con dati identici ma `updatedAt` nuovo.
+
+**Guardia sulle modifiche concorrenti.** L'app è usata da 3-4 persone sugli stessi cani.
+Firestore fa vincere l'ultimo che salva, in silenzio. Al salvataggio si rilegge `updatedAt`
+dal server: se è più recente di quando il form è stato aperto, non si scrive — si mostra
+«<nome> ha modificato questa scheda mentre la stavi aprendo» con due scelte, *Ricarica* e
+*Sovrascrivi comunque*.
+
+## 14-bis.2 · Modificare e cancellare le voci già inserite
+
+Stessa lacuna per tutto il resto. Ogni elemento di queste liste deve poter essere corretto o
+eliminato, con una pressione lunga oppure con un ⋮ sulla riga:
+
+| Voce | Dove | Modifica | Elimina |
+|---|---|---|---|
+| Trattamento sanitario | tab Salute | sì | sì, con conferma |
+| Pesata | tab Salute | sì | sì |
+| Spesa | tab Spese | sì | sì, con conferma |
+| Nota | tab Note | sì, solo l'autore o il presidente | sì, stesse regole |
+| Documento | tab Documenti | solo il nome | sì, con conferma |
+| Appuntamento | Calendario | sì | sì |
+| Adozione a distanza | tab Spese | sì | no: si chiude, non si cancella |
+
+Le eliminazioni **non sono mai silenziose**: chiedono conferma nominando la cosa che sparisce
+(«Eliminare la vaccinazione del 10/02/2025?»), e non c'è annulla. Chi elimina e quando
+restano in `updatedBy`/`updatedAt` del documento padre, dove esistono.
+
+Le modifiche riusano il **form di creazione già esistente**, aperto precompilato: non si
+scrivono due volte gli stessi campi.
+
+## 14-bis.3 · Permessi
+
+Coerente con lo Step 18: `presidente` e `referente` modificano ed eliminano tutto; il ruolo
+`volontario` può creare note e modificare o eliminare **solo le proprie**, e nient'altro.
+Le azioni non permesse **non si disegnano**, non si disabilitano.
+
+## 14-bis.4 · Test
+
+1. Aprendo la modifica di un cane, «Salva» è disabilitato; cambiando un campo si attiva.
+2. Cambiando la taglia e salvando, l'elenco cani e la scheda mostrano subito il valore nuovo.
+3. Uscendo con modifiche non salvate compare la richiesta di conferma; annullando si resta.
+4. Microchip di 14 cifre: errore sotto il campo, salvataggio bloccato.
+5. Guardia sulle concorrenti: simulando un `updatedAt` sul server più recente di quello
+   letto all'apertura, il salvataggio non avviene e compare la scelta ricarica/sovrascrivi.
+6. Modificando la data di un trattamento, l'ordine della timeline si aggiorna.
+7. Eliminando una spesa, il totale della tab Spese si ricalcola.
+8. Un utente `volontario` non vede le azioni di modifica sulle note altrui (`findsNothing`);
+   forzando la scrittura, le regole Firestore la rifiutano.
+9. La schermata di modifica non va in overflow a 320/360/411/430 dp.
+10. `updatedBy` e `updatedAt` vengono scritti a ogni salvataggio e mostrati in fondo.

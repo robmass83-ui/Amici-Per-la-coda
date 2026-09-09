@@ -6,6 +6,7 @@ void main() {
   test('i path overlay coincidono con AppRoutes', () {
     expect(parentLocation(AppRoutes.nuovo), AppRoutes.home);
     expect(parentLocation(AppRoutes.affido), AppRoutes.home);
+    expect(parentLocation(AppRoutes.impostazioni), AppRoutes.home);
     expect(parentLocation(AppRoutes.box), AppRoutes.home);
     expect(parentLocation(AppRoutes.statistiche), AppRoutes.home);
     expect(parentLocation(AppRoutes.richieste), AppRoutes.home);

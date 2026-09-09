@@ -4,11 +4,14 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/firestore_codec.dart';
+import '../documents/document_codec.dart';
+import '../documents/template_assets.dart';
 import '../models/adopter.dart';
 import '../models/adoption.dart';
 import '../models/app_document.dart';
 import '../models/appointment.dart';
 import '../models/association_settings.dart';
+import '../models/document_template.dart';
 import '../models/dog.dart';
 import '../models/expense.dart';
 import '../models/health_record.dart';
@@ -356,11 +359,12 @@ class FirestoreDocumentRepository implements DocumentRepository {
   FirestoreDocumentRepository(this._db);
   final FirebaseFirestore _db;
 
-  @override
-  Stream<List<AppDocument>> watchByDog(String dogId) {
-    return _db
-        .collection('documents')
-        .where('dogId', isEqualTo: dogId)
+  CollectionReference<Map<String, dynamic>> get _col =>
+      _db.collection('documents');
+
+  Stream<List<AppDocument>> _watchWhere(String field, String value) {
+    return _col
+        .where(field, isEqualTo: value)
         .snapshots()
         .map(
           (snap) => snap.docs
@@ -370,8 +374,142 @@ class FirestoreDocumentRepository implements DocumentRepository {
   }
 
   @override
+  Stream<List<AppDocument>> watchByDog(String dogId) =>
+      _watchWhere('dogId', dogId);
+
+  @override
+  Stream<List<AppDocument>> watchByAdopter(String adopterId) =>
+      _watchWhere('adopterId', adopterId);
+
+  @override
+  Stream<List<AppDocument>> watchByAdoption(String adoptionId) =>
+      _watchWhere('adoptionId', adoptionId);
+
+  @override
   Future<void> save(AppDocument document) {
-    return _db.collection('documents').doc(document.id).set(document.toMap());
+    return _col.doc(document.id).set(document.toMap());
+  }
+
+  @override
+  Future<AppDocument> saveBytes(AppDocument document, Uint8List bytes) async {
+    ensureDocumentSizeAllowed(bytes.lengthInBytes);
+    final count = documentChunkCount(bytes.lengthInBytes);
+    if (count == 0) {
+      final saved = document.copyWith(
+        chunkCount: 0,
+        contenutoB64: base64Encode(bytes),
+      );
+      await _col.doc(saved.id).set(saved.toMap());
+      return saved;
+    }
+    final chunks = splitDocumentBytes(bytes);
+    final saved = document.copyWith(
+      chunkCount: chunks.length,
+      clearContenuto: true,
+    );
+    final batch = _db.batch();
+    batch.set(_col.doc(saved.id), saved.toMap());
+    for (var i = 0; i < chunks.length; i++) {
+      batch.set(_col.doc(saved.id).collection('chunks').doc('$i'), {
+        'b64': base64Encode(chunks[i]),
+        'index': i,
+      });
+    }
+    await batch.commit();
+    return saved;
+  }
+
+  @override
+  Future<Uint8List> loadBytes(String id) async {
+    final snap = await _col.doc(id).get();
+    if (!snap.exists) {
+      throw StateError('Documento non trovato.');
+    }
+    final doc = AppDocument.fromMap(snap.id, _data(snap));
+    if (doc.chunkCount == 0) {
+      final b64 = doc.contenutoB64 ?? '';
+      if (b64.isEmpty) {
+        return Uint8List(0);
+      }
+      return base64Decode(b64);
+    }
+    final chunks = <Uint8List>[];
+    for (var i = 0; i < doc.chunkCount; i++) {
+      final chunk = await _col.doc(id).collection('chunks').doc('$i').get();
+      final b64 = chunk.data()?['b64'] as String? ?? '';
+      chunks.add(base64Decode(b64));
+    }
+    return joinDocumentChunks(chunks);
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    final snap = await _col.doc(id).get();
+    final count = intFrom(snap.data()?['chunkCount']);
+    for (var i = 0; i < count; i++) {
+      await _col.doc(id).collection('chunks').doc('$i').delete();
+    }
+    await _col.doc(id).delete();
+  }
+}
+
+class FirestoreTemplateRepository implements TemplateRepository {
+  FirestoreTemplateRepository(this._db);
+  final FirebaseFirestore _db;
+
+  CollectionReference<Map<String, dynamic>> get _col =>
+      _db.collection('templates');
+
+  @override
+  Stream<List<DocumentTemplate>> watchAll() {
+    return _col.snapshots().map(
+      (snap) => snap.docs
+          .map((doc) => DocumentTemplate.fromMap(doc.id, doc.data()))
+          .toList(),
+    );
+  }
+
+  @override
+  Future<DocumentTemplate?> getById(String id) async {
+    final snap = await _col.doc(id).get();
+    if (!snap.exists) {
+      return null;
+    }
+    return DocumentTemplate.fromMap(snap.id, _data(snap));
+  }
+
+  @override
+  Future<void> save(DocumentTemplate template) {
+    return _col.doc(template.id).set(template.toMap());
+  }
+
+  @override
+  Future<void> ensureDefaults({
+    required AssetBytesLoader loader,
+    required String uid,
+    DateTime? now,
+  }) async {
+    final at = now ?? DateTime.now();
+    for (final spec in defaultTemplates) {
+      final existing = await getById(spec.id);
+      if (existing != null) {
+        continue;
+      }
+      final bytes = await loader.load(spec.assetPath);
+      await save(
+        DocumentTemplate(
+          id: spec.id,
+          nome: spec.nome,
+          descrizione: spec.descrizione,
+          fileName: spec.fileName,
+          mime: 'application/pdf',
+          pdfB64: base64Encode(bytes),
+          versione: 1,
+          aggiornatoIl: at,
+          aggiornatoDa: uid,
+        ),
+      );
+    }
   }
 }
 

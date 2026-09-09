@@ -214,6 +214,31 @@ Dog syncDogWithAdoption({
   return dog;
 }
 
+Adoption recordModuloInviato({
+  required Adoption adoption,
+  required String moduloId,
+  required DateTime now,
+  required String autoreId,
+}) {
+  return adoption.withWorkflow(
+    stato: adoption.stato,
+    storicoStati: appendAdoptionStorico(
+      adoption.storicoStati,
+      AdoptionStatoVoce.moduloInviato(
+        moduloId: moduloId,
+        data: now,
+        autoreId: autoreId,
+      ),
+    ),
+    audit: Audit(
+      createdAt: adoption.audit.createdAt,
+      createdBy: adoption.audit.createdBy,
+      updatedAt: now,
+      updatedBy: autoreId,
+    ),
+  );
+}
+
 String normalizeAdopterEmail(String value) => value.trim().toLowerCase();
 
 String normalizeAdopterPhone(String value) =>

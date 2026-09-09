@@ -8,10 +8,11 @@ import '../../data/data_providers.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/app_document.dart';
 import '../../data/models/dog.dart';
-import '../../data/models/enums.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
+import '../affido/affido_copy.dart';
+import '../affido/affido_providers.dart';
 import '../auth/auth_providers.dart';
 import '../dashboard/home_aggregators.dart';
 import '../dogs/dog_labels.dart';
@@ -58,6 +59,8 @@ class AdoptionDetailPage extends ConsumerStatefulWidget {
   static const esperienzaKey = Key('richiesta-q-esperienza');
   static const dormeKey = Key('richiesta-q-dorme');
   static const noteKey = Key('richiesta-q-note');
+  static const bannerKey = Key('richiesta-modulo-inviato');
+  static const inviaModuloKey = Key('richiesta-invia-modulo');
 
   @override
   ConsumerState<AdoptionDetailPage> createState() =>
@@ -214,6 +217,19 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
     }
   }
 
+  String? _inviatoBanner(Adoption adoption, WidgetRef ref) {
+    final voce = latestModuloInviato(adoption);
+    if (voce == null) {
+      return null;
+    }
+    final nome = ref.watch(currentVolunteerProvider)?.nome ?? '';
+    return moduloInviatoEtichetta(
+      moduloId: voce.moduloId ?? 'preaffido',
+      data: voce.data,
+      volontarioNome: nome,
+    );
+  }
+
   Future<void> _editQuestionario(Adoption adoption) async {
     await AppSheet.present<void>(
       context: context,
@@ -343,6 +359,24 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
               const SizedBox(height: AppDim.gapM),
               _QuestionarioCard(questionario: adoption.questionario),
               const SizedBox(height: AppDim.gapL),
+              if (_inviatoBanner(adoption, ref) != null) ...[
+                AppCard(
+                  key: AdoptionDetailPage.bannerKey,
+                  color: AppColor.greenTint,
+                  child: Text(
+                    _inviatoBanner(adoption, ref)!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: AppText.label,
+                      color: AppColor.ink,
+                      height: AppDim.lineH,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppDim.gapL),
+              ],
               const SectionTitle(
                 title: 'Documenti',
                 icon: IconBadge(AppIcons.documenti, size: IconBadge.inTitle),
@@ -596,42 +630,58 @@ class _DocumentiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppDocument? identita;
-    AppDocument? preaffido;
-    for (final doc in documents) {
-      if (doc.adoptionId == adoption.id &&
-          doc.tipo == DocumentTipo.anagrafe) {
-        identita = doc;
-      }
-      if (doc.tipo == DocumentTipo.preaffido &&
-          (doc.adoptionId == adoption.id || doc.dogId == adoption.dogId)) {
-        preaffido = doc;
-      }
-    }
+    final received = documents
+        .where(
+          (doc) =>
+              doc.adoptionId == adoption.id ||
+              doc.dogId == adoption.dogId ||
+              (adoption.adopterId.isNotEmpty &&
+                  doc.adopterId == adoption.adopterId),
+        )
+        .toList()
+      ..sort((a, b) => b.caricatoIl.compareTo(a.caricatoIl));
     return AppCard(
       child: Column(
         children: [
           OptionRow(
-            icon: const IconBadge(AppIcons.anagrafe, size: IconBadge.inMenu),
-            title: 'Documento d\'identità',
-            subtitle: identita == null
-                ? 'Non caricato'
-                : documentTipoLabel(identita.tipo),
-            onTap: () => AppToast.show(
-              context,
-              identita == null
-                  ? 'Caricamento documenti: step successivo.'
-                  : identita.nome,
+            key: AdoptionDetailPage.inviaModuloKey,
+            icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
+            title: 'Invia modulo',
+            subtitle: 'Preaffido o adozione in bianco',
+            onTap: () => context.push(
+              AppRoutes.affidoPer(
+                adoptionId: adoption.id,
+                dogId: adoption.dogId,
+              ),
             ),
           ),
-          OptionRow(
-            icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
-            title: 'Modulo di preaffido',
-            subtitle: preaffido == null
-                ? 'Non ancora generato'
-                : documentTipoLabel(preaffido.tipo),
-            onTap: () => context.push(AppRoutes.affido),
-          ),
+          if (received.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: AppDim.gapS),
+              child: EmptyState(
+                icon: IconBadge(AppIcons.allegato),
+                message: 'Nessun documento ricevuto.',
+                compact: true,
+              ),
+            )
+          else
+            for (final doc in received)
+              OptionRow(
+                icon: IconBadge(
+                  AppIcons.perDocumento(doc.tipo.wire),
+                  size: IconBadge.inMenu,
+                ),
+                title: doc.nome.isEmpty
+                    ? documentTipoLabel(doc.tipo)
+                    : doc.nome,
+                subtitle: documentTipoLabel(doc.tipo),
+                onTap: () => context.push(
+                  AppRoutes.affidoPer(
+                    adoptionId: adoption.id,
+                    dogId: adoption.dogId,
+                  ),
+                ),
+              ),
         ],
       ),
     );
