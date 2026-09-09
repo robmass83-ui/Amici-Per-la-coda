@@ -106,14 +106,22 @@ jobs:
               echo "APK sopra 30 MB: $SIZE"
               exit 1
             fi
-            CERT=$(keytool -printcert -jarfile "$APK" 2>/dev/null \
+            RAW=$(keytool -printcert -jarfile "$APK")
+            echo "$RAW"
+            CERT=$(printf '%s\n' "$RAW" \
               | tr 'A-F' 'a-f' \
+              | tr -c '0-9a-f:\n' ' ' \
               | grep -oE '[0-9a-f]{2}(:[0-9a-f]{2}){31}' \
               | tr -d ':' \
-              | head -1)
+              | tail -1 || true)
             echo "cert $CERT"
+            if [ -z "$CERT" ]; then
+              echo "Non riesco a leggere la firma dell'APK."
+              exit 1
+            fi
             if [ "$CERT" != "$EXPECTED" ]; then
               echo "Firma $CERT diversa da quella dei telefoni $EXPECTED"
+              echo "Aggiorna il secret ANDROID_DEBUG_KEYSTORE_BASE64 con il debug.keystore di questo PC."
               exit 1
             fi
             COUNT=$((COUNT + 1))
