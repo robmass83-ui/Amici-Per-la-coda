@@ -406,9 +406,24 @@ Calcoli derivati per la tab Spese: contributo mensile totale = somma degli
 ÷ spese totali del cane, limitata a 100%. Se non ci sono sostenitori attivi il
 riquadro mostra lo stato vuoto «Attiva un'adozione a distanza».
 
+### `adopters/{id}`
+```
+nome, cognome, telefono, email, citta, indirizzo: string
+docTipo, docNumero: string
+dataNascita: Timestamp | null
+note: string
+adozioniIds: string[]
+affidabilita: 'ok'|'da_verificare'|'non_idoneo'
+```
+Archivio delle famiglie. Alla registrazione di una richiesta, se telefono o
+email coincidono con un adottante esistente l'app lo propone invece di
+crearne uno nuovo. `adoptions.adopterId` punta qui; `adoptions.richiedente`
+resta lo snapshot al momento della richiesta (liste e schede senza lookup).
+
 ### `adoptions/{id}`
 ```
 dogId: string
+adopterId: string
 richiedente: {nome, cognome, telefono, email, citta, indirizzo, docTipo, docNumero, eta}
 questionario: {abitazione, giardinoRecintato, altezzaRecinzione, altriAnimali, bambini,
                oreDaSolo, esperienzaCani, doveDormira, note}

@@ -76,6 +76,8 @@ abstract final class AppIcons {
   static const comportamento = AppIconSpec(Icons.psychology_rounded,      AppColor.redSoft,     _red);
   static const alimentazione = AppIconSpec(Icons.restaurant_rounded,      AppColor.blueSoft,    _blue);
   static const attenzione    = AppIconSpec(Icons.warning_amber_rounded,   AppColor.orangeSoft,  _orange);
+  static const questionario  = AppIconSpec(Icons.assignment_rounded,    AppColor.purpleSoft,  _purple);
+  static const respingi     = AppIconSpec(Icons.close_rounded,            AppColor.redSoft,     _red);
 
   // ---------- foto ----------
   static const galleria      = AppIconSpec(Icons.photo_library_rounded,   AppColor.blueSoft,    _blue);

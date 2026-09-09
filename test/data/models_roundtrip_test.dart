@@ -1,4 +1,5 @@
 import 'package:amici_per_la_coda/core/firestore_codec.dart';
+import 'package:amici_per_la_coda/data/models/adopter.dart';
 import 'package:amici_per_la_coda/data/models/adoption.dart';
 import 'package:amici_per_la_coda/data/models/app_document.dart';
 import 'package:amici_per_la_coda/data/models/appointment.dart';
@@ -181,6 +182,7 @@ void main() {
     final again = Adoption.fromMap(empty.id, empty.toMap());
     expect(again.preaffidoDal, isNull);
     expect(again.richiedente.nome, 'Marta');
+    expect(again.adopterId, '');
     expect(again.questionario.giardinoRecintato, isTrue);
 
     final withDates = Adoption.fromMap(empty.id, {
@@ -189,6 +191,37 @@ void main() {
       'preaffidoAl': dateTimeTo(at.add(const Duration(days: 30))),
     });
     expect(withDates.preaffidoDal!.toUtc(), at);
+  });
+
+  test('Adopter round-trip con dataNascita null e valorizzata', () {
+    final empty = Adopter(
+      id: 'adp1',
+      nome: 'Marta',
+      cognome: 'Rossi',
+      telefono: '320',
+      email: 'm@a.it',
+      citta: 'Sassari',
+      indirizzo: 'Via 1',
+      docTipo: 'CI',
+      docNumero: 'X',
+      dataNascita: null,
+      note: '',
+      adozioniIds: const ['a1'],
+      affidabilita: Affidabilita.ok,
+      audit: audit,
+    );
+    final again = Adopter.fromMap(empty.id, empty.toMap());
+    expect(again.dataNascita, isNull);
+    expect(again.nomeCompleto, 'Marta Rossi');
+    expect(again.adozioniIds, ['a1']);
+
+    final withDate = Adopter.fromMap(empty.id, {
+      ...empty.toMap(),
+      'dataNascita': dateTimeTo(at),
+      'affidabilita': 'non_idoneo',
+    });
+    expect(withDate.dataNascita!.toUtc(), at);
+    expect(withDate.affidabilita, Affidabilita.nonIdoneo);
   });
 
   test('AppDocument, Note, Appointment, Volunteer, Box, Settings', () {

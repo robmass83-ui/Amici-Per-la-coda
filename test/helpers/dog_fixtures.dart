@@ -1,4 +1,5 @@
 import 'package:amici_per_la_coda/core/firestore_codec.dart';
+import 'package:amici_per_la_coda/data/models/adopter.dart';
 import 'package:amici_per_la_coda/data/models/adoption.dart';
 import 'package:amici_per_la_coda/data/models/appointment.dart';
 import 'package:amici_per_la_coda/data/models/dog.dart';
@@ -260,20 +261,23 @@ Questionario testQuestionario() {
 Adoption testAdoption({
   String id = 'ad1',
   String dogId = 'fido',
+  String adopterId = '',
   AdoptionStato stato = AdoptionStato.ricevuta,
   DateTime? dataRichiesta,
   DateTime? preaffidoDal,
   DateTime? preaffidoAl,
   String referenteId = 'uid-1',
   Richiedente? richiedente,
+  Questionario? questionario,
   List<AdoptionStatoVoce>? storicoStati,
 }) {
   final at = dataRichiesta ?? DateTime.utc(2026, 8, 1);
   return Adoption(
     id: id,
     dogId: dogId,
+    adopterId: adopterId,
     richiedente: richiedente ?? testRichiedente(),
-    questionario: testQuestionario(),
+    questionario: questionario ?? testQuestionario(),
     stato: stato,
     storicoStati:
         storicoStati ??
@@ -290,6 +294,32 @@ Adoption testAdoption({
     referenteId: referenteId,
     dataRichiesta: at,
     audit: Audit.seed(at, by: 'test'),
+  );
+}
+
+Adopter testAdopter({
+  String id = 'adp1',
+  String nome = 'Luca',
+  String cognome = 'Verdi',
+  String telefono = '3331234567',
+  String email = 'luca@example.it',
+  List<String> adozioniIds = const [],
+}) {
+  return Adopter(
+    id: id,
+    nome: nome,
+    cognome: cognome,
+    telefono: telefono,
+    email: email,
+    citta: 'Potenza',
+    indirizzo: 'Via Roma 1',
+    docTipo: 'CI',
+    docNumero: 'AB123',
+    dataNascita: null,
+    note: '',
+    adozioniIds: adozioniIds,
+    affidabilita: Affidabilita.ok,
+    audit: Audit.seed(DateTime.utc(2026, 8, 1), by: 'test'),
   );
 }
 

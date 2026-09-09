@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/data_providers.dart';
+import '../../data/models/adopter.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/app_document.dart';
 import '../../data/models/dog.dart';
@@ -114,6 +115,14 @@ final volunteersStreamProvider = StreamProvider<List<Volunteer>>((ref) {
   final repo = ref.watch(volunteerRepositoryProvider);
   if (repo == null) {
     return Stream.value(const <Volunteer>[]);
+  }
+  return repo.watchAll();
+});
+
+final adoptersStreamProvider = StreamProvider<List<Adopter>>((ref) {
+  final repo = ref.watch(adopterRepositoryProvider);
+  if (repo == null) {
+    return Stream.value(const <Adopter>[]);
   }
   return repo.watchAll();
 });

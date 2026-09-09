@@ -133,7 +133,7 @@ class HomePage extends ConsumerWidget {
             data: (summary) {
               if (summary.databaseVuoto) {
                 return _EmptyDatabase(
-                  onAdd: () => context.go(AppRoutes.nuovo),
+                  onAdd: () => context.push(AppRoutes.nuovo),
                 );
               }
               return _HomeDashboard(
@@ -372,7 +372,7 @@ class _HomeDashboard extends ConsumerWidget {
           key: HomePage.richiesteLinkKey,
           title: 'Richieste di adozione',
           icon: const IconBadge(AppIcons.richieste, size: IconBadge.inTitle),
-          onSeeAll: () => context.go(AppRoutes.richieste),
+          onSeeAll: () => context.push(AppRoutes.richieste),
           seeAllLabel: '${summary.richiesteNuove} nuove ›',
         ),
         const SizedBox(height: AppDim.gapM),
@@ -421,28 +421,28 @@ class _HomeDashboard extends ConsumerWidget {
                   icon: AppIcons.carattere,
                   title: 'Nuovo cane',
                   subtitle: 'Crea profilo completo',
-                  onTap: () => context.go(AppRoutes.nuovo),
+                  onTap: () => context.push(AppRoutes.nuovo),
                 ),
                 _ShortcutCard(
                   key: HomePage.shortcutAffidoKey,
                   icon: AppIcons.modulo,
                   title: 'Modulo affido',
                   subtitle: 'Genera e firma',
-                  onTap: () => context.go(AppRoutes.affido),
+                  onTap: () => context.push(AppRoutes.affido),
                 ),
                 _ShortcutCard(
                   key: HomePage.shortcutBoxKey,
                   icon: AppIcons.box,
                   title: 'Box e settori',
                   subtitle: '${summary.boxLiberi} box liberi',
-                  onTap: () => context.go(AppRoutes.box),
+                  onTap: () => context.push(AppRoutes.box),
                 ),
                 _ShortcutCard(
                   key: HomePage.shortcutStatsKey,
                   icon: AppIcons.statistiche,
                   title: 'Statistiche',
                   subtitle: 'Report annuale',
-                  onTap: () => context.go(AppRoutes.statistiche),
+                  onTap: () => context.push(AppRoutes.statistiche),
                 ),
               ],
             );
@@ -618,7 +618,7 @@ class _ArrivoCard extends ConsumerWidget {
     final eta = dogAgeShortLabel(dog, now) ?? '—';
     return AppCard(
       padding: const EdgeInsets.all(AppDim.arriviPad),
-      onTap: () => context.go(AppRoutes.dog(dog.id)),
+      onTap: () => context.push(AppRoutes.dog(dog.id)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -728,70 +728,73 @@ class _RichiestaRow extends StatelessWidget {
         break;
       }
     }
-    return Row(
-      children: [
-        SizedBox(
-          width: AppDim.homeAvatar,
-          height: AppDim.homeAvatar,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Color(avatarColorValue(hex)),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                inizialiDi(who),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: AppText.body,
-                  fontWeight: FontWeight.w800,
-                  color: AppColor.card,
-                  height: AppDim.lineH,
+    return InkWell(
+      onTap: () => context.push(AppRoutes.richiesta(adoption.id)),
+      child: Row(
+        children: [
+          SizedBox(
+            width: AppDim.homeAvatar,
+            height: AppDim.homeAvatar,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(avatarColorValue(hex)),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  inizialiDi(who),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: AppText.body,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.card,
+                    height: AppDim.lineH,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: AppDim.gapM),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                cane.isEmpty ? who : '$who → $cane',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: AppText.body,
-                  fontWeight: FontWeight.w700,
-                  color: AppColor.ink,
-                  height: AppDim.lineH,
+          const SizedBox(width: AppDim.gapM),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  cane.isEmpty ? who : '$who → $cane',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: AppText.body,
+                    fontWeight: FontWeight.w700,
+                    color: AppColor.ink,
+                    height: AppDim.lineH,
+                  ),
                 ),
-              ),
-              Text(
-                richiestaStatoDescrittivo(adoption, now),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: AppText.label,
-                  color: AppColor.muted,
-                  height: AppDim.lineH,
+                Text(
+                  richiestaStatoDescrittivo(adoption, now),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: AppText.label,
+                    color: AppColor.muted,
+                    height: AppDim.lineH,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        MiniBadge(
-          label: adoptionStatoLabel(adoption.stato),
-          variant: adoption.stato == AdoptionStato.ricevuta
-              ? MiniBadgeVariant.orange
-              : MiniBadgeVariant.purple,
-        ),
-      ],
+          MiniBadge(
+            label: adoptionStatoLabel(adoption.stato),
+            variant: adoption.stato == AdoptionStato.ricevuta
+                ? MiniBadgeVariant.orange
+                : MiniBadgeVariant.purple,
+          ),
+        ],
+      ),
     );
   }
 }

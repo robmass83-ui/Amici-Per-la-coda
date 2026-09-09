@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/firestore_codec.dart';
 import '../firestore/firestore_repositories.dart';
+import '../models/adopter.dart';
 import '../models/adoption.dart';
 import '../models/association_settings.dart';
 import '../models/dog.dart';
@@ -51,6 +52,7 @@ Future<SeedReport> runSeed(FirebaseFirestore db) async {
   final volunteers = FirestoreVolunteerRepository(db);
   final boxes = FirestoreBoxRepository(db);
   final adoptions = FirestoreAdoptionRepository(db);
+  final adopters = FirestoreAdopterRepository(db);
   final settings = FirestoreSettingsRepository(db);
 
   final volunteerList = _seedVolunteers(audit);
@@ -59,6 +61,7 @@ Future<SeedReport> runSeed(FirebaseFirestore db) async {
   final dogList = [...realDogs, ...demoDogs];
   final boxList = _seedBoxes(audit);
   final adoptionList = _seedAdoptions(audit);
+  final adopterList = _seedAdopters(adoptionList, audit);
 
   for (final item in volunteerList) {
     await volunteers.save(item);
@@ -71,6 +74,9 @@ Future<SeedReport> runSeed(FirebaseFirestore db) async {
   }
   for (final item in adoptionList) {
     await adoptions.save(item);
+  }
+  for (final item in adopterList) {
+    await adopters.save(item);
   }
   await settings.saveAssociation(
     AssociationSettings(
@@ -100,6 +106,7 @@ Future<SeedCleanupReport> deleteSeedData(FirebaseFirestore db) async {
     db.collection('adoptions'),
     seedIdPrefix,
   );
+  await _deletePrefixed(db.collection('adopters'), seedIdPrefix);
   final volunteers = await _deletePrefixed(
     db.collection('volunteers'),
     seedIdPrefix,
@@ -444,6 +451,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
   Adoption item({
     required String id,
     required String dogId,
+    required String adopterId,
     required String nome,
     required String cognome,
     required String citta,
@@ -457,6 +465,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     return Adoption(
       id: '$seedIdPrefix$id',
       dogId: '$seedIdPrefix$dogId',
+      adopterId: '$seedIdPrefix$adopterId',
       richiedente: Richiedente(
         nome: nome,
         cognome: cognome,
@@ -500,6 +509,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     item(
       id: 'ad_marta_luna',
       dogId: 'luna',
+      adopterId: 'adp_marta',
       nome: 'Marta',
       cognome: 'Rossi',
       citta: 'Sassari (SS)',
@@ -510,6 +520,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     item(
       id: 'ad_ferrari_otto',
       dogId: 'otto',
+      adopterId: 'adp_ferrari',
       nome: 'Giulia',
       cognome: 'Ferrari',
       citta: 'Potenza (PZ)',
@@ -522,6 +533,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     item(
       id: 'ad_luca_brando',
       dogId: 'brando',
+      adopterId: 'adp_luca',
       nome: 'Luca',
       cognome: 'Cossu',
       citta: 'Cagliari (CA)',
@@ -532,6 +544,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     item(
       id: 'ad_anna_nina',
       dogId: 'nina',
+      adopterId: 'adp_anna',
       nome: 'Anna',
       cognome: 'Pili',
       citta: 'Oristano (OR)',
@@ -542,6 +555,7 @@ List<Adoption> _seedAdoptions(Audit audit) {
     item(
       id: 'ad_sara_zeus',
       dogId: 'zeus',
+      adopterId: 'adp_sara',
       nome: 'Sara',
       cognome: 'Deiana',
       citta: 'Nuoro (NU)',
@@ -550,5 +564,29 @@ List<Adoption> _seedAdoptions(Audit audit) {
       dataRichiesta: DateTime.utc(2026, 7, 30),
       giardino: false,
     ),
+  ];
+}
+
+List<Adopter> _seedAdopters(List<Adoption> adoptions, Audit audit) {
+  return [
+    for (final adoption in adoptions)
+      Adopter(
+        id: adoption.adopterId,
+        nome: adoption.richiedente.nome,
+        cognome: adoption.richiedente.cognome,
+        telefono: adoption.richiedente.telefono,
+        email: adoption.richiedente.email,
+        citta: adoption.richiedente.citta,
+        indirizzo: adoption.richiedente.indirizzo,
+        docTipo: adoption.richiedente.docTipo,
+        docNumero: adoption.richiedente.docNumero,
+        dataNascita: null,
+        note: '',
+        adozioniIds: [adoption.id],
+        affidabilita: adoption.stato == AdoptionStato.respinta
+            ? Affidabilita.nonIdoneo
+            : Affidabilita.ok,
+        audit: audit,
+      ),
   ];
 }

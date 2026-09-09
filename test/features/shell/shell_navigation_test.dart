@@ -1,6 +1,8 @@
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/features/calendar/calendar_placeholder_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
+import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
+import 'package:amici_per_la_coda/features/dogs/dog_detail_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dogs_page.dart';
 import 'package:amici_per_la_coda/features/settings/altro_page.dart';
 import 'package:amici_per_la_coda/ui/components.dart';
@@ -162,4 +164,90 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  Future<bool> tapSystemBack(WidgetTester tester) async {
+    final handled = await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    return handled;
+  }
+
+  testWidgets('il tasto indietro di sistema torna alla tab precedente', (
+    tester,
+  ) async {
+    await pumpLoggedIn(tester);
+
+    await tester.tap(find.text('Animali'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DogsPage), findsOneWidget);
+
+    await tester.tap(find.text('Calendario'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CalendarPlaceholderPage), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isTrue);
+    expect(find.byType(DogsPage), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isTrue);
+    expect(find.byType(HomePage), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isFalse);
+    expect(find.byType(HomePage), findsOneWidget);
+  });
+
+  testWidgets('il tasto indietro di sistema chiude la scheda cane', (
+    tester,
+  ) async {
+    await pumpLoggedIn(
+      tester,
+      dogs: InMemoryDogRepository(testListDogs()),
+    );
+
+    await tester.tap(find.text('Animali'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('[PROVA] Fenice'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DogDetailPage), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isTrue);
+    expect(find.byType(DogsPage), findsOneWidget);
+    expect(find.byType(DogDetailPage), findsNothing);
+  });
+
+  testWidgets('il tasto indietro di sistema chiude una scorciatoia', (
+    tester,
+  ) async {
+    await pumpLoggedIn(
+      tester,
+      dogs: InMemoryDogRepository(testListDogs()),
+    );
+
+    await tester.tap(find.byTooltip('Nuovo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cosa vuoi creare?'), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isTrue);
+    expect(find.text('Cosa vuoi creare?'), findsNothing);
+    expect(find.byType(HomePage), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byKey(HomePage.shortcutAffidoKey),
+      120,
+      scrollable: find.descendant(
+        of: find.byKey(HomePage.listKey),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.physics is! NeverScrollableScrollPhysics,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(HomePage.shortcutAffidoKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlaceholderFeaturePage), findsOneWidget);
+
+    expect(await tapSystemBack(tester), isTrue);
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byType(PlaceholderFeaturePage), findsNothing);
+  });
 }

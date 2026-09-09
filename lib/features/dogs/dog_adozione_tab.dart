@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format_it.dart';
 import '../../data/data_providers.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/dog.dart';
 import '../../data/models/photo.dart';
+import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'dog_labels.dart';
@@ -71,9 +73,8 @@ class DogAdozioneTab extends ConsumerWidget {
               const SizedBox(height: AppDim.gapM),
               AppButton(
                 label: 'Registra nuova richiesta',
-                onPressed: () => AppToast.show(
-                  context,
-                  'Richiesta di adozione: disponibile negli step successivi.',
+                onPressed: () => context.push(
+                  AppRoutes.nuovaRichiestaPer(dog.id),
                 ),
               ),
             ],
@@ -213,40 +214,43 @@ class _RequestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name =
         '${adoption.richiedente.nome} ${adoption.richiedente.cognome}'.trim();
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            name.isEmpty ? '—' : name,
+    return InkWell(
+      onTap: () => context.push(AppRoutes.richiesta(adoption.id)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name.isEmpty ? '—' : name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: AppText.value,
+                fontWeight: FontWeight.w600,
+                color: AppColor.ink,
+                height: AppDim.lineH,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDim.gapS),
+          MiniBadge(
+            label: adoptionStatoLabel(adoption.stato),
+            variant: MiniBadgeVariant.purple,
+          ),
+          const SizedBox(width: AppDim.gapS),
+          Text(
+            formatItalianDate(adoption.dataRichiesta),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Roboto',
-              fontSize: AppText.value,
-              fontWeight: FontWeight.w600,
-              color: AppColor.ink,
+              fontSize: AppText.caption,
+              color: AppColor.muted,
               height: AppDim.lineH,
             ),
           ),
-        ),
-        const SizedBox(width: AppDim.gapS),
-        MiniBadge(
-          label: adoptionStatoLabel(adoption.stato),
-          variant: MiniBadgeVariant.purple,
-        ),
-        const SizedBox(width: AppDim.gapS),
-        Text(
-          formatItalianDate(adoption.dataRichiesta),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: AppText.caption,
-            color: AppColor.muted,
-            height: AppDim.lineH,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

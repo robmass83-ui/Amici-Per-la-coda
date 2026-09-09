@@ -74,6 +74,13 @@ void main() {
       adoptions.firstWhere((item) => item.id == 'seed_ad_marta_luna').dogId,
       'seed_luna',
     );
+    expect(
+      adoptions.firstWhere((item) => item.id == 'seed_ad_marta_luna').adopterId,
+      'seed_adp_marta',
+    );
+
+    final adopters = await FirestoreAdopterRepository(db).watchAll().first;
+    expect(adopters, hasLength(5));
 
     final settings = await FirestoreSettingsRepository(db).getAssociation();
     expect(settings?.denominazione, 'Amici per la Coda ODV');

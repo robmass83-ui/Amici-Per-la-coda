@@ -1,7 +1,7 @@
 name: amici_per_la_coda
 description: Gestionale interno del rifugio cani Amici per la Coda ODV.
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.13.2

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../models/adopter.dart';
 import '../models/adoption.dart';
 import '../models/app_document.dart';
 import '../models/appointment.dart';
@@ -52,6 +53,12 @@ abstract interface class SponsorshipRepository {
 abstract interface class ExpenseRepository {
   Stream<List<Expense>> watchByDog(String? dogId);
   Future<void> save(Expense expense);
+}
+
+abstract interface class AdopterRepository {
+  Stream<List<Adopter>> watchAll();
+  Future<Adopter?> getById(String id);
+  Future<void> save(Adopter adopter);
 }
 
 abstract interface class AdoptionRepository {

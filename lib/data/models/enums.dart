@@ -262,3 +262,18 @@ enum VolunteerRuolo {
   static VolunteerRuolo parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, VolunteerRuolo.volontario);
 }
+
+enum Affidabilita {
+  ok,
+  daVerificare,
+  nonIdoneo;
+
+  String get wire => switch (this) {
+    ok => 'ok',
+    daVerificare => 'da_verificare',
+    nonIdoneo => 'non_idoneo',
+  };
+
+  static Affidabilita parse(String? raw) =>
+      enumByWire(values, (v) => v.wire, raw, Affidabilita.daVerificare);
+}

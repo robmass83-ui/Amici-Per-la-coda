@@ -52,6 +52,8 @@ class Richiedente {
       'eta': eta,
     };
   }
+
+  String get nomeCompleto => '$nome $cognome'.trim();
 }
 
 class Questionario {
@@ -143,6 +145,7 @@ class Adoption {
   const Adoption({
     required this.id,
     required this.dogId,
+    this.adopterId = '',
     required this.richiedente,
     required this.questionario,
     required this.stato,
@@ -156,6 +159,7 @@ class Adoption {
 
   final String id;
   final String dogId;
+  final String adopterId;
   final Richiedente richiedente;
   final Questionario questionario;
   final AdoptionStato stato;
@@ -176,6 +180,7 @@ class Adoption {
     return Adoption(
       id: id,
       dogId: map['dogId'] as String? ?? '',
+      adopterId: map['adopterId'] as String? ?? '',
       richiedente: Richiedente.fromMap(
         map['richiedente'] is Map
             ? Map<String, dynamic>.from(map['richiedente'] as Map)
@@ -199,6 +204,7 @@ class Adoption {
   Map<String, dynamic> toMap() {
     return {
       'dogId': dogId,
+      'adopterId': adopterId,
       'richiedente': richiedente.toMap(),
       'questionario': questionario.toMap(),
       'stato': stato.wire,
@@ -209,5 +215,45 @@ class Adoption {
       'dataRichiesta': dateTimeTo(dataRichiesta),
       ...audit.toMap(),
     };
+  }
+
+  Adoption withQuestionario(Questionario questionario, {Audit? audit}) {
+    return Adoption(
+      id: id,
+      dogId: dogId,
+      adopterId: adopterId,
+      richiedente: richiedente,
+      questionario: questionario,
+      stato: stato,
+      storicoStati: storicoStati,
+      preaffidoDal: preaffidoDal,
+      preaffidoAl: preaffidoAl,
+      referenteId: referenteId,
+      dataRichiesta: dataRichiesta,
+      audit: audit ?? this.audit,
+    );
+  }
+
+  Adoption withWorkflow({
+    required AdoptionStato stato,
+    required List<AdoptionStatoVoce> storicoStati,
+    DateTime? preaffidoDal,
+    DateTime? preaffidoAl,
+    Audit? audit,
+  }) {
+    return Adoption(
+      id: id,
+      dogId: dogId,
+      adopterId: adopterId,
+      richiedente: richiedente,
+      questionario: questionario,
+      stato: stato,
+      storicoStati: storicoStati,
+      preaffidoDal: preaffidoDal ?? this.preaffidoDal,
+      preaffidoAl: preaffidoAl ?? this.preaffidoAl,
+      referenteId: referenteId,
+      dataRichiesta: dataRichiesta,
+      audit: audit ?? this.audit,
+    );
   }
 }

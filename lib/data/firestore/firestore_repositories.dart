@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/firestore_codec.dart';
+import '../models/adopter.dart';
 import '../models/adoption.dart';
 import '../models/app_document.dart';
 import '../models/appointment.dart';
@@ -294,6 +295,33 @@ class FirestoreExpenseRepository implements ExpenseRepository {
   @override
   Future<void> save(Expense expense) {
     return _db.collection('expenses').doc(expense.id).set(expense.toMap());
+  }
+}
+
+class FirestoreAdopterRepository implements AdopterRepository {
+  FirestoreAdopterRepository(this._db);
+  final FirebaseFirestore _db;
+
+  @override
+  Stream<List<Adopter>> watchAll() {
+    return _db.collection('adopters').snapshots().map(
+      (snap) =>
+          snap.docs.map((doc) => Adopter.fromMap(doc.id, doc.data())).toList(),
+    );
+  }
+
+  @override
+  Future<Adopter?> getById(String id) async {
+    final snap = await _db.collection('adopters').doc(id).get();
+    if (!snap.exists) {
+      return null;
+    }
+    return Adopter.fromMap(snap.id, _data(snap));
+  }
+
+  @override
+  Future<void> save(Adopter adopter) {
+    return _db.collection('adopters').doc(adopter.id).set(adopter.toMap());
   }
 }
 

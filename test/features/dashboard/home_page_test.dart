@@ -171,9 +171,6 @@ void main() {
     expect(find.textContaining('Nuovo cane'), findsWidgets);
     await tester.tap(find.byTooltip('Indietro'));
     await tester.pumpAndSettle();
-    expect(find.byType(DogsPage), findsOneWidget);
-    await tester.tap(find.text('Home'));
-    await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
 
     await tapShortcut(HomePage.shortcutAffidoKey, 'Modulo affido');

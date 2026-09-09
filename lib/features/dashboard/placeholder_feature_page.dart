@@ -14,7 +14,13 @@ class PlaceholderFeaturePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: title,
-      onBack: () => context.go(AppRoutes.home),
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.home);
+        }
+      },
       body: Center(
         child: EmptyState(
           icon: const IconBadge(AppIcons.altro),

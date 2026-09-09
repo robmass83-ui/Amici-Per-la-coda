@@ -44,6 +44,7 @@ Future<void> pumpApp(
   SponsorshipRepository? sponsorships,
   AppointmentRepository? appointments,
   BoxRepository? boxes,
+  AdopterRepository? adopters,
   PhotoPicker? picker,
   DogDraftStore? drafts,
   MicrochipScanner? scanner,
@@ -89,6 +90,8 @@ Future<void> pumpApp(
           appointmentRepositoryProvider.overrideWith((ref) => appointments),
         if (boxes != null)
           boxRepositoryProvider.overrideWith((ref) => boxes),
+        if (adopters != null)
+          adopterRepositoryProvider.overrideWith((ref) => adopters),
         if (picker != null)
           photoPickerProvider.overrideWith((ref) => picker),
         if (drafts != null)

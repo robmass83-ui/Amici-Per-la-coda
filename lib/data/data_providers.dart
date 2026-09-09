@@ -27,6 +27,11 @@ final boxRepositoryProvider = Provider<BoxRepository?>((ref) {
   return db == null ? null : FirestoreBoxRepository(db);
 });
 
+final adopterRepositoryProvider = Provider<AdopterRepository?>((ref) {
+  final db = ref.watch(firestoreProvider);
+  return db == null ? null : FirestoreAdopterRepository(db);
+});
+
 final adoptionRepositoryProvider = Provider<AdoptionRepository?>((ref) {
   final db = ref.watch(firestoreProvider);
   return db == null ? null : FirestoreAdoptionRepository(db);

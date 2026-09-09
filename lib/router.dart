@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/app_navigation.dart';
+import 'features/adoptions/adoption_detail_page.dart';
+import 'features/adoptions/adoptions_page.dart';
+import 'features/adoptions/new_adoption_page.dart';
 import 'features/auth/auth_providers.dart';
 import 'features/auth/login_page.dart';
 import 'features/calendar/calendar_placeholder_page.dart';
@@ -31,20 +35,29 @@ abstract final class AppRoutes {
   static const box = '/box';
   static const statistiche = '/statistiche';
   static const richieste = '/richieste';
+  static const nuovaRichiesta = '/richieste/nuova';
 
   static String dog(String id) => '$animali/$id';
   static String dogFoto(String id) => '$animali/$id/foto';
   static String dogStato(String id) => '$animali/$id/stato';
+  static String richiesta(String id) => '$richieste/$id';
+  static String nuovaRichiestaPer(String dogId) =>
+      '$nuovaRichiesta?dogId=${Uri.encodeQueryComponent(dogId)}';
 }
 
 final initialLocationProvider = Provider<String>((ref) => AppRoutes.home);
 
+final appNavigationHistoryProvider = Provider<AppNavigationHistory>((ref) {
+  return AppNavigationHistory();
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authRepositoryProvider);
   final refresh = GoRouterRefreshStream(auth.watchUser());
+  final history = ref.read(appNavigationHistoryProvider);
   ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: ref.watch(initialLocationProvider),
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -88,8 +101,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.richieste,
-        builder: (context, state) =>
-            const PlaceholderFeaturePage(title: 'Richieste di adozione'),
+        builder: (context, state) => const AdoptionsPage(),
+        routes: [
+          GoRoute(
+            path: 'nuova',
+            builder: (context, state) => NewAdoptionPage(
+              dogId: state.uri.queryParameters['dogId'],
+            ),
+          ),
+          GoRoute(
+            path: ':adoptionId',
+            builder: (context, state) {
+              final id = state.pathParameters['adoptionId']!;
+              return AdoptionDetailPage(adoptionId: id);
+            },
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -159,6 +186,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  void syncHistory() {
+    final matches = router.routerDelegate.currentConfiguration;
+    if (matches.isEmpty) {
+      return;
+    }
+    history.record(canonicalUri(matches.uri));
+  }
+
+  router.routerDelegate.addListener(syncHistory);
+  syncHistory();
+  ref.onDispose(() => router.routerDelegate.removeListener(syncHistory));
+  return router;
 });
 
 class GoRouterRefreshStream extends ChangeNotifier {
