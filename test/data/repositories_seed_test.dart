@@ -86,6 +86,46 @@ void main() {
     expect(settings?.denominazione, 'Amici per la Coda ODV');
   });
 
+  test('il seed cancella gli appuntamenti con tipo non più previsto', () async {
+    final db = FakeFirebaseFirestore();
+    final at = DateTime.utc(2026, 9, 8, 8);
+    await db.collection('appointments').doc('obsoleto1').set({
+      'tipo': 'obsoleto',
+      'titolo': 'Da cancellare',
+      'dogId': null,
+      'adoptionId': null,
+      'inizio': at,
+      'fine': null,
+      'tuttoIlGiorno': false,
+      'luogo': '',
+      'stato': 'previsto',
+      'createdAt': at,
+      'createdBy': 'seed',
+      'updatedAt': at,
+      'updatedBy': 'seed',
+    });
+    await db.collection('appointments').doc('visita1').set({
+      'tipo': 'visita',
+      'titolo': 'Controllo Nina',
+      'dogId': 'nina',
+      'adoptionId': null,
+      'inizio': at,
+      'fine': null,
+      'tuttoIlGiorno': false,
+      'luogo': 'Rifugio',
+      'stato': 'previsto',
+      'createdAt': at,
+      'createdBy': 'seed',
+      'updatedAt': at,
+      'updatedBy': 'seed',
+    });
+
+    await runSeed(db);
+
+    final leftover = await db.collection('appointments').get();
+    expect(leftover.docs.map((doc) => doc.id), ['visita1']);
+  });
+
   test('Rimuovi dati di prova cancella solo i documenti seed_*', () async {
     final db = FakeFirebaseFirestore();
     await runSeed(db);

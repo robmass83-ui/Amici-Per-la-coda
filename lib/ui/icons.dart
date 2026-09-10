@@ -92,8 +92,6 @@ abstract final class AppIcons {
   static const isolamento    = AppIconSpec(Icons.coronavirus_rounded,     AppColor.redSoft,     _red);
   static const manutenzione  = AppIconSpec(Icons.build_rounded,           AppColor.neutralSoft, _grey);
   static const volontari     = AppIconSpec(Icons.groups_rounded,          AppColor.purpleSoft,  _purple);
-  static const turnoMattina  = AppIconSpec(Icons.wb_twilight_rounded,     AppColor.orangeSoft,  _orange);
-  static const turnoSera     = AppIconSpec(Icons.nights_stay_rounded,     AppColor.purpleSoft,  _purple);
   static const passeggiata   = AppIconSpec(Icons.directions_walk_rounded, AppColor.greenSoft,   _green);
   static const trasferimento = AppIconSpec(Icons.local_shipping_rounded,  AppColor.neutralSoft, _grey);
 
@@ -177,7 +175,6 @@ abstract final class AppIcons {
   static AppIconSpec perAppuntamento(String tipo) => switch (tipo) {
     'visita' => visita,
     'colloquio' => richieste,
-    'turno' => volontari,
     'verifica_preaffido' => preaffido,
     'scadenza' => scadenza,
     _ => altro,

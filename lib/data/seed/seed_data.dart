@@ -42,9 +42,18 @@ class SeedCleanupReport {
   final int volunteers;
 }
 
+const _tipiAppuntamentoConsentiti = {
+  'visita',
+  'colloquio',
+  'verifica_preaffido',
+  'scadenza',
+  'altro',
+};
+
 /// Anagrafe vera da `cani.csv` + 6 cani / 3 volontari / 5 richieste di prova.
 Future<SeedReport> runSeed(FirebaseFirestore db) async {
   await _deleteLegacyDemoDocs(db);
+  await _deleteObsoleteAppointments(db);
 
   final at = DateTime.utc(2024, 6, 25, 10);
   final audit = Audit.seed(at);
@@ -124,6 +133,16 @@ Future<void> _deleteLegacyDemoDocs(FirebaseFirestore db) async {
   }
   for (final id in legacyDemoAdoptionIds) {
     await db.collection('adoptions').doc(id).delete();
+  }
+}
+
+Future<void> _deleteObsoleteAppointments(FirebaseFirestore db) async {
+  final snap = await db.collection('appointments').get();
+  for (final doc in snap.docs) {
+    final tipo = doc.data()['tipo'];
+    if (tipo is! String || !_tipiAppuntamentoConsentiti.contains(tipo)) {
+      await doc.reference.delete();
+    }
   }
 }
 

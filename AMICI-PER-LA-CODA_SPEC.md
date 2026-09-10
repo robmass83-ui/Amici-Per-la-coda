@@ -5,7 +5,7 @@ L'agente deve leggerlo per intero prima di scrivere una riga di codice e rilegge
 pertinente all'inizio di ogni step.
 
 - **Versione:** 1.0
-- **Integrazione obbligatoria:** `SPEC-integrazione-step.md` (Step 9-bis, Step 17-bis; la Parte 3 sullo Step 14 è assorbita in questo documento)
+- **Integrazione obbligatoria:** `SPEC-integrazione-step.md` (Step 9-bis e Step 17-bis)
 - **Riferimento visivo obbligatorio:** `design/reference.html` (prototipo HTML di 29 schermate, aprirlo nel browser)
 - **Committente:** associazione *Amici per la Coda ODV* — rifugio cani
 - **Utenti reali:** 3-4 volontari. Non è un'app pubblica, non va su nessuno store.
@@ -19,9 +19,13 @@ Gestionale per un rifugio cani. Sostituisce quaderni e fogli Excel. Le funzioni 
 1. **Anagrafe dei cani presenti in rifugio** (creazione profilo completo, foto, microchip, box)
 2. **Stato del cane** (in rifugio, stallo, preaffido, adottato, in cura, restituito, deceduto)
 3. **Salute** (vaccini, sterilizzazione, terapie, scadenze automatiche)
-4. **Adozioni e documenti di affido** (richieste, iter, invio moduli PDF, caricamento firmati)
+4. **Adozioni e documenti di affido** (richieste, iter, moduli PDF, firma)
 5. **Spese** per cane e bilancio
-6. Contorno: calendario, box/settori, volontari e turni, note, statistiche
+6. Contorno: calendario, box/settori, note, statistiche
+
+> **Decisione del 10/09/2026:** la gestione dei **turni dei volontari non fa parte dell'app**.
+> L'elenco dei volontari vive in Impostazioni → Utenti (blocco 14-ter.8 dell'integrazione).
+> La schermata 21 «Volontari e turni» e ogni riferimento ai turni sono superati.
 
 Tutto deve funzionare con **connessione lenta o assente** (il rifugio ha campo scarso) e
 sincronizzarsi appena torna la rete.
@@ -42,8 +46,8 @@ sincronizzarsi appena torna la rete.
 | Stato | `flutter_riverpod` | |
 | Routing | `go_router` | |
 | Offline | persistenza Firestore attiva + cache locale | |
-| PDF | `pdf` + `printing` | report annuale e «Esporta scheda PDF» |
-| File | `file_picker` + `open_filex` | scegliere e aprire i moduli |
+| PDF | `pdf` + `printing` | moduli di affido |
+| Firma | `signature` | firma con il dito |
 | Immagini | `image_picker` + `flutter_image_compress` | |
 | Test | `flutter_test`, `mocktail`, `fake_cloud_firestore` | |
 
@@ -68,8 +72,7 @@ dependencies:
   intl: ^0.19.0
   pdf: ^3.11.0
   printing: ^5.13.0
-  file_picker: ^8.0.0
-  open_filex: ^4.5.0
+  signature: ^5.5.0
   flutter_local_notifications: ^17.0.0
   csv: ^6.0.0
   share_plus: ^10.0.0
@@ -339,7 +342,6 @@ noteCarattere: string
 fotoCopertinaId: string | null
 referenteId: string | null     // volunteers/{id}
 pubblicato: bool
-dataPubblicazione: Timestamp | null
 archiviato: bool
 storicoStati: [{stato, dal, note, autoreId}]   // max 30 voci, poi si taglia
 ```
@@ -372,17 +374,6 @@ prossimaScadenza: Timestamp | null
 costo: number | null       // se valorizzato genera anche una expense
 ```
 
-### `weights/{id}`
-```
-dogId: string
-data: Timestamp
-kg: number
-autoreId: string
-note: string               // "pesato in ambulatorio", "stima"
-```
-`dogs.pesoKg` resta come copia dell'ultimo peso registrato, aggiornata a ogni nuova
-pesata. Il grafico della tab Salute legge questa collezione ordinata per data.
-
 ### `expenses/{id}`
 ```
 dogId: string | null       // null = spesa generale del rifugio
@@ -392,90 +383,30 @@ data: Timestamp
 descrizione, fornitore: string
 ```
 
-### `sponsorships/{id}`
-```
-dogId: string
-sostenitore: {nome, cognome, email, telefono}
-importoMensile: number
-attiva: bool
-dal: Timestamp
-al: Timestamp | null
-note: string
-```
-Calcoli derivati per la tab Spese: contributo mensile totale = somma degli
-`importoMensile` delle attive; copertura = contributo totale × mesi di permanenza
-÷ spese totali del cane, limitata a 100%. Se non ci sono sostenitori attivi il
-riquadro mostra lo stato vuoto «Attiva un'adozione a distanza».
-
-### `adopters/{id}`
-```
-nome, cognome, telefono, email, citta, indirizzo: string
-docTipo, docNumero: string
-dataNascita: Timestamp | null
-note: string
-adozioniIds: string[]
-affidabilita: 'ok'|'da_verificare'|'non_idoneo'
-```
-Archivio delle famiglie. Alla registrazione di una richiesta, se telefono o
-email coincidono con un adottante esistente l'app lo propone invece di
-crearne uno nuovo. `adoptions.adopterId` punta qui; `adoptions.richiedente`
-resta lo snapshot al momento della richiesta (liste e schede senza lookup).
-
 ### `adoptions/{id}`
 ```
 dogId: string
-adopterId: string
 richiedente: {nome, cognome, telefono, email, citta, indirizzo, docTipo, docNumero, eta}
 questionario: {abitazione, giardinoRecintato, altezzaRecinzione, altriAnimali, bambini,
                oreDaSolo, esperienzaCani, doveDormira, note}
 stato: 'ricevuta'|'colloquio'|'visita'|'preaffido'|'adottato'|'respinta'|'ritirata'
-storicoStati: [{stato, data, note, autoreId, moduloId?}]
-          // stato può essere una tappa dell'iter oppure 'modulo_inviato'
+storicoStati: [{stato, data, note, autoreId}]
 preaffidoDal, preaffidoAl: Timestamp | null
 referenteId: string
 dataRichiesta: Timestamp
 ```
 
-### `templates/{id}` — due soli documenti: `preaffido` e `adozione`
-Moduli in bianco. **Non** restano compilati dentro l'APK: gli asset
-`assets/moduli/modulo-preaffido.pdf` e `assets/moduli/modulo-adozione.pdf`
-servono solo come contenuto iniziale al primo avvio (versione 1). Poi si
-sostituiscono dalle Impostazioni senza reinstallare.
-```
-nome: string
-descrizione: string
-fileName: string
-mime: 'application/pdf'
-pdfB64: string          // il PDF in bianco, < 700 KB
-versione: int
-aggiornatoIl: Timestamp
-aggiornatoDa: string
-```
-In Impostazioni, sezione «Moduli»: nome, versione, data, azione «Sostituisci
-file» riservata al presidente.
-
 ### `documents/{id}`
-Un solo file, mai due copie: stesso documento sulla tab Documenti del cane e
-sulla scheda dell'adottante perché ha sia `dogId` sia `adopterId`.
-I PDF firmati superano spesso 1 MB: si spezzano in blocchi da 600 KB in
-`documents/{id}/chunks/{n}` (`chunkCount` nel padre). Limite 10 MB.
 ```
-tipo: 'preaffido_firmato'|'adozione_firmato'|'documento_identita'|'altro'
-      | 'libretto'|'anagrafe'|'verbale'|'preaffido'|'adozione'|'microchip'
-adoptionId: string
-dogId: string
-adopterId: string
+dogId | adoptionId: string | null
+tipo: 'libretto'|'anagrafe'|'verbale'|'preaffido'|'adozione'|'microchip'|'altro'
 nome: string
 mime: string
-chunkCount: int           // 0 se il contenuto sta tutto nel padre
-contenutoB64: string|null // usato solo quando sta in un documento solo
-caricatoIl: Timestamp
-caricatoDa: string
+pdfB64: string | null      // solo per i PDF generati dall'app (< 700 KB)
+firmaAffidatarioB64: string | null
+firmaReferenteB64: string | null
+createdAt, createdBy
 ```
-L'app **non genera** i moduli e **non raccoglie firme**. Flusso: invio del
-PDF in bianco col foglio di condivisione → l'adottante compila fuori
-dall'app → la volontaria carica il file firmato. Al caricamento del
-preaffido firmato l'app **propone** di avanzare la richiesta a `preaffido`.
 
 ### `notes/{id}`
 ```
@@ -487,15 +418,14 @@ createdAt
 
 ### `appointments/{id}`
 ```
-tipo: 'visita'|'colloquio'|'turno'|'verifica_preaffido'|'scadenza'|'altro'
+tipo: 'visita'|'colloquio'|'verifica_preaffido'|'scadenza'|'altro'   // 'turno' rimosso il 10/09/2026
 titolo: string
 dogId | adoptionId: string | null
 inizio: Timestamp
 fine: Timestamp | null
 tuttoIlGiorno: bool
 luogo: string
-volontariIds: string[]
-stato: 'previsto'|'fatto'|'annullato'
+stato: 'previsto'|'fatto'|'annullato'          // volontariIds rimosso il 10/09/2026
 ```
 
 ### `volunteers/{uid}` — l'id è l'UID di Firebase Auth
@@ -539,27 +469,9 @@ service cloud.firestore {
     }
     match /notes/{id}   { allow read: if attivo(); allow create: if attivo();
                           allow update, delete: if puoScrivere(); }
-    match /appointments/{id} {
-      allow read: if attivo();
-      allow create, delete: if puoScrivere();
-      allow update: if puoScrivere() || (
-        attivo()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['volontariIds'])
-        && request.resource.data.volontariIds.toSet()
-             .difference(resource.data.volontariIds.toSet())
-             .hasOnly([request.auth.uid])
-      );
-    }
     match /settings/{id}{ allow read: if attivo(); allow write: if attivo() && ruolo()=='presidente'; }
-    match /templates/{id} {
-      allow read: if attivo();
-      allow create: if puoScrivere();
-      allow update, delete: if attivo() && ruolo() == 'presidente';
-    }
     match /{col}/{id}   { allow read: if attivo(); allow write: if puoScrivere(); }
     match /{path=**}/full/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
-    match /{path=**}/chunks/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
   }
 }
 ```
@@ -569,9 +481,7 @@ service cloud.firestore {
 - `dogs`: `archiviato ASC, adottabile ASC, nome ASC`
 - `health`: `dogId ASC, data DESC`
 - `health`: `prossimaScadenza ASC` (per le scadenze)
-- `weights`: `dogId ASC, data ASC`
 - `expenses`: `dogId ASC, data DESC`
-- `sponsorships`: `dogId ASC, attiva ASC`
 - `adoptions`: `stato ASC, dataRichiesta DESC`
 - `photos`: `dogId ASC, createdAt DESC`
 - `appointments`: `inizio ASC`
@@ -618,7 +528,7 @@ Elenco completo, tutte presenti in `design/reference.html` — apri il file e re
 | 5 | Tab Salute | prossime scadenze, libretto sanitario in timeline, grafico peso, "aggiungi trattamento" |
 | 6 | Tab Adozione | banner adottabile, iter a 5 tappe, stato pubblicazione, condividi scheda |
 | 7 | Tab Spese | totale, ripartizione con barre, elenco movimenti, adozione a distanza |
-| 8 | Tab Documenti | documenti del cane, moduli da inviare, carica documento firmato |
+| 8 | Tab Documenti | documenti del cane, modulistica da generare, carica documento |
 | 9 | Tab Note | note colorate per tipo con autore e data, aggiungi nota |
 | 10 | Tab Altro | galleria, cambia stato, box, referente, storico completo, esporta PDF, archivia |
 | 11 | Galleria foto | foto grande, griglia miniature, upload, imposta copertina, video (fuori v1: nascondi) |
@@ -628,15 +538,15 @@ Elenco completo, tutte presenti in `design/reference.html` — apri il file e re
 | 15 | Nuovo cane 3/3 | sanitario, test, adozione, referente, riepilogo |
 | 16 | Richieste di adozione | filtri per stato, card con avatar iniziali, badge |
 | 17 | Iter richiesta | anagrafica richiedente, cane, avanzamento, questionario, documenti, azioni |
-| 18 | Documenti di affido | moduli da inviare (Invia) e documenti ricevuti (Apri, Condividi, Elimina) |
+| 18 | Documenti di affido | scelta modulo, dati precompilati, firme, genera PDF, invia |
 | 19 | Calendario | mese, eventi del giorno, prossimi giorni, nuovo appuntamento |
 | 20 | Box e settori | contatori posti, griglia box per settore, infermeria, sposta cane |
-| 21 | Volontari e turni | elenco volontari, turni settimanali, turni scoperti |
+| 21 | ~~Volontari e turni~~ | **RIMOSSA (10/09/2026)** — l'elenco volontari è in Impostazioni → Utenti; i turni non esistono |
 | 22 | Statistiche | 4 contatori, adozioni per mese, composizione, bilancio, esporta report |
 | 23 | Ricerca globale | risultati per cani/documenti, ricerche recenti, ricerca per microchip |
 | 24 | Notifiche | raggruppate per giorno, bordo colorato per gravità |
 | 25 | Menu Altro | profilo, gestione, archivio, app, esci |
-| 26 | Impostazioni | dati associazione, moduli (versione e sostituisci file), notifiche, aspetto e dati, permessi |
+| 26 | Impostazioni | dati associazione, notifiche con switch, aspetto e dati, permessi |
 | 27 | Bottom sheet "+" | nuovo cane / richiesta / trattamento / spesa / appuntamento / foto |
 | 28 | Bottom sheet filtri | stato, taglia, sesso ed età, sanitario, compatibilità, ordinamento |
 | 29 | Bottom sheet azioni (⋮) | modifica, foto, stato, modulo affido, PDF, link, duplica, archivia |
@@ -808,37 +718,14 @@ il questionario si salva integralmente.
 
 ---
 
-### Step 14 — Documenti di affido (invio e caricamento)
-L'app **non genera** i moduli e **non raccoglie firme**. I due PDF in bianco
-(preaffido e adozione) stanno in Firestore `templates` (seed da
-`assets/moduli/` al primo avvio). Dalla richiesta e dalla tab Documenti:
-«Invia modulo» apre il foglio di condivisione (`share_plus`) con il PDF
-allegato e un testo già pronto. L'invio si registra nello `storicoStati`
-come voce `modulo_inviato`. La volontaria carica il file compilato e firmato
-(PDF o foto); le immagini si comprimono a 1600 px / qualità 70; i PDF oltre
-la soglia del documento si salvano a blocchi da 600 KB. Un file oltre 10 MB
-viene rifiutato con un messaggio chiaro. Dipendenze: si toglie `signature`;
-restano `pdf` e `printing`; si aggiungono `file_picker` e `open_filex`.
+### Step 14 — Documenti di affido e PDF
+Generazione dei 3 moduli (preaffido, contratto di adozione, passaggio microchip) precompilati
+con dati cane + adottante + associazione, firma con il dito, PDF salvato in `documents`,
+condivisione via `share_plus`.
 
-**TEST 14:**
-1. Al primo avvio, senza documenti in `templates`, l'app li crea dai PDF in
-   `assets/moduli/` e le due voci compaiono in Impostazioni con versione 1.
-2. Sostituendo un modulo dalle impostazioni, la versione passa a 2 e la
-   condivisione manda il file nuovo.
-3. «Invia modulo» apre il foglio di condivisione con il PDF allegato e il testo
-   precompilato contenente il nome dell'adottante e quello del cane.
-4. Dopo l'invio, la richiesta mostra «Modulo preaffido inviato il \<data\> da
-   \<nome\>» e la voce compare nello storico.
-5. Caricando un PDF da 4 MB il documento viene salvato in 7 blocchi e riletto
-   identico (confronto byte a byte del base64 ricomposto).
-6. Caricando una foto da 6 MB, viene compressa sotto i 300 KB e salvata in un
-   documento solo.
-7. Un file da 12 MB viene rifiutato con un messaggio chiaro, non con un errore
-   tecnico.
-8. Lo stesso documento compare sia nella tab Documenti del cane sia nella
-   scheda dell'adottante, ed è **un solo** documento in Firestore.
-9. Funziona senza rete: il caricamento va in coda e si sincronizza al ritorno
-   del segnale.
+**TEST 14:** il PDF generato contiene nome del cane, microchip, nome dell'adottante e le due
+firme (test che verifica il testo estratto) · il PDF pesa < 700 KB · il documento compare nella
+tab Documenti del cane · funziona senza rete e si sincronizza dopo.
 
 ---
 
@@ -852,12 +739,18 @@ resta di 6 righe fisse senza saltare · nessun overflow della griglia a 320 dp �
 
 ---
 
-### Step 16 — Box, settori, volontari e turni
-Griglia box con occupazione, spostamento di un cane fra box con controllo di capienza,
-elenco volontari, turni settimanali con evidenza dei turni scoperti.
+### Step 16 — Box e settori
+*(era «Box, settori, volontari e turni»: la parte volontari/turni è stata rimossa il 10/09/2026;
+l'elenco volontari è in Impostazioni → Utenti, blocco 14-ter.8.)*
+
+Griglia box con occupazione per settore, tipo di box (normale, degenza, isolamento,
+quarantena — punto 7 della Parte 2), spostamento di un cane fra box con controllo di capienza,
+creazione e modifica dei box e dei settori dall'app, box in manutenzione.
 
 **TEST 16:** spostando Fenice dal box B7 al B8 entrambi i box si aggiornano · non si può superare
-la capienza (messaggio chiaro) · il contatore posti liberi è coerente.
+la capienza (messaggio chiaro) · il contatore posti liberi è coerente · i box di degenza e
+isolamento non entrano nei posti disponibili della home · creando un box dall'app compare
+subito nel selettore del wizard e della modifica cane.
 
 ---
 

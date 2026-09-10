@@ -365,7 +365,6 @@ Appointment testAppointment({
     fine: null,
     tuttoIlGiorno: false,
     luogo: '',
-    volontariIds: const [],
     stato: stato,
     audit: Audit.seed(at, by: 'test'),
   );

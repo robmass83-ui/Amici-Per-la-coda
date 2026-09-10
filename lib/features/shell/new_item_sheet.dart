@@ -43,7 +43,7 @@ Future<void> showNewItemSheet(BuildContext hostContext) {
       OptionRow(
         icon: const IconBadge(AppIcons.data, size: IconBadge.inMenu),
         title: 'Appuntamento',
-        subtitle: 'Visita, colloquio, turno',
+        subtitle: 'Visita, colloquio, scadenza',
         onTap: () => _soon(hostContext, 'Appuntamento'),
       ),
       OptionRow(

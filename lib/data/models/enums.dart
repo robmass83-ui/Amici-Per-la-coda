@@ -240,7 +240,6 @@ enum NoteTipo {
 enum AppointmentTipo {
   visita,
   colloquio,
-  turno,
   verificaPreaffido,
   scadenza,
   altro;
@@ -248,7 +247,6 @@ enum AppointmentTipo {
   String get wire => switch (this) {
     visita => 'visita',
     colloquio => 'colloquio',
-    turno => 'turno',
     verificaPreaffido => 'verifica_preaffido',
     scadenza => 'scadenza',
     altro => 'altro',

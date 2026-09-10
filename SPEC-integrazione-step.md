@@ -188,7 +188,8 @@ Le quattro schermate di contorno rimaste scoperte. Da fare dopo lo Step 17.
 Card profilo in alto (avatar iniziale, nome, ruolo, → impostazioni), poi tre gruppi di
 `OptionRow` con intestazione 10sp maiuscoletto `AppColor.muted`:
 
-- **Gestione**: Anagrafe cani · Richieste e adozioni · Box e settori · Volontari e turni · Calendario
+- **Gestione**: Anagrafe cani · Richieste e adozioni · Box e settori · Calendario
+  *(«Volontari e turni» rimossa il 10/09/2026: l'elenco volontari è in Impostazioni → Utenti)*
 - **Archivio**: Documenti e modulistica · Famiglie adottanti · Veterinari e fornitori · Cani archiviati
 - **App**: Statistiche e report · Notifiche · Impostazioni · Esci (in `AppColor.red`)
 
@@ -326,7 +327,15 @@ delle attive; copertura = contributo totale × mesi di permanenza ÷ spese total
 limitata a 100%. Se non ci sono sostenitori il riquadro mostra uno stato vuoto con
 «Attiva un'adozione a distanza», non un riquadro con degli zeri.
 
-### 3. Il volontario deve poter iscriversi a un turno (Step 16 e 18)
+### 3. ~~Il volontario deve poter iscriversi a un turno~~ — SUPERATO il 10/09/2026
+
+> **I turni non fanno più parte dell'app, e nemmeno i volontari sugli appuntamenti.**
+> Il campo `appointments.volontariIds` va **rimosso** dal modello, dal foglio di creazione e
+> dalle regole Firestore (la regola speciale su `volontariIds` e il suo test si cancellano).
+> Un appuntamento è: tipo, titolo, cane o richiesta, data, luogo, stato. Chi ci va non è
+> affar dell'app. Il testo sotto resta solo per riferimento storico.
+
+#### (testo originale, superato)
 
 Le regole di sicurezza della sezione 5 danno scrittura solo a `presidente` e `referente`.
 Ma il riferimento ha il pulsante «Iscriviti a un turno» nella schermata Volontari, che un
@@ -489,9 +498,8 @@ esegui SOLO i tre punti urgenti, quelli marcati in rosso:
    repository, e collega il riquadro della tab Spese ai dati veri, con lo stato
    vuoto quando non ci sono sostenitori. Niente numeri finti.
 
-3. Regole di sicurezza: aggiungi la regola che permette a un volontario attivo
-   di aggiungere o togliere solo il proprio uid da appointments.volontariIds,
-   senza poter modificare altri campi. Copia la regola dal documento.
+3. ~~Regole di sicurezza su appointments.volontariIds~~ — SUPERATO il 10/09/2026:
+   il campo e la regola vanno rimossi, non aggiunti.
 
 Aggiorna anche la sezione 5 di AMICI-PER-LA-CODA_SPEC.md con le due collezioni
 nuove e la regola, così la specifica resta la fonte unica.
@@ -738,3 +746,363 @@ Le azioni non permesse **non si disegnano**, non si disabilitano.
    forzando la scrittura, le regole Firestore la rifiutano.
 9. La schermata di modifica non va in overflow a 320/360/411/430 dp.
 10. `updatedBy` e `updatedAt` vengono scritti a ogni salvataggio e mostrati in fondo.
+
+---
+
+# PARTE 5 — Step 14-ter: consolidamento
+
+**Origine:** rapporto sullo stato dell'app del 9 settembre 2026 (`RAPPORTO-STATO-APP.md`).
+**Quando:** subito dopo lo Step 14-bis, prima dello Step 15.
+**Natura:** nessuna funzione nuova. Solo cablaggio di ciò che esiste già, correzione di buchi
+di sicurezza e di integrità dei dati, rimozione dei segnaposto lasciati dagli step iniziali.
+
+Il rapporto ha mostrato un fenomeno preciso: le cose costruite ai primi step — FAB, header
+della scheda, tab Altro — sono rimaste ai toast «disponibile negli step successivi» anche
+dopo che le funzioni vere sono arrivate nelle tab. Questo step le ricollega.
+
+**Non fa parte di questo step** (ha il suo step, non anticiparlo): griglia mensile del
+calendario (15), schermate Box e Volontari (16), Statistiche ed export (17), menu Altro
+completo, notifiche, ricerca, famiglie adottanti, cani archiviati, `vendors` (17-bis),
+impostazioni associazione e test completi dei ruoli (18), notifiche di sistema (19).
+
+## 14-ter.1 · Sicurezza — da fare per primo
+
+1. `canWriteRecords(null)` deve restituire **false**, non true. Un utente senza documento
+   in `volunteers` non ha alcun diritto di scrittura, e l'app deve mostrargli un avviso
+   chiaro «Il tuo account non è ancora abilitato: chiedi al presidente» al posto della home.
+2. La galleria foto e la pagina cambio stato usano lo stesso gate delle altre schermate:
+   upload, elimina, imposta copertina e salva stato **non si disegnano** per chi non può
+   scrivere.
+3. Test: con `currentVolunteerProvider` nullo, nessun pulsante di scrittura è nell'albero
+   dei widget in scheda, galleria, cambio stato, tab Salute, Spese, Note, Documenti.
+
+## 14-ter.2 · Integrità dei dati
+
+1. **Archiviati fuori dall'elenco.** `filterDogs` esclude `archiviato == true` in tutti i
+   segmenti. Gli archiviati si vedranno solo nella schermata dedicata dello Step 17-bis.
+   Anche gli aggregatori della home devono già escluderli (verificare, il rapporto dice di sì
+   per `caniInRifugio`).
+2. **«Archivia» diventa vero.** Dalla tab Altro: conferma nominando il cane → `archiviato =
+   true`, voce in `storicoStati`, ritorno all'elenco. Aggiungi `ripristina` nel repository
+   (lo userà il 17-bis).
+3. **Stato `trasferito`.** Aggiungilo all'enum e alla pagina cambio stato, con il campo
+   «Struttura di destinazione» obbligatorio quando è selezionato; va in
+   `storicoStati.strutturaDestinazione`. Un trasferito è escluso dai conteggi come un
+   adottato. «Trasferisci» nella tab Altro apre la pagina cambio stato con quello stato
+   preselezionato.
+4. **«Carica documento» dalla scheda cane carica un file davvero.** Riusa esattamente il
+   picker, la compressione e il salvataggio a blocchi già scritti per `affido_page`. Non
+   esistono due modi di caricare un documento: uno solo, condiviso. Un documento senza
+   contenuto non deve poter essere creato.
+5. **Tap su un documento** nella tab Documenti apre il file (`open_filex`), come già avviene
+   in Affido. Le azioni Apri / Condividi / Rinomina / Elimina sono le stesse nei due posti.
+
+## 14-ter.3 · Cablaggio di ciò che esiste già
+
+| Dove | Adesso | Deve fare |
+|---|---|---|
+| FAB «+» → Richiesta | toast | apre `/richieste/nuova` |
+| FAB «+» → Trattamento | toast | apre un selettore del cane, poi `AddTreatmentSheet` |
+| FAB «+» → Spesa | toast | selettore del cane (con «Spesa generale» in cima), poi `AddExpenseSheet` |
+| FAB «+» → Appuntamento | toast | `AddAppointmentSheet` |
+| FAB «+» → Foto rapida | toast | selettore del cane, poi il foglio foto della galleria |
+| Header scheda → Condividi | toast | stessa azione di «Condividi scheda» della tab Adozione |
+| Header scheda → ⋮ | 1 voce | Modifica · Gestisci foto · Cambia stato · Invia modulo · Condividi · Archivia (rosso). Le altre due voci del 17-bis arrivano con il 17-bis. |
+| Tab Altro → Box e collocazione | toast | apre la modifica del cane posizionata sulla sezione Provenienza e ingresso (dove sta il box) |
+| Tab Altro → Volontario referente | toast | foglio con l'elenco dei volontari attivi, salva `referenteId` |
+| Tab Altro → Esporta PDF | toast | **resta disattivato ma non mente**: la voce non si disegna finché lo Step 17 non esiste |
+| Home → righe «Da fare oggi» | nessun tap | tap apre il cane, l'appuntamento o la richiesta a cui la voce si riferisce |
+| Home → card contatori | nessun tap | «Cani in rifugio» apre l'elenco filtrato; «Adozioni» apre le richieste con filtro Concluse |
+| Tab Salute → righe scadenze | nessun tap | tap apre il trattamento in modifica |
+| Dettaglio richiesta → Chiama | copia | `url_launcher` con `tel:`; la copia resta come pressione lunga |
+| Dettaglio richiesta → Email | copia | `mailto:` con oggetto precompilato «Adozione di <cane>» |
+| Elenco cani → Filtri e ordina | toast | il bottom sheet 28 della sezione 7: stato, taglia, sesso, età, sanitario, compatibilità, ordinamento. È già disegnato nel riferimento, mancava solo il collegamento |
+| Galleria → Usa per annuncio | toast | imposta la foto come copertina **e** apre «Condividi scheda». È tutto ciò che significava |
+| Login → Password dimenticata | toast | `sendPasswordResetEmail` di Firebase Auth, con conferma |
+| Login → Resta collegato | inerte | rimuovere la casella: Firebase Auth su Android mantiene già la sessione. Una casella che non fa nulla è peggio di nessuna casella |
+
+## 14-ter.4 · Segnaposto e dati di prova
+
+1. **Versione:** il testo nel login legge `package_info_plus`, non una stringa fissa.
+2. **`[PROVA]` in elenco:** `dog_list_tile` usa `dogDisplayName` come la scheda.
+3. **«Rimuovi dati di prova»:** voce in Impostazioni, solo presidente, chiede conferma
+   contando i documenti che sparirebbero, chiama `deleteSeedData`. Dopo l'esecuzione la voce
+   non si mostra più se non c'è nulla con prefisso `seed_`.
+4. **Banner offline:** o si collega davvero (`connectivity_plus`, oppure lo stato
+   `hasPendingWrites` / `isFromCache` degli snapshot Firestore) oppure **si toglie**. Un
+   indicatore che non può mai accendersi va rimosso, non lasciato. Consigliato: collegarlo,
+   è mezza giornata.
+5. **Iter di adozione nella tab Adozione:** le cinque tappe leggono lo stato reale della
+   richiesta aperta per quel cane — tappa raggiunta in verde, corrente evidenziata, future in
+   grigio. Se non c'è nessuna richiesta, si mostra l'iter tutto in grigio con la scritta
+   «Nessuna richiesta in corso».
+6. **Appuntamenti:** il foglio di creazione ha il campo «Cane» (opzionale) e «Richiesta»
+   (opzionale, filtrata per cane), così le voci del calendario sanno a cosa si riferiscono e
+   la home può aprirle.
+
+## 14-ter.5 · Test
+
+1. `canWriteRecords(null)` è false; con volontario nullo nessun pulsante di scrittura in
+   sette schermate (`findsNothing`).
+2. Un cane con `archiviato == true` non compare in nessun segmento dell'elenco.
+3. «Archivia» chiede conferma con il nome del cane; dopo, il cane sparisce dall'elenco e
+   compare nello storico la voce.
+4. Cambio stato a `trasferito` senza struttura di destinazione è bloccato.
+5. «Carica documento» dalla tab cane con un PDF da 3 MB produce un documento a blocchi
+   identico a quello prodotto da Affido con lo stesso file (stesso `chunkCount`, stesso hash).
+6. Non è possibile salvare un documento con `contenutoB64` nullo e `chunkCount` zero.
+7. Ognuna delle sei voci del FAB apre qualcosa che non è un toast (test per voce).
+8. Le voci del ⋮ della scheda sono sei e ognuna naviga o agisce.
+9. «Filtri e ordina» apre il foglio; applicando «Taglia grande» la lista cambia.
+10. Il login mostra la versione del `pubspec`, non una costante.
+11. Con il volontario `presidente`, «Rimuovi dati di prova» è visibile; con `volontario` no;
+    dopo l'esecuzione i documenti `seed_*` sono zero.
+12. Le tappe dell'iter riflettono lo stato della richiesta: con stato `preaffido` le prime
+    quattro sono verdi e la quinta grigia.
+13. Nessun toast «disponibile negli step successivi» resta nel codice, tranne quelli
+    esplicitamente ammessi (Esporta PDF fino allo Step 17, Box e Statistiche fino a 16/17):
+    test che fa grep sulla stringa e ammette solo i file elencati.
+14. Tutte le schermate toccate a 320/360/411/430 dp senza overflow; golden aggiornati solo
+    dopo approvazione visiva.
+
+## 14-ter.6 · Dipendenze da aggiungere
+
+`url_launcher`, `package_info_plus`, `connectivity_plus` (se si sceglie di collegare il
+banner). Nient'altro.
+
+## 14-ter.7 · Form compatti — modifica cane e wizard
+
+**Origine:** screenshot della schermata Modifica cane del 9 settembre. È un modulo disperso,
+non una pagina dell'app: i campi galleggiano sullo sfondo senza card, ogni campo occupa una
+riga intera anche per due caratteri, i selettori a due opzioni sono larghi 336 dp, e la barra di
+navigazione con il FAB resta visibile coprendo l'ultimo campo. Circa 1.650 dp di altezza.
+
+**Obiettivo:** ~980 dp, con l'aspetto delle altre schermate. Il riferimento visivo è
+`design/confronto-modifica-cane.html`. Le stesse regole valgono per il **wizard** dello Step 11,
+che ha lo stesso difetto: i tre passaggi usano gli stessi componenti di form.
+
+### Grammatica dei form — vale per tutti i form dell'app
+
+Aggiungi a `lib/ui/components/` quattro componenti e usali ovunque ci sia un form:
+
+| Componente | Misure |
+|---|---|
+| `FormCard` | AppCard con `SectionTitle` in testa (IconBadge 20 + titolo 12.5 sp w700), padding 10, gap fra card 9 |
+| `FormField` | etichetta 10 sp w600 maiuscoletto `AppColor.muted`, 3 dp sotto, campo alto **34** (non 40), radius 9, testo 12 sp |
+| `FormRow2` | due `FormField` affiancati con `Expanded`, gap 8. Accetta `flex` diverso (es. 1.6 / 1) |
+| `CompatRow` | riga alta 30: etichetta a sinistra larga 92 dp, `AppSegmented` a destra alta 28 |
+
+`AppSegmented` scende a **32 dp** (28 dentro `CompatRow`), testo 11 sp. Con più di tre opzioni
+in mezza larghezza le etichette diventano abbreviazioni con `FittedBox`: «P / M / G»,
+«♀ F / ♂ M», «Sì / No / ?». La forma estesa resta nel tooltip e nel valore salvato.
+
+I campi a più righe (`slogan`, `descrizione`, `noteCarattere`) partono da **una riga** (34 dp)
+e crescono digitando fino a 4. Non si presentano vuoti alti 64 o 80 dp.
+
+### Contratto — schermata Modifica cane
+
+```
+MODIFICA CANE   rotta a schermo intero (parentNavigatorKey: root)
+                → NESSUNA bottom nav, NESSUN FAB
+└ AppBar h=40: ← · "Modifica <nome>" 13sp w700 (nome senza prefisso [PROVA])
+               · "Salva" a destra: testo AppColor.faint se non ci sono modifiche,
+                 pillola verde piena 11sp w700 quando il form è dirty
+└ ListView padding=12, gap 9 fra le card
+   ├ FormCard "Anagrafica"  AppIcons.carattere
+   │   ├ FormField  NOME *
+   │   ├ FormRow2   SESSO (seg ♀F/♂M)        | DATA DI NASCITA (date picker)
+   │   ├ FormRow2   PRECISIONE (seg)         | TAGLIA (seg P/M/G)
+   │   └ FormRow2   RAZZA / TIPO             | MANTELLO
+   ├ FormCard "Identificazione"  AppIcons.microchip
+   │   └ FormRow2   MICROCHIP + icona scanner (flex 1.6) | ANAGRAFE (seg Sì/No/?)
+   ├ FormCard "Provenienza e ingresso"  AppIcons.provenienza
+   │   ├ FormField  LUOGO DI PROVENIENZA
+   │   ├ FormRow2   MODALITÀ (dropdown)      | INGRESSO * (date picker)
+   │   └ FormRow2   BOX (dropdown)           | REFERENTE (dropdown volontari)
+   ├ FormCard "Presentazione"  AppIcons.annuncio
+   │   ├ FormField  SLOGAN            (multilinea, 1→2 righe)
+   │   └ FormField  DESCRIZIONE       (multilinea, 1→4 righe)
+   ├ FormCard "Carattere e compatibilità"  AppIcons.carattere
+   │   ├ Wrap di AppChip h=26 (carattere) + chip "+"
+   │   ├ CompatRow  Con persone   | Socievole / Selettivo / Diffidente
+   │   ├ CompatRow  Con cani      | Sì / Solo ♀ / No / ?
+   │   ├ CompatRow  Con gatti     | Sì / ? / No
+   │   ├ CompatRow  Con bambini   | Sì / Grandi / No / ?
+   │   └ FormField  NOTE SUL CARATTERE (multilinea)
+   ├ FormCard "Adozione"  AppIcons.adottabile
+   │   └ FormRow2   ADOTTABILE (seg 3, flex 1.5) | PUBBLICATO (seg Sì/No)
+   └ Text "Ultima modifica: <nome>, <data>"  10sp muted centrato
+```
+
+Il referente si sposta da «Adozione» a «Provenienza e ingresso», accanto al box: sono
+entrambi dati di collocazione del cane nel rifugio, e così la card Adozione resta di una riga.
+
+### Cosa vale anche per il wizard
+
+I tre passaggi usano `FormCard`, `FormRow2`, `CompatRow` e le stesse altezze. Il passaggio 2
+(foto e carattere) e il 3 (sanitario e riepilogo) seguono lo stesso raggruppamento. Anche il
+wizard è a schermo intero senza bottom nav e senza FAB.
+
+### Test
+
+1. L'altezza totale del contenuto scorrevole di Modifica cane a 360 dp è sotto i 1.050 dp
+   (misura con `tester.getSize` sul `ListView` espanso, o sommando le card).
+2. In Modifica cane e nel wizard non esiste nessuna `AppBottomNav` né FAB nell'albero
+   (`findsNothing`).
+3. Nessun `AppSegmented` supera i 32 dp di altezza; nessun campo a riga singola supera i 34.
+4. Un campo multilinea vuoto è alto 34; con quattro righe di testo cresce fino a 4 righe.
+5. Overflow a 320/360/411/430 dp: nessuno, in particolare sulle `FormRow2` con etichette
+   lunghe e sulle `CompatRow` a quattro opzioni.
+6. Golden di Modifica cane a 360×640 dopo approvazione visiva.
+
+## 14-ter.8 · Gestione utenti dall'app e saluto personale
+
+**Richiesta del committente.** Oggi gli account si creano solo dalla console Firebase e la
+home saluta sempre «Giovanna». **Questa sezione sostituisce la schermata 21 «Volontari e
+turni», rimossa il 10/09/2026: i turni non fanno parte dell'app.** Da qui in poi il presidente crea i volontari **dall'app**, e la
+home saluta **chi ha fatto l'accesso**.
+
+### Due vincoli tecnici che decidono il progetto
+
+1. **Creare un utente dal client fa il login del nuovo utente.** `createUserWithEmailAndPassword`
+   di Firebase Auth, chiamata dall'app, sostituisce la sessione corrente con quella del nuovo
+   account: il presidente verrebbe buttato fuori mentre crea un volontario. La soluzione
+   standard, che funziona sul piano gratuito senza server, è creare l'utente su una **seconda
+   istanza Firebase temporanea**:
+
+   ```dart
+   final secondary = await Firebase.initializeApp(
+     name: 'creazione-utente',
+     options: DefaultFirebaseOptions.currentPlatform,
+   );
+   final auth = FirebaseAuth.instanceFor(app: secondary);
+   final cred = await auth.createUserWithEmailAndPassword(email: e, password: p);
+   final uid = cred.user!.uid;
+   await auth.signOut();
+   await secondary.delete();
+   ```
+
+   La sessione principale non viene toccata. Il documento `volunteers/{uid}` si scrive
+   subito dopo con la sessione principale (quella del presidente, che ha i permessi).
+
+2. **Un utente Auth non si può eliminare dal client.** Serve l'Admin SDK, cioè un server, cioè
+   il piano Blaze. Quindi non esiste «Elimina utente»: esiste **«Disattiva»**, che mette
+   `attivo = false`. Le regole Firestore controllano già `attivo`, l'utente disattivato non può
+   più leggere né scrivere nulla e al login vede «Account disattivato». Resta in elenco,
+   in grigio, e le sue note e modifiche restano attribuite a lui.
+
+### Modello — `volunteers/{uid}` esteso
+
+```
+nome: string
+cognome: string                      // nuovo
+email: string
+ruolo: 'presidente'|'referente'|'volontario'
+attivo: bool
+coloreAvatar: string
+mustChangePassword: bool             // nuovo: true alla creazione, false dopo il primo cambio
+createdAt, createdBy                 // nuovo
+ultimoAccesso: Timestamp | null      // nuovo: aggiornato al login
+```
+
+Le regole restano: solo `presidente` scrive su `volunteers`. Eccezione da aggiungere: ogni
+utente attivo può aggiornare **sul proprio documento** soltanto `mustChangePassword`,
+`ultimoAccesso` e `coloreAvatar` (stessa tecnica `affectedKeys().hasOnly([...])` usata per
+i turni).
+
+### Impostazioni → sezione «Utenti»
+
+Solo per il presidente. Per gli altri ruoli la sezione non si disegna.
+
+```
+IMPOSTAZIONI (schermata 26)
+├ FormCard "Associazione"    (arriva con lo Step 18, per ora non c'è)
+├ FormCard "Moduli"          (già esistente, resta com'è)
+└ FormCard "Utenti"          ← NUOVA
+    ├ per ogni volontario:  Row h=44
+    │    ├ Avatar 30 iniziali, colore coloreAvatar (grigio se disattivato)
+    │    ├ Expanded: "Nome Cognome" 12sp w700 · sotto "email · ruolo" 10sp muted
+    │    │           se disattivato: nome barrato, badge "Disattivato"
+    │    │           se mustChangePassword: badge "Password da cambiare"
+    │    └ chevron
+    │  ordinati: attivi prima, poi per nome
+    └ AppButton ghost "➕ Nuovo volontario"
+```
+
+**Nuovo volontario** — bottom sheet con `FormField`/`FormRow2` del blocco 14-ter.7:
+
+```
+NUOVO VOLONTARIO
+├ FormRow2   NOME *            | COGNOME *
+├ FormField  EMAIL *            (validazione formato; unicità verificata da Auth)
+├ FormField  PASSWORD INIZIALE *  (min 8, mostra/nascondi, pulsante "Genera"
+│                                  che produce 10 caratteri leggibili senza ambiguità)
+├ FormField  RUOLO              (seg Presidente / Referente / Volontario, default Volontario)
+├ testo 10sp muted: "Il volontario dovrà cambiare la password al primo accesso.
+│                    Comunicagli email e password a voce o di persona."
+└ AppButton "Crea account"
+```
+
+Al salvataggio: creazione su istanza secondaria → scrittura `volunteers/{uid}` con
+`mustChangePassword: true` → toast «Account creato per <Nome>». Errori Auth tradotti in
+italiano: email già in uso, email non valida, password debole, nessuna rete.
+
+**Dettaglio volontario** — tocco su una riga:
+
+```
+├ stessi campi in modifica: NOME, COGNOME, RUOLO (email in sola lettura)
+├ "Invia email di reset password"  → sendPasswordResetEmail; conferma con toast
+├ "Disattiva account" (rosso) / "Riattiva account"
+│    Disattiva chiede conferma nominando la persona. Il presidente non può
+│    disattivare sé stesso, né cambiare il proprio ruolo: le voci non si disegnano.
+└ "Ultimo accesso: <data>" 10sp muted in fondo
+```
+
+Deve esistere **sempre almeno un presidente attivo**: il salvataggio che porterebbe a zero
+viene rifiutato con messaggio chiaro.
+
+### Primo accesso con password da cambiare
+
+Dopo il login, se `mustChangePassword == true`, prima della home compare una schermata a
+schermo intero «Scegli la tua password»: nuova password ×2, min 8, `updatePassword`, poi
+`mustChangePassword = false`. Non si può saltare (nessun pulsante indietro).
+
+### Saluto nella home
+
+`"Ciao <nome> 👋"` legge `volunteers/{uid}.nome` dell'utente **autenticato**, dal
+`currentVolunteerProvider`. Ordine di ripiego: `nome` → parte prima della `@` dell'email
+con iniziale maiuscola → «Ciao 👋» senza nome. Mai un nome scritto a mano, mai il nome del
+seed. Il nome va **con l'iniziale maiuscola** anche se salvato in minuscolo.
+
+Stessa fonte per «Volontario referente», per l'autore delle note, per `createdBy` e
+`updatedBy` mostrati nelle schermate: ovunque compare un nome di volontario, viene da
+`volunteers`, non da stringhe locali.
+
+### Sicurezza — coerenza con 14-ter.1
+
+L'auto-registrazione non esiste nell'app. Se qualcuno crea un account Auth dall'esterno,
+non ha il documento `volunteers/{uid}` e vede la schermata «Il tuo account non è ancora
+abilitato», come previsto dal blocco 1. Il presidente può abilitarlo solo creando il
+documento — cioè tramite «Nuovo volontario», che crea anche l'account: non c'è una via
+per abilitare un account estraneo, ed è voluto.
+
+### Test
+
+1. Creando un volontario dalla sezione Utenti, l'utente **corrente** resta autenticato
+   (l'uid di `FirebaseAuth.instance.currentUser` è lo stesso prima e dopo).
+2. Dopo la creazione esiste `volunteers/{nuovoUid}` con `mustChangePassword: true`,
+   `attivo: true`, `createdBy` = uid del presidente.
+3. Email già in uso → messaggio italiano, nessun documento creato.
+4. Un `referente` non vede la sezione Utenti (`findsNothing`); una scrittura forzata su
+   `volunteers` è rifiutata dalle regole (emulatore).
+5. Disattivare un volontario: `attivo = false`, la riga si ingrigisce, e al login quell'utente
+   vede «Account disattivato» e non la home.
+6. Tentare di disattivare l'ultimo presidente attivo viene rifiutato.
+7. Il presidente non vede su sé stesso «Disattiva» né il selettore del ruolo.
+8. Login con `mustChangePassword: true` porta alla schermata cambio password; dopo il cambio
+   il flag è false e si arriva alla home.
+9. Home: con l'utente «marco@…» il cui documento ha `nome: "marco"`, il saluto è «Ciao Marco».
+   Con un utente senza documento il saluto non contiene il nome di nessun seed.
+10. Un utente attivo può aggiornare `mustChangePassword` e `ultimoAccesso` sul proprio
+    documento e **non** `ruolo` né `attivo` (emulatore).
+11. Nessun overflow delle schermate nuove a 320/360/411/430 dp.

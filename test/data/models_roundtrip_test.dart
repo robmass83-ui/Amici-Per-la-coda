@@ -286,7 +286,6 @@ void main() {
       fine: null,
       tuttoIlGiorno: true,
       luogo: 'Rifugio',
-      volontariIds: const ['u1'],
       stato: AppointmentStato.previsto,
       audit: audit,
     );

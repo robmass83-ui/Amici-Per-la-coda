@@ -12,7 +12,6 @@ class Appointment {
     required this.fine,
     required this.tuttoIlGiorno,
     required this.luogo,
-    required this.volontariIds,
     required this.stato,
     required this.audit,
   });
@@ -26,7 +25,6 @@ class Appointment {
   final DateTime? fine;
   final bool tuttoIlGiorno;
   final String luogo;
-  final List<String> volontariIds;
   final AppointmentStato stato;
   final Audit audit;
 
@@ -41,9 +39,6 @@ class Appointment {
       fine: dateTimeFrom(map['fine']),
       tuttoIlGiorno: map['tuttoIlGiorno'] as bool? ?? false,
       luogo: map['luogo'] as String? ?? '',
-      volontariIds: (map['volontariIds'] as List<dynamic>? ?? const [])
-          .map((item) => item.toString())
-          .toList(),
       stato: AppointmentStato.parse(map['stato'] as String?),
       audit: Audit.fromMap(map),
     );
@@ -59,7 +54,6 @@ class Appointment {
       'fine': dateTimeTo(fine),
       'tuttoIlGiorno': tuttoIlGiorno,
       'luogo': luogo,
-      'volontariIds': volontariIds,
       'stato': stato.wire,
       ...audit.toMap(),
     };

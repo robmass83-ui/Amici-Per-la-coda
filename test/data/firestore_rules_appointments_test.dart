@@ -42,7 +42,7 @@ Map<String, String> _envWithJava() {
 
 void main() {
   test(
-    'volontario attivo si iscrive al turno; non può cambiare altri campi',
+    'le regole Firestore passano con l\'emulatore',
     () async {
       final backend = Directory('backend');
       expect(
