@@ -80,13 +80,15 @@ Non si usa `git clean` sull’intero albero.
 | `PROMPT-import-anagrafe.md` |
 | `RAPPORTO-STATO-APP.md` |
 | `Scheda-Pongo-AmiciPerLaCoda.pdf` |
-| `Cani_Amici_per_la_Coda_IMPORT.xlsx` |
-| `csv-anagrafe.zip` |
+| `Cani_Amici_per_la_Coda_IMPORT.xlsx` (resta sul disco in `docs/archive/`, non in git) |
+| `csv-anagrafe.zip` (resta sul disco in `docs/archive/`, non in git) |
 | `tool/import/report-2026-09-11.md` |
 | `tool/import/report-2026-09-11-1912.md` |
 | `tool/import/report-2026-09-11-1914.md` |
 
 I prompt archiviati **non** si aggiornano se citano path vecchi.
+
+`csv-anagrafe.zip` e `Cani_Amici_per_la_Coda_IMPORT.xlsx` restano in `docs/archive/` sul PC e sono in `.gitignore` (dati personali; il repo GitHub è pubblico). Stesso ignore per `import/anagrafe_src/`.
 
 `docs/archive/` si crea se manca. Si aggiunge un `README.md` breve: cartella di documenti storici, non usata a runtime.
 

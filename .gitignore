@@ -76,10 +76,14 @@ tool/import/backup-*/
 tool/import/.migrate-photos-state.json
 import/foto/
 
-# Scarto di radice â€” non reintrodurre
+# Scarto di radice — non reintrodurre
 /tmp/
 /Moduli/
 /New folder/
 /Scheda-Pongo*.pdf
 /csv-anagrafe.zip
 /Cani_Amici_per_la_Coda_IMPORT.xlsx
+docs/archive/csv-anagrafe.zip
+docs/archive/Cani_Amici_per_la_Coda_IMPORT.xlsx
+import/anagrafe_src/
+/.superpowers/
