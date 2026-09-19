@@ -27,6 +27,7 @@ abstract final class AppIcons {
   static const dataNascita   = AppIconSpec(Icons.cake_rounded,            AppColor.blueSoft,    _blue);
   static const data          = AppIconSpec(Icons.calendar_month_rounded,  AppColor.blueSoft,    _blue);
   static const razza         = AppIconSpec(Icons.pets_rounded,            AppColor.neutralSoft, _grey);
+  static const pelo          = AppIconSpec(Icons.waves_rounded,           AppColor.neutralSoft, _grey);
   static const peso          = AppIconSpec(Icons.monitor_weight_rounded,  AppColor.neutralSoft, _grey);
   static const microchip     = AppIconSpec(Icons.qr_code_2_rounded,       AppColor.neutralSoft, _grey);
   static const provenienza   = AppIconSpec(Icons.place_rounded,           AppColor.redSoft,     _red);
@@ -51,6 +52,7 @@ abstract final class AppIcons {
   static const esame         = AppIconSpec(Icons.biotech_rounded,         AppColor.purpleSoft,  _purple);
   static const scadenza      = AppIconSpec(Icons.schedule_rounded,        AppColor.redSoft,     _red);
   static const terapia       = AppIconSpec(Icons.healing_rounded,         AppColor.blueSoft,    _blue);
+  static const patologia     = AppIconSpec(Icons.coronavirus_rounded,     AppColor.redSoft,     _red);
 
   // ---------- adozione ----------
   static const adottabile    = AppIconSpec(Icons.favorite_rounded,        AppColor.redSoft,     _red);
@@ -90,6 +92,7 @@ abstract final class AppIcons {
   static const box           = AppIconSpec(Icons.meeting_room_rounded,    AppColor.orangeSoft,  _orange);
   static const infermeria    = AppIconSpec(Icons.medical_information_rounded, AppColor.blueSoft, _blue);
   static const isolamento    = AppIconSpec(Icons.coronavirus_rounded,     AppColor.redSoft,     _red);
+  static const quarantena    = AppIconSpec(Icons.health_and_safety_rounded, AppColor.purpleSoft, _purple);
   static const manutenzione  = AppIconSpec(Icons.build_rounded,           AppColor.neutralSoft, _grey);
   static const volontari     = AppIconSpec(Icons.groups_rounded,          AppColor.purpleSoft,  _purple);
   static const passeggiata   = AppIconSpec(Icons.directions_walk_rounded, AppColor.greenSoft,   _green);
@@ -99,6 +102,7 @@ abstract final class AppIcons {
   static const statistiche   = AppIconSpec(Icons.insights_rounded,        AppColor.greenSoft,   _green);
   static const notifiche     = AppIconSpec(Icons.notifications_rounded,   AppColor.orangeSoft,  _orange);
   static const impostazioni  = AppIconSpec(Icons.settings_rounded,        AppColor.neutralSoft, _grey);
+  static const associazione  = AppIconSpec(Icons.account_balance_rounded, AppColor.greenSoft,   _green);
   static const backup        = AppIconSpec(Icons.cloud_done_rounded,      AppColor.blueSoft,    _blue);
   static const esporta       = AppIconSpec(Icons.ios_share_rounded,       AppColor.neutralSoft, _grey);
   static const archivia      = AppIconSpec(Icons.inventory_2_rounded,     AppColor.redSoft,     _red);
@@ -110,6 +114,10 @@ abstract final class AppIcons {
   static const lingua        = AppIconSpec(Icons.language_rounded,        AppColor.neutralSoft, _grey);
   static const tema          = AppIconSpec(Icons.brightness_6_rounded,    AppColor.neutralSoft, _grey);
   static const condividi     = AppIconSpec(Icons.ios_share_rounded,       AppColor.greenSoft,   _green);
+  static const schedaPdf     = AppIconSpec(Icons.picture_as_pdf_rounded,  AppColor.greenSoft,   _green);
+  static const cardSocial    = AppIconSpec(Icons.image_rounded,           AppColor.blueSoft,    _blue);
+  static const salvaGalleria = AppIconSpec(Icons.save_alt_rounded,        AppColor.greenSoft,   _green);
+  static const aggiornamenti = AppIconSpec(Icons.system_update_alt_rounded, AppColor.blueSoft,  _blue);
   static const apri          = AppIconSpec(Icons.open_in_new_rounded,      AppColor.blueSoft,    _blue);
   static const carica        = AppIconSpec(Icons.upload_file_rounded,     AppColor.greenSoft,   _green);
 
@@ -119,11 +127,14 @@ abstract final class AppIcons {
   static const foto            = AppIconSpec(Icons.photo_rounded,            AppColor.blueSoft,    _blue);
   static const cerca           = AppIconSpec(Icons.search_rounded,           AppColor.blueSoft,    _blue);
   static const altro           = AppIconSpec(Icons.more_horiz_rounded,       AppColor.neutralSoft, _grey);
+  static const menu            = AppIconSpec(Icons.more_vert_rounded,        AppColor.neutralSoft, _grey);
   static const mostraPassword  = AppIconSpec(Icons.visibility_outlined,      AppColor.neutralSoft, _grey);
   static const nascondiPassword = AppIconSpec(Icons.visibility_off_outlined, AppColor.neutralSoft, _grey);
   static const errore          = AppIconSpec(Icons.pets_rounded,             AppColor.redSoft,     _red);
   static const regolazioni     = AppIconSpec(Icons.tune_rounded,             AppColor.neutralSoft, _grey);
-  static const aggiorna        = AppIconSpec(Icons.system_update_alt_rounded, AppColor.greenSoft,   _green);
+  static const fornitori     = AppIconSpec(Icons.local_hospital_rounded,  AppColor.blueSoft,    _blue);
+  static const famiglie      = AppIconSpec(Icons.family_restroom_rounded, AppColor.purpleSoft,  _purple);
+  static const aggiungi      = AppIconSpec(Icons.add_rounded,             AppColor.greenSoft,   _green);
 
   /// Icone di stato, per costruire pill e badge dal valore del modello.
   static AppIconSpec perStato(String stato) => switch (stato) {
@@ -134,6 +145,7 @@ abstract final class AppIcons {
     'in_cura'    => inCura,
     'restituito' => restituito,
     'deceduto'   => deceduto,
+    'trasferito' => trasferimento,
     _            => inRifugio,
   };
 
@@ -178,6 +190,13 @@ abstract final class AppIcons {
     'verifica_preaffido' => preaffido,
     'scadenza' => scadenza,
     _ => altro,
+  };
+
+  static AppIconSpec perBox(String tipo) => switch (tipo) {
+    'degenza' => infermeria,
+    'isolamento' => isolamento,
+    'quarantena' => quarantena,
+    _ => box,
   };
 
   static AppIconSpec perNota(String tipo) => switch (tipo) {
