@@ -9,15 +9,18 @@ import '../../core/format_it.dart';
 import '../../core/new_id.dart';
 import '../../data/data_providers.dart';
 import '../../data/models/adopter.dart';
+import '../../data/models/adoption.dart';
 import '../../data/models/enums.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/form_pickers.dart';
 import '../../ui/tokens.dart';
 import '../affido/affido_providers.dart';
+import '../dogs/dog_labels.dart';
 import '../dogs/dogs_providers.dart';
 import '../dogs/new_dog/new_dog_validation.dart';
 import 'adoption_flow.dart';
+import 'family_link.dart';
 
 // ── CONTRATTO DI LAYOUT · Form famiglia ───────────────────────────────────
 // AppScaffold compactHeader  titolo + pill Salva
@@ -157,6 +160,11 @@ class _AdopterFormPageState extends ConsumerState<AdopterFormPage> {
         if (!mounted) {
           return;
         }
+        final dogId = widget.dogId;
+        if (dogId != null && dogId.isNotEmpty) {
+          await _linkToDog(match, dogId);
+          return;
+        }
         AppToast.show(
           context,
           'Esiste già: ${match.nomeCompleto}. Apro quella scheda.',
@@ -198,11 +206,82 @@ class _AdopterFormPageState extends ConsumerState<AdopterFormPage> {
     if (!mounted) {
       return;
     }
+    final dogId = widget.dogId;
+    if (dogId != null && dogId.isNotEmpty) {
+      await _linkToDog(adopter, dogId);
+      return;
+    }
     if (context.canPop()) {
       context.pop();
     } else {
       context.go(AppRoutes.adottanti);
     }
+  }
+
+  Future<void> _linkToDog(Adopter adopter, String dogId) async {
+    final adoptions = ref.read(adoptionRepositoryProvider);
+    final adopterRepo = ref.read(adopterRepositoryProvider);
+    final dogRepo = ref.read(dogRepositoryProvider);
+    final volunteer = ref.read(currentVolunteerProvider);
+    if (adoptions == null ||
+        adopterRepo == null ||
+        dogRepo == null ||
+        volunteer == null) {
+      return;
+    }
+    final existingLinks = ref.read(adoptionsStreamProvider).maybeWhen(
+          data: (items) => items,
+          orElse: () => const <Adoption>[],
+        );
+    final now = DateTime.now();
+    await replaceDogFamily(
+      adoptions: adoptions,
+      adopters: adopterRepo,
+      existing: existingLinks,
+      adopter: adopter,
+      dogId: dogId,
+      uid: volunteer.id,
+      now: now,
+    );
+    if (!mounted) {
+      return;
+    }
+    final dog = ref.read(dogByIdProvider(dogId)).maybeWhen(
+          data: (value) => value,
+          orElse: () => null,
+        );
+    if (dog != null) {
+      await AppSheet.present<void>(
+        context: context,
+        builder: (sheetContext) => AppSheet(
+          title: 'Segnare ${dogDisplayName(dog.nome)} come adottato?',
+          children: [
+            AppButton(
+              label: 'Sì',
+              onPressed: () {
+                Navigator.of(sheetContext).pop();
+                final result = markDogAdottatoIfNeeded(
+                  dog: dog,
+                  now: DateTime.now(),
+                  autoreId: volunteer.id,
+                );
+                unawaited(dogRepo.save(result.dog));
+              },
+            ),
+            const SizedBox(height: AppDim.gapM),
+            AppButton(
+              label: 'No',
+              variant: AppButtonVariant.grey,
+              onPressed: () => Navigator.of(sheetContext).pop(),
+            ),
+          ],
+        ),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
+    context.go(AppRoutes.dog(dogId));
   }
 
   @override

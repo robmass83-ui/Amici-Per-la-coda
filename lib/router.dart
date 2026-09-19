@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -125,6 +124,10 @@ abstract final class AppRoutes {
 
   static String adottante(String id) => '$adottanti/$id';
   static String adottanteModifica(String id) => '$adottanti/$id/modifica';
+  static String adottanteNuovoPer(String dogId) => Uri(
+        path: adottanteNuovo,
+        queryParameters: {'dogId': dogId},
+      ).toString();
 
   static String fornitore(String id) => '$fornitori/$id';
   static String fornitoreModifica(String id) => '$fornitori/$id/modifica';

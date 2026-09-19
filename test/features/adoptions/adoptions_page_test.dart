@@ -3,9 +3,13 @@ import 'package:amici_per_la_coda/data/models/enums.dart';
 import 'package:amici_per_la_coda/features/adoptions/adoption_detail_page.dart';
 import 'package:amici_per_la_coda/features/adoptions/adoptions_page.dart';
 import 'package:amici_per_la_coda/features/adoptions/new_adoption_page.dart';
+import 'package:amici_per_la_coda/features/dogs/dog_adozione_tab.dart';
 import 'package:amici_per_la_coda/features/dogs/dog_detail_page.dart';
 import 'package:amici_per_la_coda/router.dart';
+import 'package:amici_per_la_coda/ui/components.dart';
+import 'package:amici_per_la_coda/ui/tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/dog_fixtures.dart';
@@ -207,25 +211,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Registra nuova richiesta'));
-    await tester.tap(find.text('Registra nuova richiesta'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NewAdoptionPage), findsOneWidget);
-
-    await tester.enterText(find.byKey(NewAdoptionPage.nomeKey), 'Marta');
-    await tester.enterText(find.byKey(NewAdoptionPage.cognomeKey), 'Rossi');
-    await tester.enterText(
-      find.byKey(NewAdoptionPage.abitazioneKey),
-      'Villetta con giardino',
-    );
-    await tester.ensureVisible(find.byKey(NewAdoptionPage.saveKey));
-    await tester.tap(find.byKey(NewAdoptionPage.saveKey));
-    await tester.pumpAndSettle();
-
-    expect((await adoptions.watchAll().first).length, 1);
-    expect(find.byType(DogDetailPage), findsOneWidget);
-    expect(find.text('Marta Rossi'), findsOneWidget);
-    expect(find.text('Richieste ricevute'), findsOneWidget);
+    expect(find.text('Registra nuova richiesta'), findsNothing);
+    expect(find.byKey(DogAdozioneTab.registraFamigliaKey), findsOneWidget);
+    expect(find.byKey(DogAdozioneTab.collegaFamigliaKey), findsOneWidget);
   });
 
   testWidgets('il questionario si salva integralmente', (tester) async {
@@ -247,34 +235,51 @@ void main() {
     await tester.tap(find.text('Modifica ›'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(AdoptionDetailPage.abitazioneKey),
-      'Villetta 300 m²',
+    expect(find.byType(NewAdoptionPage), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(NewAdoptionPage.abitazioneKey),
+        matching: find.text('Appartamento'),
+      ),
     );
-    await tester.enterText(find.byKey(AdoptionDetailPage.recinzioneKey), '1,8 m');
-    await tester.enterText(find.byKey(AdoptionDetailPage.animaliKey), '1 gatto');
-    await tester.enterText(find.byKey(AdoptionDetailPage.bambiniKey), '8 e 11');
-    await tester.enterText(find.byKey(AdoptionDetailPage.oreKey), 'Max 4 ore');
+    await tester.pump();
     await tester.enterText(
-      find.byKey(AdoptionDetailPage.esperienzaKey),
-      'Sì, precedente meticcio',
+      find.byKey(NewAdoptionPage.recinzioneKey),
+      '1,8 m',
     );
-    await tester.enterText(find.byKey(AdoptionDetailPage.dormeKey), 'In casa');
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(NewAdoptionPage.animaliRowKey),
+        matching: find.text('Sì'),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byKey(NewAdoptionPage.animaliKey), '1 gatto');
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(NewAdoptionPage.bambiniRowKey),
+        matching: find.text('Sì'),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byKey(NewAdoptionPage.bambiniKey), '8 e 11');
+    await tester.enterText(find.byKey(NewAdoptionPage.oreKey), 'Max 4 ore');
     await tester.enterText(
-      find.byKey(AdoptionDetailPage.noteKey),
+      find.byKey(NewAdoptionPage.noteKey),
       'Note complete',
     );
-    await tester.ensureVisible(find.byKey(AdoptionDetailPage.saveQuestionarioKey));
-    await tester.tap(find.byKey(AdoptionDetailPage.saveQuestionarioKey));
+    await tester.ensureVisible(find.byKey(NewAdoptionPage.saveKey));
+    await tester.tap(find.byKey(NewAdoptionPage.saveKey));
     await tester.pumpAndSettle();
 
     final saved = await adoptions.getById('ad1');
-    expect(saved?.questionario.abitazione, 'Villetta 300 m²');
+    expect(saved?.questionario.abitazione, 'Appartamento');
     expect(saved?.questionario.altezzaRecinzione, '1,8 m');
     expect(saved?.questionario.altriAnimali, '1 gatto');
     expect(saved?.questionario.bambini, '8 e 11');
     expect(saved?.questionario.oreDaSolo, 'Max 4 ore');
-    expect(saved?.questionario.esperienzaCani, 'Sì, precedente meticcio');
+    expect(saved?.questionario.esperienzaCani, 'Sì');
     expect(saved?.questionario.doveDormira, 'In casa');
     expect(saved?.questionario.note, 'Note complete');
     expect(saved?.questionario.giardinoRecintato, isTrue);
@@ -293,4 +298,58 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nessuna richiesta in questo filtro.'), findsOneWidget);
   });
+
+  testWidgets(
+    'Sì/No del questionario restano stretti e le etichette si leggono intere',
+    (tester) async {
+      const labels = [
+        'Giardino recintato',
+        'Altri animali',
+        'Bambini in casa',
+        'Esperienza con cani',
+      ];
+      const keys = [
+        NewAdoptionPage.giardinoRowKey,
+        NewAdoptionPage.animaliRowKey,
+        NewAdoptionPage.bambiniRowKey,
+        NewAdoptionPage.esperienzaKey,
+      ];
+      for (final width in widths) {
+        await pumpLogged(
+          tester,
+          location: AppRoutes.nuovaRichiestaPer('fenice'),
+          size: Size(width, 1400),
+        );
+        expect(find.byType(NewAdoptionPage), findsOneWidget);
+        for (var i = 0; i < labels.length; i++) {
+          final row = find.byKey(keys[i]);
+          await tester.ensureVisible(row);
+          final labelFinder = find.descendant(
+            of: row,
+            matching: find.text(labels[i]),
+          );
+          expect(labelFinder, findsOneWidget, reason: '${labels[i]} a $width');
+          expect(
+            tester.renderObject<RenderParagraph>(labelFinder).didExceedMaxLines,
+            isFalse,
+            reason: '${labels[i]} troncata a $width',
+          );
+          final segmented = find.descendant(
+            of: row,
+            matching: find.byType(AppSegmented),
+          );
+          expect(
+            tester.getSize(segmented).width,
+            closeTo(AppDim.compatYesNoW, 0.5),
+            reason: 'Sì/No ${labels[i]} a $width',
+          );
+          expect(
+            tester.getSize(labelFinder).width,
+            greaterThan(tester.getSize(segmented).width),
+            reason: 'etichetta ${labels[i]} più larga di Sì/No a $width',
+          );
+        }
+      }
+    },
+  );
 }
