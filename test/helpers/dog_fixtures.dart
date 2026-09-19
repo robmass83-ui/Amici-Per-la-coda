@@ -14,11 +14,13 @@ import 'package:amici_per_la_coda/data/models/weight.dart';
 Dog testDog({
   String id = 'fido',
   String nome = 'Fido',
-  DogSex sesso = DogSex.M,
+  DogSex? sesso = DogSex.M,
   DateTime? dataNascita,
   bool nascitaPresunta = true,
   String razza = 'Meticcia',
+  Taglia taglia = Taglia.media,
   String microchip = '',
+  Audit? audit,
   String settore = 'B',
   String box = '1',
   DogStato stato = DogStato.inRifugio,
@@ -38,6 +40,8 @@ Dog testDog({
   String noteCarattere = '',
   bool pubblicato = false,
   DateTime? dataPubblicazione,
+  List<StatoVoce>? storicoStati,
+  int fotoCount = 0,
 }) {
   final at = DateTime.utc(2024, 6, 25);
   final birth = dataNascita ?? DateTime.utc(2022, 1, 1);
@@ -49,7 +53,7 @@ Dog testDog({
     dataNascita: dataNascita ?? birth,
     nascitaPresunta: nascitaPresunta,
     razza: razza,
-    taglia: Taglia.media,
+    taglia: taglia,
     pesoKg: pesoKg,
     mantello: 'Misto',
     microchip: microchip,
@@ -73,14 +77,16 @@ Dog testDog({
     conBambini: conBambini,
     noteCarattere: noteCarattere,
     fotoCopertinaId: null,
+    fotoCount: fotoCount,
     referenteId: null,
     pubblicato: pubblicato,
     dataPubblicazione: dataPubblicazione,
     archiviato: archiviato,
-    storicoStati: [
-      StatoVoce(stato: stato, dal: at, note: '', autoreId: 'test'),
-    ],
-    audit: Audit.seed(at, by: 'test'),
+    storicoStati: storicoStati ??
+        [
+          StatoVoce(stato: stato, dal: at, note: '', autoreId: 'test'),
+        ],
+    audit: audit ?? Audit.seed(at, by: 'test'),
   );
 }
 
@@ -142,15 +148,23 @@ List<Dog> testListDogs() {
 Volunteer testVolunteer({
   String id = 'uid-1',
   String nome = 'Giovanna',
+  String cognome = '',
   String email = 'giovanna@amiciperlacoda.it',
+  VolunteerRuolo ruolo = VolunteerRuolo.presidente,
+  bool attivo = true,
+  bool mustChangePassword = false,
+  DateTime? ultimoAccesso,
 }) {
   return Volunteer(
     id: id,
     nome: nome,
+    cognome: cognome,
     email: email,
-    ruolo: VolunteerRuolo.presidente,
-    attivo: true,
+    ruolo: ruolo,
+    attivo: attivo,
     coloreAvatar: '#157A3C',
+    mustChangePassword: mustChangePassword,
+    ultimoAccesso: ultimoAccesso,
     audit: Audit.seed(DateTime.utc(2024, 6, 25), by: 'test'),
   );
 }
@@ -330,6 +344,7 @@ HealthRecord testHealth({
   DateTime? data,
   DateTime? prossimaScadenza,
   String descrizione = 'Richiamo',
+  String veterinario = 'Dr. Test',
 }) {
   final at = data ?? DateTime.utc(2025, 9, 1);
   return HealthRecord(
@@ -338,7 +353,7 @@ HealthRecord testHealth({
     tipo: tipo,
     data: at,
     descrizione: descrizione,
-    veterinario: 'Dr. Test',
+    veterinario: veterinario,
     lotto: '',
     prossimaScadenza: prossimaScadenza,
     costo: null,
@@ -375,6 +390,7 @@ ShelterBox testBox({
   String settore = 'A',
   String numero = '1',
   int capienza = 4,
+  BoxTipo tipo = BoxTipo.normale,
   bool inManutenzione = false,
 }) {
   return ShelterBox(
@@ -382,6 +398,7 @@ ShelterBox testBox({
     settore: settore,
     numero: numero,
     capienza: capienza,
+    tipo: tipo,
     note: '',
     inManutenzione: inManutenzione,
     audit: Audit.seed(DateTime.utc(2024, 6, 25), by: 'test'),

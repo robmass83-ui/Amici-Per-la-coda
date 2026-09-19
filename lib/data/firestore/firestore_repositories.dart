@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/firestore_codec.dart';
+import '../dog_archive.dart';
 import '../documents/document_codec.dart';
 import '../documents/template_assets.dart';
 import '../models/adopter.dart';
@@ -19,6 +21,7 @@ import '../models/note.dart';
 import '../models/photo.dart';
 import '../models/shelter_box.dart';
 import '../models/sponsorship.dart';
+import '../models/vendor.dart';
 import '../models/volunteer.dart';
 import '../models/weight.dart';
 import '../photos/lru_bytes_cache.dart';
@@ -36,11 +39,18 @@ class FirestoreDogRepository implements DogRepository {
 
   CollectionReference<Map<String, dynamic>> get _col => _db.collection('dogs');
 
+  late final _allSnaps = SharedQuerySnapshots(_col);
+
   @override
   Stream<List<Dog>> watchAll() {
-    return _col.snapshots().map(
-      (snap) => snap.docs.map((doc) => Dog.fromMap(doc.id, doc.data())).toList(),
+    return _allSnaps.snapshots().map(
+      (snap) =>
+          snap.docs.map((doc) => Dog.fromMap(doc.id, doc.data())).toList(),
     );
+  }
+
+  Stream<bool> watchAllFromCache() {
+    return _allSnaps.snapshots().map((snap) => snap.metadata.isFromCache);
   }
 
   @override
@@ -54,6 +64,24 @@ class FirestoreDogRepository implements DogRepository {
 
   @override
   Future<void> save(Dog dog) => _col.doc(dog.id).set(dog.toMap());
+
+  @override
+  Future<void> delete(String id) => _col.doc(id).delete();
+
+  @override
+  Future<void> ripristina(
+    String id, {
+    required String autoreId,
+    DateTime? now,
+  }) async {
+    final dog = await getById(id);
+    if (dog == null || !dogInArchivio(dog)) {
+      return;
+    }
+    await save(
+      applyRipristina(dog: dog, autoreId: autoreId, now: now ?? DateTime.now()),
+    );
+  }
 }
 
 class FirestorePhotoRepository implements PhotoRepository {
@@ -61,28 +89,53 @@ class FirestorePhotoRepository implements PhotoRepository {
   final FirebaseFirestore _db;
   final _cache = LruBytesCache();
 
-  CollectionReference<Map<String, dynamic>> get _col => _db.collection('photos');
+  CollectionReference<Map<String, dynamic>> get _col =>
+      _db.collection('photos');
+
+  late final _coverSnaps = SharedQuerySnapshots(
+    _col.where('isCover', isEqualTo: true),
+  );
 
   @override
   Stream<List<Photo>> watchByDog(String dogId) {
-    return _col
-        .where('dogId', isEqualTo: dogId)
-        .snapshots()
-        .map(
-          (snap) {
-            final list = snap.docs
-                .map((doc) => Photo.fromMap(doc.id, doc.data()))
-                .toList();
-            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            return list;
-          },
-        );
+    return _col.where('dogId', isEqualTo: dogId).snapshots().map((snap) {
+      final list = snap.docs
+          .map((doc) => Photo.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
   }
 
-  Future<void> saveMeta(Photo photo) => _col.doc(photo.id).set(photo.toMap());
+  @override
+  Stream<Map<String, Photo>> watchCovers() {
+    return _coverSnaps.snapshots().map((snap) {
+      final covers = <String, Photo>{};
+      for (final doc in snap.docs) {
+        final photo = Photo.fromMap(doc.id, doc.data());
+        if (photo.dogId.isEmpty) {
+          continue;
+        }
+        covers[photo.dogId] = photo;
+      }
+      return covers;
+    });
+  }
 
-  Future<void> saveFull(String photoId, PhotoFull full) {
-    return _col.doc(photoId).collection('full').doc('data').set(full.toMap());
+  Stream<bool> watchCoversFromCache() {
+    return _coverSnaps.snapshots().map((snap) => snap.metadata.isFromCache);
+  }
+
+  Future<void> saveMeta(Photo photo) async {
+    final data = photo.toMap();
+    ensurePhotoDocumentFits(data);
+    await _col.doc(photo.id).set(data);
+  }
+
+  Future<void> saveFull(String photoId, PhotoFull full) async {
+    final data = full.toMap();
+    ensurePhotoDocumentFits(data);
+    await _col.doc(photoId).collection('full').doc('data').set(data);
   }
 
   @override
@@ -97,6 +150,10 @@ class FirestorePhotoRepository implements PhotoRepository {
       throw const PhotoLimitReached();
     }
     final compressed = await compressDogPhoto(bytes);
+    if (compressed.full.lengthInBytes > photoFullMaxBytes ||
+        compressed.thumb.lengthInBytes > photoThumbMaxBytes) {
+      throw const PhotoTooLarge();
+    }
     final now = DateTime.now();
     final id = 'p_${now.microsecondsSinceEpoch}';
     final cover = asCover || existing.isEmpty;
@@ -107,24 +164,27 @@ class FirestorePhotoRepository implements PhotoRepository {
       w: compressed.width,
       h: compressed.height,
       mime: compressed.mime,
-      thumbB64: base64Encode(compressed.thumb),
+      thumb: compressed.thumb,
       bytesFull: compressed.full.lengthInBytes,
       createdAt: now,
       createdBy: createdBy,
     );
+    final meta = photo.toMap();
+    final full = PhotoFull(dati: compressed.full).toMap();
+    ensurePhotoDocumentFits(meta);
+    ensurePhotoDocumentFits(full);
     final batch = _db.batch();
-    batch.set(_col.doc(id), photo.toMap());
-    batch.set(_col.doc(id).collection('full').doc('data'), {
-      'b64': base64Encode(compressed.full),
-    });
+    batch.set(_col.doc(id), meta);
+    batch.set(_col.doc(id).collection('full').doc('data'), full);
     if (cover) {
       for (final doc in existing) {
         batch.update(_col.doc(doc.id), {'isCover': false});
       }
-      batch.update(_db.collection('dogs').doc(dogId), {
-        'fotoCopertinaId': id,
-      });
     }
+    batch.update(_db.collection('dogs').doc(dogId), {
+      'fotoCount': FieldValue.increment(1),
+      if (cover) 'fotoCopertinaId': id,
+    });
     await batch.commit();
     _cache[id] = compressed.full;
     return photo;
@@ -141,12 +201,11 @@ class FirestorePhotoRepository implements PhotoRepository {
       return null;
     }
     final full = PhotoFull.fromMap(_data(snap));
-    if (full.b64.isEmpty) {
+    if (full.dati.isEmpty) {
       return null;
     }
-    final bytes = base64Decode(full.b64);
-    _cache[photoId] = bytes;
-    return bytes;
+    _cache[photoId] = full.dati;
+    return full.dati;
   }
 
   @override
@@ -162,6 +221,8 @@ class FirestorePhotoRepository implements PhotoRepository {
     await batch.commit();
   }
 
+  /// Una sola query: tutte le copertine. Usata dalla lista, non `watchByDog`.
+
   @override
   Future<void> delete(String photoId) async {
     final snap = await _col.doc(photoId).get();
@@ -174,15 +235,20 @@ class FirestorePhotoRepository implements PhotoRepository {
     if (dogId == null) {
       return;
     }
+    final dogRef = _db.collection('dogs').doc(dogId);
     if (wasCover) {
       final rest = await watchByDog(dogId).first;
       if (rest.isEmpty) {
-        await _db.collection('dogs').doc(dogId).update({
+        await dogRef.update({
           'fotoCopertinaId': null,
+          'fotoCount': FieldValue.increment(-1),
         });
       } else {
         await setCover(dogId, rest.first.id);
+        await dogRef.update({'fotoCount': FieldValue.increment(-1)});
       }
+    } else {
+      await dogRef.update({'fotoCount': FieldValue.increment(-1)});
     }
   }
 }
@@ -206,16 +272,24 @@ class FirestoreHealthRepository implements HealthRepository {
 
   @override
   Stream<List<HealthRecord>> watchAll() {
-    return _db.collection('health').snapshots().map(
-      (snap) => snap.docs
-          .map((doc) => HealthRecord.fromMap(doc.id, doc.data()))
-          .toList(),
-    );
+    return _db
+        .collection('health')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => HealthRecord.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
   Future<void> save(HealthRecord record) {
     return _db.collection('health').doc(record.id).set(record.toMap());
+  }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('health').doc(id).delete();
   }
 }
 
@@ -229,15 +303,13 @@ class FirestoreWeightRepository implements WeightRepository {
         .collection('weights')
         .where('dogId', isEqualTo: dogId)
         .snapshots()
-        .map(
-          (snap) {
-            final list = snap.docs
-                .map((doc) => Weight.fromMap(doc.id, doc.data()))
-                .toList();
-            list.sort((a, b) => a.data.compareTo(b.data));
-            return list;
-          },
-        );
+        .map((snap) {
+          final list = snap.docs
+              .map((doc) => Weight.fromMap(doc.id, doc.data()))
+              .toList();
+          list.sort((a, b) => a.data.compareTo(b.data));
+          return list;
+        });
   }
 
   @override
@@ -249,6 +321,29 @@ class FirestoreWeightRepository implements WeightRepository {
       'updatedAt': dateTimeTo(weight.audit.updatedAt),
       'updatedBy': weight.audit.updatedBy,
     });
+    await batch.commit();
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    final snap = await _db.collection('weights').doc(id).get();
+    final dogId = snap.data()?['dogId'] as String? ?? '';
+    final batch = _db.batch();
+    batch.delete(_db.collection('weights').doc(id));
+    if (dogId.isNotEmpty) {
+      final remaining = await _db
+          .collection('weights')
+          .where('dogId', isEqualTo: dogId)
+          .get();
+      final others =
+          remaining.docs
+              .where((doc) => doc.id != id)
+              .map((doc) => Weight.fromMap(doc.id, doc.data()))
+              .toList()
+            ..sort((a, b) => a.data.compareTo(b.data));
+      final latest = others.isEmpty ? null : others.last;
+      batch.update(_db.collection('dogs').doc(dogId), {'pesoKg': latest?.kg});
+    }
     await batch.commit();
   }
 }
@@ -271,11 +366,28 @@ class FirestoreSponsorshipRepository implements SponsorshipRepository {
   }
 
   @override
+  Stream<List<Sponsorship>> watchAll() {
+    return _db
+        .collection('sponsorships')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Sponsorship.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
+  }
+
+  @override
   Future<void> save(Sponsorship sponsorship) {
     return _db
         .collection('sponsorships')
         .doc(sponsorship.id)
         .set(sponsorship.toMap());
+  }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('sponsorships').doc(id).delete();
   }
 }
 
@@ -299,6 +411,11 @@ class FirestoreExpenseRepository implements ExpenseRepository {
   Future<void> save(Expense expense) {
     return _db.collection('expenses').doc(expense.id).set(expense.toMap());
   }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('expenses').doc(id).delete();
+  }
 }
 
 class FirestoreAdopterRepository implements AdopterRepository {
@@ -307,10 +424,14 @@ class FirestoreAdopterRepository implements AdopterRepository {
 
   @override
   Stream<List<Adopter>> watchAll() {
-    return _db.collection('adopters').snapshots().map(
-      (snap) =>
-          snap.docs.map((doc) => Adopter.fromMap(doc.id, doc.data())).toList(),
-    );
+    return _db
+        .collection('adopters')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Adopter.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
@@ -328,16 +449,51 @@ class FirestoreAdopterRepository implements AdopterRepository {
   }
 }
 
+class FirestoreVendorRepository implements VendorRepository {
+  FirestoreVendorRepository(this._db);
+  final FirebaseFirestore _db;
+
+  @override
+  Stream<List<Vendor>> watchAll() {
+    return _db
+        .collection('vendors')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Vendor.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
+  }
+
+  @override
+  Future<Vendor?> getById(String id) async {
+    final snap = await _db.collection('vendors').doc(id).get();
+    if (!snap.exists) {
+      return null;
+    }
+    return Vendor.fromMap(snap.id, _data(snap));
+  }
+
+  @override
+  Future<void> save(Vendor vendor) {
+    return _db.collection('vendors').doc(vendor.id).set(vendor.toMap());
+  }
+}
+
 class FirestoreAdoptionRepository implements AdoptionRepository {
   FirestoreAdoptionRepository(this._db);
   final FirebaseFirestore _db;
 
   @override
   Stream<List<Adoption>> watchAll() {
-    return _db.collection('adoptions').snapshots().map(
-      (snap) =>
-          snap.docs.map((doc) => Adoption.fromMap(doc.id, doc.data())).toList(),
-    );
+    return _db
+        .collection('adoptions')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Adoption.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
@@ -353,6 +509,11 @@ class FirestoreAdoptionRepository implements AdoptionRepository {
   Future<void> save(Adoption adoption) {
     return _db.collection('adoptions').doc(adoption.id).set(adoption.toMap());
   }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('adoptions').doc(id).delete();
+  }
 }
 
 class FirestoreDocumentRepository implements DocumentRepository {
@@ -361,6 +522,15 @@ class FirestoreDocumentRepository implements DocumentRepository {
 
   CollectionReference<Map<String, dynamic>> get _col =>
       _db.collection('documents');
+
+  @override
+  Stream<List<AppDocument>> watchAll() {
+    return _col.snapshots().map(
+      (snap) => snap.docs
+          .map((doc) => AppDocument.fromMap(doc.id, doc.data()))
+          .toList(),
+    );
+  }
 
   Stream<List<AppDocument>> _watchWhere(String field, String value) {
     return _col
@@ -387,11 +557,17 @@ class FirestoreDocumentRepository implements DocumentRepository {
 
   @override
   Future<void> save(AppDocument document) {
+    ensureDocumentHasContent(document);
     return _col.doc(document.id).set(document.toMap());
   }
 
   @override
   Future<AppDocument> saveBytes(AppDocument document, Uint8List bytes) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError(
+        'Un documento deve avere un file: contenutoB64 e chunkCount non possono essere entrambi vuoti.',
+      );
+    }
     ensureDocumentSizeAllowed(bytes.lengthInBytes);
     final count = documentChunkCount(bytes.lengthInBytes);
     if (count == 0) {
@@ -471,7 +647,7 @@ class FirestoreTemplateRepository implements TemplateRepository {
 
   @override
   Future<DocumentTemplate?> getById(String id) async {
-    final snap = await _col.doc(id).get();
+    final snap = await getCacheThenServer(_col.doc(id));
     if (!snap.exists) {
       return null;
     }
@@ -484,17 +660,22 @@ class FirestoreTemplateRepository implements TemplateRepository {
   }
 
   @override
+  Future<void> delete(String id) {
+    return _col.doc(id).delete();
+  }
+
+  @override
   Future<void> ensureDefaults({
     required AssetBytesLoader loader,
     required String uid,
     DateTime? now,
   }) async {
+    final existing = await getQueryCacheThenServer(_col.limit(1));
+    if (existing.docs.isNotEmpty) {
+      return;
+    }
     final at = now ?? DateTime.now();
     for (final spec in defaultTemplates) {
-      final existing = await getById(spec.id);
-      if (existing != null) {
-        continue;
-      }
       final bytes = await loader.load(spec.assetPath);
       await save(
         DocumentTemplate(
@@ -533,6 +714,11 @@ class FirestoreNoteRepository implements NoteRepository {
   Future<void> save(Note note) {
     return _db.collection('notes').doc(note.id).set(note.toMap());
   }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('notes').doc(id).delete();
+  }
 }
 
 class FirestoreAppointmentRepository implements AppointmentRepository {
@@ -541,11 +727,14 @@ class FirestoreAppointmentRepository implements AppointmentRepository {
 
   @override
   Stream<List<Appointment>> watchAll() {
-    return _db.collection('appointments').snapshots().map(
-      (snap) => snap.docs
-          .map((doc) => Appointment.fromMap(doc.id, doc.data()))
-          .toList(),
-    );
+    return _db
+        .collection('appointments')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Appointment.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
@@ -555,6 +744,11 @@ class FirestoreAppointmentRepository implements AppointmentRepository {
         .doc(appointment.id)
         .set(appointment.toMap());
   }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('appointments').doc(id).delete();
+  }
 }
 
 class FirestoreVolunteerRepository implements VolunteerRepository {
@@ -563,10 +757,14 @@ class FirestoreVolunteerRepository implements VolunteerRepository {
 
   @override
   Stream<List<Volunteer>> watchAll() {
-    return _db.collection('volunteers').snapshots().map(
-      (snap) =>
-          snap.docs.map((doc) => Volunteer.fromMap(doc.id, doc.data())).toList(),
-    );
+    return _db
+        .collection('volunteers')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => Volunteer.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
@@ -580,7 +778,76 @@ class FirestoreVolunteerRepository implements VolunteerRepository {
 
   @override
   Future<void> save(Volunteer volunteer) {
-    return _db.collection('volunteers').doc(volunteer.id).set(volunteer.toMap());
+    return _db
+        .collection('volunteers')
+        .doc(volunteer.id)
+        .set(volunteer.toMap());
+  }
+
+  @override
+  Future<void> delete(String id) {
+    return _db.collection('volunteers').doc(id).delete();
+  }
+
+  @override
+  Future<void> updateSelf({
+    required String id,
+    bool? mustChangePassword,
+    DateTime? ultimoAccesso,
+    String? coloreAvatar,
+  }) async {
+    final data = <String, dynamic>{};
+    if (mustChangePassword != null) {
+      data['mustChangePassword'] = mustChangePassword;
+    }
+    if (ultimoAccesso != null) {
+      data['ultimoAccesso'] = dateTimeTo(ultimoAccesso);
+    }
+    if (coloreAvatar != null) {
+      data['coloreAvatar'] = coloreAvatar;
+    }
+    if (data.isEmpty) {
+      return;
+    }
+    final doc = _db.collection('volunteers').doc(id);
+    await doc.update(data);
+    try {
+      await _db.waitForPendingWrites().timeout(const Duration(seconds: 20));
+    } on TimeoutException {
+      // La verifica a valle (getById) intercetta se il flag non è persistito.
+    }
+  }
+
+  CollectionReference<Map<String, dynamic>> get _authTokens =>
+      _db.collection('authTokens');
+
+  @override
+  Future<void> saveAuthRefreshToken({
+    required String id,
+    required String token,
+  }) {
+    return _authTokens.doc(id).set({
+      'refreshToken': token,
+      'updatedAt': dateTimeTo(DateTime.now()),
+    });
+  }
+
+  @override
+  Future<String?> getAuthRefreshToken(String id) async {
+    final snap = await _authTokens.doc(id).get();
+    if (!snap.exists) {
+      return null;
+    }
+    final token = _data(snap)['refreshToken'] as String?;
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
+  }
+
+  @override
+  Future<void> deleteAuthRefreshToken(String id) {
+    return _authTokens.doc(id).delete();
   }
 }
 
@@ -590,11 +857,14 @@ class FirestoreBoxRepository implements BoxRepository {
 
   @override
   Stream<List<ShelterBox>> watchAll() {
-    return _db.collection('boxes').snapshots().map(
-      (snap) => snap.docs
-          .map((doc) => ShelterBox.fromMap(doc.id, doc.data()))
-          .toList(),
-    );
+    return _db
+        .collection('boxes')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => ShelterBox.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   @override
@@ -612,11 +882,21 @@ class FirestoreSettingsRepository implements SettingsRepository {
 
   @override
   Future<AssociationSettings?> getAssociation() async {
-    final snap = await _doc.get();
+    final snap = await getCacheThenServer(_doc);
     if (!snap.exists) {
       return null;
     }
     return AssociationSettings.fromMap(_data(snap));
+  }
+
+  @override
+  Stream<AssociationSettings?> watchAssociation() {
+    return _doc.snapshots().map((snap) {
+      if (!snap.exists) {
+        return null;
+      }
+      return AssociationSettings.fromMap(_data(snap));
+    });
   }
 
   @override
@@ -626,5 +906,12 @@ class FirestoreSettingsRepository implements SettingsRepository {
 }
 
 void enableFirestoreOffline(FirebaseFirestore db) {
-  db.settings = const Settings(persistenceEnabled: true);
+  try {
+    db.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  } catch (_) {
+    // settings va impostato prima di qualsiasi lettura/scrittura.
+  }
 }

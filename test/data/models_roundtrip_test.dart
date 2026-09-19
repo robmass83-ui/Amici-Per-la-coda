@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:amici_per_la_coda/core/firestore_codec.dart';
 import 'package:amici_per_la_coda/data/models/adopter.dart';
 import 'package:amici_per_la_coda/data/models/adoption.dart';
@@ -13,8 +15,10 @@ import 'package:amici_per_la_coda/data/models/note.dart';
 import 'package:amici_per_la_coda/data/models/photo.dart';
 import 'package:amici_per_la_coda/data/models/shelter_box.dart';
 import 'package:amici_per_la_coda/data/models/sponsorship.dart';
+import 'package:amici_per_la_coda/data/models/vendor.dart';
 import 'package:amici_per_la_coda/data/models/volunteer.dart';
 import 'package:amici_per_la_coda/data/models/weight.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -80,10 +84,165 @@ void main() {
     expect(again.modalitaIngresso, ModalitaIngresso.natoInRifugio);
     expect(again.iscrittoAnagrafe, IscrittoAnagrafe.daVerificare);
     expect(again.storicoStati.single.stato, DogStato.inRifugio);
+    expect(again.storicoStati.single.strutturaDestinazione, isNull);
+    expect(again.patologie, '');
+    expect(again.fotoCount, 0);
+    expect(again.tipoPelo, isNull);
+    expect(again.purezza, isNull);
+    expect(again.dataIngressoStimata, isFalse);
     expect(again.toMap()['dataNascita'], isNull);
+    expect(again.toMap()['fotoCount'], 0);
+    expect(
+      Dog.fromMap(dog.id, {...dog.toMap(), 'fotoCount': 4}).fotoCount,
+      4,
+    );
+    expect(
+      Dog.fromMap(dog.id, {...dog.toMap()..remove('fotoCount')}).fotoCount,
+      0,
+    );
+  });
+
+  test('Dog tiene vuoti come null: sterilizzato, extra anagrafe, ingresso stimato', () {
+    final dog = Dog(
+      id: 'orso',
+      nome: 'Orso',
+      sesso: DogSex.M,
+      dataNascita: DateTime.utc(2021, 3, 17, 12),
+      nascitaPresunta: false,
+      razza: 'Meticcio',
+      taglia: Taglia.media,
+      pesoKg: null,
+      mantello: 'Bianco',
+      microchip: '380260160527395',
+      iscrittoAnagrafe: IscrittoAnagrafe.si,
+      provenienza: 'Corleto Perticara (PZ)',
+      modalitaIngresso: ModalitaIngresso.rinuncia,
+      dataIngresso: DateTime.utc(2024, 7, 11, 12),
+      settore: '',
+      box: '',
+      stato: DogStato.inRifugio,
+      statoDal: DateTime.utc(2024, 7, 11, 12),
+      adottabile: null,
+      sterilizzato: null,
+      dataSterilizzazione: null,
+      slogan: '',
+      descrizione: '',
+      carattere: const [],
+      conPersone: null,
+      conCani: ConCani.daTestare,
+      conGatti: ConGatti.daTestare,
+      conBambini: ConBambini.daTestare,
+      noteCarattere: '',
+      fotoCopertinaId: null,
+      referenteId: null,
+      pubblicato: false,
+      dataPubblicazione: null,
+      archiviato: false,
+      storicoStati: const [],
+      tipoPelo: TipoPelo.medio,
+      purezza: Purezza.meticcio,
+      dataApplicazioneChip: DateTime.utc(2023, 6, 17, 12),
+      zonaApplicazioneChip: 'collo sx',
+      veterinarioApplicatore: 'Tisci Tommaso',
+      dataIscrizioneAnagrafe: null,
+      ultimaUbicazione: 'C/DA PANTALOIANO',
+      dataIngressoStimata: true,
+      audit: audit,
+    );
+    final map = dog.toMap();
+    expect(map['sterilizzato'], isNull);
+    expect(map['adottabile'], isNull);
+    expect(map['conPersone'], isNull);
+    expect(map['tipoPelo'], 'medio');
+    expect(map['purezza'], 'meticcio');
+    expect(map['dataIngressoStimata'], isTrue);
+    final again = Dog.fromMap(dog.id, map);
+    expect(again.sterilizzato, isNull);
+    expect(again.adottabile, isNull);
+    expect(again.conPersone, isNull);
+    expect(again.tipoPelo, TipoPelo.medio);
+    expect(again.purezza, Purezza.meticcio);
+    expect(again.dataIngressoStimata, isTrue);
+    expect(again.zonaApplicazioneChip, 'collo sx');
+    expect(again.veterinarioApplicatore, 'Tisci Tommaso');
+    expect(
+      Dog.fromMap(dog.id, {...map..remove('sterilizzato')}).sterilizzato,
+      isNull,
+    );
+  });
+
+  test('Dog.fromMap accetta sesso nullo e lo serializza come null', () {
+    final dog = Dog(
+      id: 'duca',
+      nome: 'Duca',
+      sesso: null,
+      dataNascita: null,
+      nascitaPresunta: true,
+      razza: '',
+      taglia: Taglia.media,
+      pesoKg: null,
+      mantello: '',
+      microchip: '',
+      iscrittoAnagrafe: IscrittoAnagrafe.daVerificare,
+      provenienza: 'Stigliano (MT)',
+      modalitaIngresso: ModalitaIngresso.trasferimento,
+      dataIngresso: at,
+      settore: '',
+      box: '',
+      stato: DogStato.inRifugio,
+      statoDal: at,
+      adottabile: false,
+      sterilizzato: false,
+      dataSterilizzazione: null,
+      slogan: '',
+      descrizione: '',
+      carattere: const [],
+      conPersone: ConPersone.selettivo,
+      conCani: ConCani.daTestare,
+      conGatti: ConGatti.daTestare,
+      conBambini: ConBambini.daTestare,
+      noteCarattere: '',
+      fotoCopertinaId: null,
+      referenteId: null,
+      pubblicato: false,
+      dataPubblicazione: null,
+      archiviato: false,
+      storicoStati: const [],
+      audit: audit,
+    );
+    expect(dog.toMap()['sesso'], isNull);
+    final fromNull = Dog.fromMap('duca', {
+      ...dog.toMap(),
+      'sesso': null,
+    });
+    expect(fromNull.sesso, isNull);
+    expect(fromNull.toMap()['sesso'], isNull);
+    final fromMissing = Dog.fromMap('duca', {
+      ...dog.toMap()..remove('sesso'),
+    });
+    expect(fromMissing.sesso, isNull);
+    final fromEmpty = Dog.fromMap('duca', {
+      ...dog.toMap(),
+      'sesso': '',
+    });
+    expect(fromEmpty.sesso, isNull);
+  });
+
+  test('StatoVoce round-trip con strutturaDestinazione', () {
+    final voce = StatoVoce(
+      stato: DogStato.trasferito,
+      dal: at,
+      note: 'Trasferimento',
+      autoreId: 'u1',
+      strutturaDestinazione: 'Canile di Potenza',
+    );
+    final again = StatoVoce.fromMap(voce.toMap());
+    expect(again.stato, DogStato.trasferito);
+    expect(again.strutturaDestinazione, 'Canile di Potenza');
   });
 
   test('Photo e PhotoFull round-trip', () {
+    final thumb = Uint8List.fromList([1, 2, 3]);
     final photo = Photo(
       id: 'p1',
       dogId: 'fenice',
@@ -91,15 +250,22 @@ void main() {
       w: 160,
       h: 120,
       mime: 'image/jpeg',
-      thumbB64: 'abc',
+      thumb: thumb,
       bytesFull: 12000,
       createdAt: at,
       createdBy: 'u1',
     );
-    final again = Photo.fromMap(photo.id, photo.toMap());
+    final map = photo.toMap();
+    expect(map['thumb'], isA<Blob>());
+    expect(map.containsKey('thumbB64'), isFalse);
+    final again = Photo.fromMap(photo.id, map);
     expect(again.dogId, 'fenice');
     expect(again.createdAt.toUtc(), at);
-    expect(PhotoFull.fromMap(const PhotoFull(b64: 'xx').toMap()).b64, 'xx');
+    expect(again.thumb, thumb);
+    final full = PhotoFull(dati: Uint8List.fromList([9, 8, 7]));
+    expect(full.toMap()['dati'], isA<Blob>());
+    expect(full.toMap().containsKey('b64'), isFalse);
+    expect(PhotoFull.fromMap(full.toMap()).dati, [9, 8, 7]);
   });
 
   test('HealthRecord round-trip con scadenza e costo null', () {
@@ -225,6 +391,24 @@ void main() {
     expect(withDate.affidabilita, Affidabilita.nonIdoneo);
   });
 
+  test('Vendor round-trip', () {
+    final item = Vendor(
+      id: 'v1',
+      nome: 'Datena Anna Maria',
+      tipo: VendorTipo.veterinario,
+      telefono: '333',
+      email: 'a@b.it',
+      indirizzo: 'Via 1',
+      convenzionato: true,
+      note: 'note',
+      audit: audit,
+    );
+    final again = Vendor.fromMap(item.id, item.toMap());
+    expect(again.nome, 'Datena Anna Maria');
+    expect(again.tipo, VendorTipo.veterinario);
+    expect(again.convenzionato, isTrue);
+  });
+
   test('AppDocument, Note, Appointment, Volunteer, Box, Settings', () {
     final doc = AppDocument(
       id: 'd1',
@@ -265,6 +449,17 @@ void main() {
       aggiornatoDa: 'u1',
     );
     expect(DocumentTemplate.fromMap(template.id, template.toMap()).versione, 1);
+    expect(
+      DocumentTemplate.fromMap(template.id, template.toMap()).visibilita,
+      TemplateVisibilita.entrambi,
+    );
+    expect(
+      DocumentTemplate.fromMap('x', {
+        ...template.toMap(),
+        'visibilita': 'home',
+      }).visibilita,
+      TemplateVisibilita.home,
+    );
 
     final note = Note(
       id: 'n1',
@@ -296,24 +491,44 @@ void main() {
     final volunteer = Volunteer(
       id: 'v1',
       nome: 'Giovanna',
+      cognome: 'Rossi',
       email: 'g@a.it',
       ruolo: VolunteerRuolo.presidente,
       attivo: true,
       coloreAvatar: '#157A3C',
+      mustChangePassword: true,
+      ultimoAccesso: DateTime.utc(2026, 9, 1),
       audit: audit,
     );
-    expect(Volunteer.fromMap(volunteer.id, volunteer.toMap()).attivo, isTrue);
+    final againVol = Volunteer.fromMap(volunteer.id, volunteer.toMap());
+    expect(againVol.attivo, isTrue);
+    expect(againVol.cognome, 'Rossi');
+    expect(againVol.mustChangePassword, isTrue);
+    expect(againVol.ultimoAccesso?.toUtc(), DateTime.utc(2026, 9, 1));
+    expect(
+      Volunteer(
+        id: 'v2',
+        nome: 'Anna',
+        email: 'a@a.it',
+        ruolo: VolunteerRuolo.volontario,
+        attivo: true,
+        coloreAvatar: '#2E7FD6',
+        audit: audit,
+      ).toMap().containsKey('ultimoAccesso'),
+      isFalse,
+    );
 
     final box = ShelterBox(
       id: 'b7',
       settore: 'B',
       numero: '7',
       capienza: 2,
+      tipo: BoxTipo.normale,
       note: '',
       inManutenzione: false,
       audit: audit,
     );
-    expect(ShelterBox.fromMap(box.id, box.toMap()).capienza, 2);
+    expect(ShelterBox.fromMap(box.id, box.toMap()).tipo, BoxTipo.normale);
 
     final settings = AssociationSettings(
       denominazione: 'Amici per la Coda ODV',
@@ -327,6 +542,21 @@ void main() {
       AssociationSettings.fromMap(settings.toMap()).logoB64,
       isNull,
     );
+    expect(
+      AssociationSettings.fromMap(settings.toMap()).notificheScadenzeSanitarie,
+      isTrue,
+    );
+    expect(
+      AssociationSettings.fromMap(settings.toMap()).notificheRiepilogoSettimanale,
+      isFalse,
+    );
+    final withPrefs = settings.copyWith(
+      notificheRiepilogoSettimanale: true,
+      ultimoExportAt: at,
+    );
+    final round = AssociationSettings.fromMap(withPrefs.toMap());
+    expect(round.notificheRiepilogoSettimanale, isTrue);
+    expect(round.ultimoExportAt, isNotNull);
   });
 
   test('Weight round-trip', () {

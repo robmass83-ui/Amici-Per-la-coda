@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/app_links.dart';
+import '../features/dogs/export/gal_gallery_saver.dart';
+import '../features/dogs/export/gallery_saver.dart';
 import 'documents/device_document_file_picker.dart';
 import 'documents/device_file_actions.dart';
 import 'documents/document_file_picker.dart';
@@ -15,6 +18,24 @@ final firestoreProvider = Provider<FirebaseFirestore?>((ref) {
     return null;
   }
   return FirebaseFirestore.instance;
+});
+
+/// `snapshot.metadata.isFromCache` del listener `dogs` (stesso stream).
+final dogsFromCacheProvider = StreamProvider<bool>((ref) {
+  final repo = ref.watch(dogRepositoryProvider);
+  if (repo is FirestoreDogRepository) {
+    return repo.watchAllFromCache();
+  }
+  return Stream.value(false);
+});
+
+/// `snapshot.metadata.isFromCache` del listener copertine (stesso stream).
+final coversFromCacheProvider = StreamProvider<bool>((ref) {
+  final repo = ref.watch(photoRepositoryProvider);
+  if (repo is FirestorePhotoRepository) {
+    return repo.watchCoversFromCache();
+  }
+  return Stream.value(false);
 });
 
 final dogRepositoryProvider = Provider<DogRepository?>((ref) {
@@ -35,6 +56,11 @@ final boxRepositoryProvider = Provider<BoxRepository?>((ref) {
 final adopterRepositoryProvider = Provider<AdopterRepository?>((ref) {
   final db = ref.watch(firestoreProvider);
   return db == null ? null : FirestoreAdopterRepository(db);
+});
+
+final vendorRepositoryProvider = Provider<VendorRepository?>((ref) {
+  final db = ref.watch(firestoreProvider);
+  return db == null ? null : FirestoreVendorRepository(db);
 });
 
 final adoptionRepositoryProvider = Provider<AdoptionRepository?>((ref) {
@@ -102,4 +128,10 @@ final documentFilePickerProvider = Provider<DocumentFilePicker>(
 
 final fileShareProvider = Provider<FileShare>((ref) => SharePlusFileShare());
 
+final gallerySaverProvider = Provider<GallerySaver>((ref) => GalGallerySaver());
+
 final fileOpenerProvider = Provider<FileOpener>((ref) => OpenFilexOpener());
+
+final appLinkOpenerProvider = Provider<AppLinkOpener>(
+  (ref) => UrlLauncherLinkOpener(),
+);

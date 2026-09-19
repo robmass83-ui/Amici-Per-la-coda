@@ -4,15 +4,27 @@ T enumByWire<T extends Enum>(
   String? raw,
   T fallback,
 ) {
+  return enumByWireOrNull(values, wireOf, raw) ?? fallback;
+}
+
+T? enumByWireOrNull<T extends Enum>(
+  List<T> values,
+  String Function(T value) wireOf,
+  String? raw,
+) {
   if (raw == null) {
-    return fallback;
+    return null;
+  }
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
   }
   for (final value in values) {
-    if (wireOf(value) == raw) {
+    if (wireOf(value) == trimmed) {
       return value;
     }
   }
-  return fallback;
+  return null;
 }
 
 enum DogSex {
@@ -32,6 +44,36 @@ enum Taglia {
   String get wire => name;
   static Taglia parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, Taglia.media);
+}
+
+enum TipoPelo {
+  corto,
+  medio,
+  lungo,
+  nonIndicato;
+
+  String get wire => switch (this) {
+    corto => 'corto',
+    medio => 'medio',
+    lungo => 'lungo',
+    nonIndicato => 'non_indicato',
+  };
+
+  static TipoPelo? parseOrNull(String? raw) =>
+      enumByWireOrNull(values, (v) => v.wire, raw);
+}
+
+enum Purezza {
+  meticcio,
+  inPurezza;
+
+  String get wire => switch (this) {
+    meticcio => 'meticcio',
+    inPurezza => 'in_purezza',
+  };
+
+  static Purezza? parseOrNull(String? raw) =>
+      enumByWireOrNull(values, (v) => v.wire, raw);
 }
 
 enum IscrittoAnagrafe {
@@ -66,6 +108,9 @@ enum ModalitaIngresso {
 
   static ModalitaIngresso parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, ModalitaIngresso.vagante);
+
+  static ModalitaIngresso? parseOrNull(String? raw) =>
+      enumByWireOrNull(values, (v) => v.wire, raw);
 }
 
 enum DogStato {
@@ -75,7 +120,8 @@ enum DogStato {
   adottato,
   inCura,
   restituito,
-  deceduto;
+  deceduto,
+  trasferito;
 
   String get wire => switch (this) {
     inRifugio => 'in_rifugio',
@@ -85,6 +131,7 @@ enum DogStato {
     inCura => 'in_cura',
     restituito => 'restituito',
     deceduto => 'deceduto',
+    trasferito => 'trasferito',
   };
 
   static DogStato parse(String? raw) =>
@@ -104,6 +151,9 @@ enum ConPersone {
 
   static ConPersone parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, ConPersone.selettivo);
+
+  static ConPersone? parseOrNull(String? raw) =>
+      enumByWireOrNull(values, (v) => v.wire, raw);
 }
 
 enum ConCani {
@@ -266,6 +316,17 @@ enum AppointmentStato {
       enumByWire(values, (v) => v.wire, raw, AppointmentStato.previsto);
 }
 
+enum BoxTipo {
+  normale,
+  degenza,
+  isolamento,
+  quarantena;
+
+  String get wire => name;
+  static BoxTipo parse(String? raw) =>
+      enumByWire(values, (v) => v.wire, raw, BoxTipo.normale);
+}
+
 enum VolunteerRuolo {
   presidente,
   referente,
@@ -289,4 +350,33 @@ enum Affidabilita {
 
   static Affidabilita parse(String? raw) =>
       enumByWire(values, (v) => v.wire, raw, Affidabilita.daVerificare);
+}
+
+enum VendorTipo {
+  veterinario,
+  clinica,
+  farmacia,
+  negozio,
+  toelettatura,
+  altro;
+
+  String get wire => name;
+  static VendorTipo parse(String? raw) =>
+      enumByWire(values, (v) => v.wire, raw, VendorTipo.altro);
+}
+
+enum TemplateVisibilita {
+  home,
+  scheda,
+  entrambi,
+  nessuna;
+
+  String get wire => name;
+
+  static TemplateVisibilita parse(String? raw) =>
+      enumByWire(values, (v) => v.wire, raw, TemplateVisibilita.entrambi);
+
+  bool get inHome => this == home || this == entrambi;
+
+  bool get inScheda => this == scheda || this == entrambi;
 }
