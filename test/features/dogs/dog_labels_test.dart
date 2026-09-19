@@ -39,6 +39,45 @@ void main() {
     expect(tagliaLabel(Taglia.media), 'Media');
   });
 
+  test('situazione: Intero/Castrato e Intera/Sterilizzata', () {
+    expect(
+      dogSituazioneValue(testDog(sesso: DogSex.M, sterilizzato: false)),
+      'Intero',
+    );
+    expect(
+      dogSituazioneValue(testDog(sesso: DogSex.M, sterilizzato: true)),
+      'Castrato',
+    );
+    expect(
+      dogSituazioneValue(testDog(sesso: DogSex.F, sterilizzato: false)),
+      'Intera',
+    );
+    expect(
+      dogSituazioneValue(testDog(sesso: DogSex.F, sterilizzato: true)),
+      'Sterilizzata',
+    );
+    expect(
+      dogSituazioneValue(testDog(sesso: null, sterilizzato: false)),
+      'Intero',
+    );
+    expect(
+      dogSituazioneValue(testDog().copyWith(clearSterilizzato: true)),
+      '—',
+    );
+  });
+
+  test('sesso nullo si mostra come trattino', () {
+    expect(dogSexLabel(null), '—');
+    expect(dogSexLabel(DogSex.F), 'Femmina');
+    final dog = testDog(nome: 'Duca', sesso: null, razza: 'Meticcia');
+    expect(dogListSubtitle(dog, now: now), contains('—'));
+  });
+
+  test('sottotitolo elenco include la taglia', () {
+    final dog = testDog(razza: 'Meticcia', taglia: Taglia.grande);
+    expect(dogListSubtitle(dog, now: now), contains('Taglia grande'));
+  });
+
   test('testo di condivisione: nome, età, carattere', () {
     final dog = testDog(
       nome: '[PROVA] Fenice',
@@ -49,6 +88,16 @@ void main() {
     expect(
       testoCondivisioneScheda(dog, now),
       'Fenice\nCirca 3 anni e mezzo\nDolce, Socievole, Equilibrata',
+    );
+  });
+
+  test('sottotitolo galleria usa fotoCount, senza query foto', () {
+    expect(dogGalleryCountLabel(testDog()), 'Nessuna copertina');
+    expect(dogGalleryCountLabel(testDog().copyWith(fotoCount: 1)), '1 foto');
+    expect(dogGalleryCountLabel(testDog().copyWith(fotoCount: 3)), '3 foto');
+    expect(
+      dogGalleryCountLabel(testDog().copyWith(fotoCopertinaId: 'p1')),
+      'Foto',
     );
   });
 }

@@ -3,10 +3,11 @@ import '../../data/models/dog.dart';
 import '../../data/models/enums.dart';
 import '../../ui/components.dart';
 
-String dogSexLabel(DogSex sex) {
+String dogSexLabel(DogSex? sex) {
   return switch (sex) {
     DogSex.F => 'Femmina',
     DogSex.M => 'Maschio',
+    null => '—',
   };
 }
 
@@ -19,6 +20,7 @@ String dogStatoLabel(DogStato stato) {
     DogStato.inCura => 'In cura',
     DogStato.restituito => 'Restituito',
     DogStato.deceduto => 'Deceduto',
+    DogStato.trasferito => 'Trasferito',
   };
 }
 
@@ -31,6 +33,7 @@ String dogStatoChoiceTitle(DogStato stato) {
     DogStato.inCura => 'In cura / degenza',
     DogStato.restituito => 'Restituito al proprietario',
     DogStato.deceduto => 'Deceduto',
+    DogStato.trasferito => 'Trasferito ad altra struttura',
   };
 }
 
@@ -43,6 +46,7 @@ String dogStatoChoiceSubtitle(DogStato stato) {
     DogStato.inCura => 'Presso clinica veterinaria',
     DogStato.restituito => 'Cane smarrito ritrovato',
     DogStato.deceduto => 'Archivia la scheda con data',
+    DogStato.trasferito => 'Lascia il rifugio per un\'altra struttura',
   };
 }
 
@@ -65,12 +69,14 @@ MiniBadgeVariant dogStatoBadge(DogStato stato) {
     DogStato.inCura => MiniBadgeVariant.red,
     DogStato.restituito => MiniBadgeVariant.neutral,
     DogStato.deceduto => MiniBadgeVariant.neutral,
+    DogStato.trasferito => MiniBadgeVariant.neutral,
   };
 }
 
 String dogListSubtitle(Dog dog, {required DateTime now}) {
   final parts = <String>[
     if (dog.razza.isNotEmpty) dog.razza,
+    'Taglia ${tagliaLabel(dog.taglia).toLowerCase()}',
     dogSexLabel(dog.sesso),
     ?dogAgeShortLabel(dog, now),
   ];
@@ -78,7 +84,18 @@ String dogListSubtitle(Dog dog, {required DateTime now}) {
 }
 
 String dogSterilizedLabel(Dog dog) {
-  return dog.sesso == DogSex.F ? 'Sterilizzata' : 'Sterilizzato';
+  return dogSituazioneValue(dog);
+}
+
+String dogSituazioneValue(Dog dog) {
+  if (dog.sterilizzato == null) {
+    return '—';
+  }
+  final female = dog.sesso == DogSex.F;
+  if (dog.sterilizzato == true) {
+    return female ? 'Sterilizzata' : 'Castrato';
+  }
+  return female ? 'Intera' : 'Intero';
 }
 
 String tagliaLabel(Taglia taglia) {
@@ -89,7 +106,11 @@ String tagliaLabel(Taglia taglia) {
   };
 }
 
-String yesNo(bool value) => value ? 'Sì' : 'No';
+String yesNo(bool? value) => switch (value) {
+  true => 'Sì',
+  false => 'No',
+  null => '—',
+};
 
 String dashIfEmpty(String value) => value.trim().isEmpty ? '—' : value.trim();
 
@@ -104,11 +125,12 @@ String carattereLabel(List<String> tags) {
   return tags.join(', ');
 }
 
-String conPersoneLabel(ConPersone value) {
+String conPersoneLabel(ConPersone? value) {
   return switch (value) {
     ConPersone.moltoSocievole => 'Molto socievole',
     ConPersone.selettivo => 'Selettivo',
     ConPersone.diffidente => 'Diffidente',
+    null => '—',
   };
 }
 
@@ -146,13 +168,14 @@ String iscrittoAnagrafeLabel(IscrittoAnagrafe value) {
   };
 }
 
-String modalitaIngressoLabel(ModalitaIngresso value) {
+String modalitaIngressoLabel(ModalitaIngresso? value) {
   return switch (value) {
     ModalitaIngresso.vagante => 'Recupero cane vagante',
     ModalitaIngresso.sequestro => 'Sequestro',
     ModalitaIngresso.rinuncia => 'Rinuncia',
     ModalitaIngresso.natoInRifugio => 'Nato in rifugio',
     ModalitaIngresso.trasferimento => 'Trasferimento',
+    null => '—',
   };
 }
 
@@ -174,6 +197,29 @@ String dogPesoLabel(double? pesoKg) {
     return '—';
   }
   return 'Circa ${formatItalianNumber(pesoKg)} kg';
+}
+
+String dogIngressoLabel(Dog dog) {
+  final date = formatItalianDate(dog.dataIngresso);
+  return dog.dataIngressoStimata ? '$date (stimata)' : date;
+}
+
+String tipoPeloLabel(TipoPelo? value) {
+  return switch (value) {
+    TipoPelo.corto => 'Corto',
+    TipoPelo.medio => 'Medio',
+    TipoPelo.lungo => 'Lungo',
+    TipoPelo.nonIndicato => 'Non indicato',
+    null => '—',
+  };
+}
+
+String purezzaLabel(Purezza? value) {
+  return switch (value) {
+    Purezza.meticcio => 'Meticcio',
+    Purezza.inPurezza => 'In purezza',
+    null => '—',
+  };
 }
 
 String dogRazzaTagliaLabel(Dog dog) {
@@ -222,4 +268,15 @@ String? dogAgeShortLabel(Dog dog, DateTime now, {bool compact = true}) {
     return '${prefix}1 anno$half';
   }
   return '$prefix$years anni$half';
+}
+
+String dogGalleryCountLabel(Dog dog) {
+  final n = dog.fotoCount;
+  if (n > 0) {
+    return n == 1 ? '1 foto' : '$n foto';
+  }
+  if (dog.fotoCopertinaId != null && dog.fotoCopertinaId!.isNotEmpty) {
+    return 'Foto';
+  }
+  return 'Nessuna copertina';
 }

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/dog.dart';
-import '../../data/models/photo.dart';
-import '../../data/photos/cover_photo.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'dog_labels.dart';
@@ -41,10 +39,7 @@ class DogListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photos = ref
-        .watch(photosByDogProvider(dog.id))
-        .maybeWhen(data: (items) => items, orElse: () => const <Photo>[]);
-    final cover = coverPhotoOf(photos, dog.fotoCopertinaId);
+    final cover = ref.watch(coverPhotoProvider(dog.id));
     return AppCard(
       padding: const EdgeInsets.all(AppDim.radIconBox),
       onTap: onTap,
@@ -59,7 +54,7 @@ class DogListTile extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  dog.nome,
+                  dogDisplayName(dog.nome),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -91,9 +86,9 @@ class DogListTile extends ConsumerWidget {
                       label: dogStatoLabel(dog.stato),
                       variant: dogStatoBadge(dog.stato),
                     ),
-                    if (dog.sterilizzato)
-                      MiniBadge(label: dogSterilizedLabel(dog)),
-                    if (dog.adottabile)
+                    if (dog.sterilizzato != null)
+                      MiniBadge(label: dogSituazioneValue(dog)),
+                    if (dog.adottabile == true)
                       const MiniBadge(
                         label: 'Adottabile',
                         variant: MiniBadgeVariant.red,
