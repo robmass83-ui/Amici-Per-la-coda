@@ -1,4 +1,4 @@
-﻿/// Copia embedded di cani.csv, usata dal seed (anche nei test senza asset).
+﻿/// Copia embedded dell'anagrafe; originale in backend/scripts/cani.csv.
 const caniCsvSource = r'''n.,nome,sesso,dataNascita,nascitaPresunta,sterilizzato,dataSterilizzazione,razza,taglia,pesoKg,mantello,microchip,iscrittoAnagrafe,provenienza,modalitaIngresso,dataIngresso,settore,box,stato,statoDal,adottabile,conPersone,conCani,conGatti,conBambini,carattere,slogan,descrizione,noteCarattere,referente,pubblicato,note
 1,Orso,M,17/03/2021,NO,NO,,,,,,,,Corleto Perticara (PZ),,,,,in_rifugio,,,,,,,,,,,,,
 2,Bailys,F,17/03/2021,NO,SI,,,,,,,,Corleto Perticara (PZ),,,,,in_rifugio,,,,,,,,,,,,,

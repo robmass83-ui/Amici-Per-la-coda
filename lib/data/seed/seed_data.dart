@@ -50,7 +50,7 @@ const _tipiAppuntamentoConsentiti = {
   'altro',
 };
 
-/// Anagrafe vera da `cani.csv` + 6 cani / 3 volontari / 5 richieste di prova.
+/// Anagrafe vera da `backend/scripts/cani.csv` + 6 cani / 3 volontari / 5 richieste di prova.
 Future<SeedReport> runSeed(FirebaseFirestore db) async {
   await _deleteLegacyDemoDocs(db);
   await _deleteObsoleteAppointments(db);
