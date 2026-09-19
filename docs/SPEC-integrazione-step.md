@@ -241,7 +241,7 @@ Da usare adesso, appena concluso lo Step 9.
 Nella specifica mancavano alcune schermate: la home non veniva costruita da
 nessuno step. Ho aggiunto un documento di integrazione.
 
-Leggi @SPEC-integrazione-step.md ed esegui SOLO lo "Step 9-bis — Home / Dashboard".
+Leggi @docs/SPEC-integrazione-step.md ed esegui SOLO lo "Step 9-bis — Home / Dashboard".
 
 Punti su cui non voglio interpretazioni:
 
@@ -265,7 +265,7 @@ Al termine: flutter analyze, flutter test, screenshot dell'app vera a 360 dp
 Poi, quando arriverai in fondo allo Step 17:
 
 ```
-Approvato. Esegui lo "Step 17-bis" di @SPEC-integrazione-step.md: menu Altro,
+Approvato. Esegui lo "Step 17-bis" di @docs/SPEC-integrazione-step.md: menu Altro,
 notifiche, ricerca globale e bottom sheet delle azioni, con i test elencati.
 Contratto di layout in cima a ogni file prima del codice.
 Al termine: analyze, test, screenshot, riepilogo, fermati.
@@ -486,7 +486,7 @@ costruiscono.
 
 ```
 Ho verificato la specifica contro il riferimento HTML e sono emerse alcune
-lacune nel modello dati. Leggi la PARTE 2 di @SPEC-integrazione-step.md ed
+lacune nel modello dati. Leggi la PARTE 2 di @docs/SPEC-integrazione-step.md ed
 esegui SOLO i tre punti urgenti, quelli marcati in rosso:
 
 1. Storico dei pesi: aggiungi la collezione weights, il modello, il repository
@@ -751,7 +751,7 @@ Le azioni non permesse **non si disegnano**, non si disabilitano.
 
 # PARTE 5 — Step 14-ter: consolidamento
 
-**Origine:** rapporto sullo stato dell'app del 9 settembre 2026 (`RAPPORTO-STATO-APP.md`).
+**Origine:** rapporto sullo stato dell'app del 9 settembre 2026 (`docs/archive/RAPPORTO-STATO-APP.md`).
 **Quando:** subito dopo lo Step 14-bis, prima dello Step 15.
 **Natura:** nessuna funzione nuova. Solo cablaggio di ciò che esiste già, correzione di buchi
 di sicurezza e di integrità dei dati, rimozione dei segnaposto lasciati dagli step iniziali.

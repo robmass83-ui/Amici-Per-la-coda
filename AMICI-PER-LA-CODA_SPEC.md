@@ -5,7 +5,7 @@ L'agente deve leggerlo per intero prima di scrivere una riga di codice e rilegge
 pertinente all'inizio di ogni step.
 
 - **Versione:** 1.0
-- **Integrazione obbligatoria:** `SPEC-integrazione-step.md` (Step 9-bis e Step 17-bis)
+- **Integrazione obbligatoria:** `docs/SPEC-integrazione-step.md` (Step 9-bis e Step 17-bis)
 - **Riferimento visivo obbligatorio:** `design/reference.html` (prototipo HTML di 29 schermate, aprirlo nel browser)
 - **Committente:** associazione *Amici per la Coda ODV* — rifugio cani
 - **Utenti reali:** 3-4 volontari. Non è un'app pubblica, non va su nessuno store.
@@ -667,7 +667,7 @@ data corretti · tutte e 5 le tab rese senza overflow alle 4 larghezze.
 Contenuto della schermata Home (schermata 2 della sezione 7): saluto, due contatori,
 "da fare oggi", ultimi arrivi, richieste aperte, quattro scorciatoie.
 **Il contratto di layout completo, gli aggregatori e i test sono nel documento
-`SPEC-integrazione-step.md`**, che fa parte di questa specifica a tutti gli effetti.
+`docs/SPEC-integrazione-step.md`**, che fa parte di questa specifica a tutti gli effetti.
 
 Nota: la fascia "Ultimi arrivi" del riferimento HTML scorre in orizzontale. Nell'app
 diventa una riga di tre card di larghezza uguale — la regola 1 non ammette eccezioni.
@@ -766,7 +766,7 @@ il CSV esportato ha una riga per cane e le intestazioni corrette · l'export si 
 ### Step 17-bis — Menu Altro, Notifiche, Ricerca globale, azioni scheda
 
 Le quattro schermate di contorno (25, 24, 23, 29 della sezione 7) non coperte dagli altri
-step. **Dettaglio e test in `SPEC-integrazione-step.md`.**
+step. **Dettaglio e test in `docs/SPEC-integrazione-step.md`.**
 
 ---
 
