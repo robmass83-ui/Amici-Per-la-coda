@@ -1,32 +1,42 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/format_it.dart';
+import '../../core/firestore_codec.dart';
+import '../../data/data_providers.dart';
 import '../../data/models/dog.dart';
 import '../../data/models/enums.dart';
-import '../../data/models/photo.dart';
-import '../../data/photos/cover_photo.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
+import '../affido/affido_providers.dart';
+import '../auth/auth_providers.dart';
 import 'dog_adozione_tab.dart';
+import 'export/adoption_export.dart';
 import 'dog_altro_tab.dart';
 import 'dog_documenti_tab.dart';
 import 'dog_labels.dart';
+import 'dog_quick_edit_sheets.dart';
 import 'dog_note_tab.dart';
 import 'dog_salute_tab.dart';
 import 'dog_scheda_tab.dart';
 import 'dog_spese_tab.dart';
 import 'dog_tabs.dart';
 import 'dogs_providers.dart';
+import 'edit_permissions.dart';
 import 'photo_thumb.dart';
 
 // ── CONTRATTO DI LAYOUT · Scheda cane ──────────────────────────────────────
 // Column
 // ├ SafeArea  bottom=false
 // │  └ AppHeader  h=AppDim.appBarH(44)
-// │     back 34×34  (flex: none)  edit  share  more  34×34  (flex: none)
+// │  edit solo se canWriteRecords; share e more se la scheda è caricata
+// │  share: Scheda PDF · Card social (visibili a tutti i ruoli)
+// │  ⋮: Modifica · Gestisci foto · Cambia stato · Genera modulo ·
+// │     Duplica · Archivia · Elimina (rosso).
+// │     Le voci !canWrite non si disegnano.
 // └ Expanded NestedScrollView
 //    header:
 //    ├ Padding  L/T/R=AppDim.gapL(12)  B=AppDim.gapM(9)
@@ -56,7 +66,7 @@ import 'photo_thumb.dart';
 //    │     │    Text  11.5sp italic  AppColor.ink2
 //    │     ├ SizedBox h=9
 //    │     └ Wrap  spacing=9 runSpacing=9
-//    │        └ StatTile ×4  width=(max-9)/2
+//    │        └ StatTile ×4  width=(max-9)/2  minHeight=40; tap se canWrite
 //    │           ├ IconBadge  30×30  (flex: none)
 //    │           ├ SizedBox w=6
 //    │           └ Expanded Column
@@ -66,8 +76,8 @@ import 'photo_thumb.dart';
 //    │    Text  9sp  maxLines=2 ellipsis  textAlign=center
 //    body:
 //    └ ListView  padding L/R=12 T/B=9
-//       tab Scheda: Wrap 2×2  (vedi dog_scheda_tab.dart)
-//       tab Salute: scadenze + libretto + peso + pulsante
+//       tab Scheda: Wrap + Patologie accanto alle attività sanitarie
+//       tab Salute: patologie + scadenze + libretto + peso + pulsanti
 //       tab Adozione / Spese / Documenti / Note / Altro: dati dai repository
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -79,10 +89,21 @@ class DogDetailPage extends ConsumerStatefulWidget {
   final String dogId;
 
   static const microchipKey = Key('dog-microchip');
+  static const razzaTagliaKey = Key('dog-razza-taglia');
   static const tabBarKey = Key('dog-tab-bar');
   static const coverKey = Key('dog-cover');
   static const coverImageKey = Key('dog-cover-image');
   static const statoPillKey = Key('dog-stato-pill');
+  static const azioneModificaKey = Key('dog-azione-modifica');
+  static const azioneFotoKey = Key('dog-azione-foto');
+  static const azioneStatoKey = Key('dog-azione-stato');
+  static const azioneModuloKey = Key('dog-azione-modulo');
+  static const azioneCondividiKey = Key('dog-azione-condividi');
+  static const azioneEsportaPdfKey = Key('dog-azione-esporta-pdf');
+  static const azioneCardSocialKey = Key('dog-azione-card-social');
+  static const azioneDuplicaKey = Key('dog-azione-duplica');
+  static const azioneArchiviaKey = Key('dog-azione-archivia');
+  static const azioneEliminaKey = Key('dog-azione-elimina');
 
   static Key tabBodyKey(DogSheetTab tab) => Key('dog-tab-${tab.name}');
 
@@ -106,11 +127,162 @@ class _DogDetailPageState extends ConsumerState<DogDetailPage>
     super.dispose();
   }
 
+  Future<void> _onBack() async {
+    final from = GoRouterState.of(context).uri.queryParameters['from'];
+    if (from != null && from.isNotEmpty) {
+      GoRouter.of(context).go(from);
+      return;
+    }
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(AppRoutes.animali);
+  }
+
+  void _condividi(Dog dog) {
+    AppSheet.show<void>(
+      context: context,
+      title: 'Condividi',
+      children: [
+        OptionRow(
+          key: DogDetailPage.azioneEsportaPdfKey,
+          icon: const IconBadge(AppIcons.schedaPdf, size: IconBadge.inMenu),
+          title: 'Scheda di adozione (PDF)',
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            unawaited(
+              esportaSchedaAdozionePdf(context: context, ref: ref, dog: dog),
+            );
+          },
+        ),
+        OptionRow(
+          key: DogDetailPage.azioneCardSocialKey,
+          icon: const IconBadge(AppIcons.cardSocial, size: IconBadge.inMenu),
+          title: 'Card per i social (immagine)',
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            unawaited(esportaCardSocial(context: context, ref: ref, dog: dog));
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _duplica(Dog dog) async {
+    final repo = ref.read(dogRepositoryProvider);
+    if (repo == null) {
+      return;
+    }
+    final now = ref.read(dogListNowProvider);
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    final copy = dog.copyWith(
+      id: 'dup_${now.microsecondsSinceEpoch}',
+      nome: 'Copia di ${dogDisplayName(dog.nome)}',
+      microchip: '',
+      archiviato: false,
+      pubblicato: false,
+      clearFotoCopertinaId: true,
+      clearDataPubblicazione: true,
+      audit: Audit.seed(now, by: uid),
+    );
+    await repo.save(copy);
+    if (!mounted) {
+      return;
+    }
+    unawaited(context.push(AppRoutes.dog(copy.id)));
+  }
+
+  void _showAzioni(Dog dog, bool canWrite) {
+    AppSheet.show<void>(
+      context: context,
+      title: 'Azioni',
+      children: [
+        if (canWrite)
+          OptionRow(
+            key: DogDetailPage.azioneModificaKey,
+            icon: const IconBadge(AppIcons.modifica, size: IconBadge.inMenu),
+            title: 'Modifica',
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              context.push(AppRoutes.dogModifica(dog.id));
+            },
+          ),
+        OptionRow(
+          key: DogDetailPage.azioneFotoKey,
+          icon: const IconBadge(AppIcons.galleria, size: IconBadge.inMenu),
+          title: 'Gestisci foto',
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push(AppRoutes.dogFoto(dog.id));
+          },
+        ),
+        if (canWrite)
+          OptionRow(
+            key: DogDetailPage.azioneStatoKey,
+            icon: const IconBadge(AppIcons.cambiaStato, size: IconBadge.inMenu),
+            title: 'Cambia stato',
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              context.push(AppRoutes.dogStato(dog.id));
+            },
+          ),
+        OptionRow(
+          key: DogDetailPage.azioneModuloKey,
+          icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
+          title: 'Genera modulo di affido',
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push(AppRoutes.affidoPer(dogId: dog.id));
+          },
+        ),
+        if (canWrite)
+          OptionRow(
+            key: DogDetailPage.azioneDuplicaKey,
+            icon: const IconBadge(AppIcons.duplica, size: IconBadge.inMenu),
+            title: 'Duplica scheda',
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              unawaited(_duplica(dog));
+            },
+          ),
+        if (canWrite)
+          OptionRow(
+            key: DogDetailPage.azioneArchiviaKey,
+            icon: const IconBadge(AppIcons.archivia, size: IconBadge.inMenu),
+            title: 'Archivia',
+            titleColor: AppColor.red,
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              unawaited(
+                archiviaSchedaCane(context: context, ref: ref, dog: dog),
+              );
+            },
+          ),
+        if (canWrite)
+          OptionRow(
+            key: DogDetailPage.azioneEliminaKey,
+            icon: const IconBadge(AppIcons.elimina, size: IconBadge.inMenu),
+            title: 'Elimina definitivamente',
+            titleColor: AppColor.red,
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              unawaited(
+                eliminaSchedaCane(context: context, ref: ref, dog: dog),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
     final asyncDog = ref.watch(dogByIdProvider(widget.dogId));
     final now = ref.watch(dogListNowProvider);
     final requestCount = ref.watch(dogAdoptionCountProvider(widget.dogId));
+    final dog = asyncDog.maybeWhen(data: (value) => value, orElse: () => null);
 
     return Column(
       children: [
@@ -118,24 +290,13 @@ class _DogDetailPageState extends ConsumerState<DogDetailPage>
           bottom: false,
           child: AppHeader(
             onBack: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRoutes.animali);
-              }
+              unawaited(_onBack());
             },
-            onEdit: () => AppToast.show(
-              context,
-              'Modifica scheda: disponibile negli step successivi.',
-            ),
-            onShare: () => AppToast.show(
-              context,
-              'Condividi scheda: disponibile negli step successivi.',
-            ),
-            onMore: () => AppToast.show(
-              context,
-              'Altre azioni: disponibili negli step successivi.',
-            ),
+            onEdit: canWrite && dog != null
+                ? () => context.push(AppRoutes.dogModifica(widget.dogId))
+                : null,
+            onShare: dog == null ? null : () => _condividi(dog),
+            onMore: dog == null ? null : () => _showAzioni(dog, canWrite),
           ),
         ),
         Expanded(
@@ -202,11 +363,7 @@ class _DogDetailBody extends StatelessWidget {
                 AppDim.gapL,
                 AppDim.gapM,
               ),
-              child: _DogHero(
-                dog: dog,
-                now: now,
-                requestCount: requestCount,
-              ),
+              child: _DogHero(dog: dog, now: now, requestCount: requestCount),
             ),
           ),
           SliverPersistentHeader(
@@ -316,29 +473,23 @@ class _DogHero extends StatelessWidget {
   List<Widget> _infoRows(Dog dog, DateTime now) {
     final rows = <(AppIconSpec, String, String, Key?)>[
       (
-        dog.sesso == DogSex.F ? AppIcons.sessoF : AppIcons.sessoM,
+        dog.sesso == DogSex.F
+            ? AppIcons.sessoF
+            : dog.sesso == DogSex.M
+            ? AppIcons.sessoM
+            : AppIcons.carattere,
         'Sesso',
         dogSexLabel(dog.sesso),
         null,
       ),
-      (
-        AppIcons.data,
-        'Età',
-        dogAgeDetailLabel(dog, now),
-        null,
-      ),
+      (AppIcons.data, 'Età', dogAgeDetailLabel(dog, now), null),
       (
         AppIcons.razza,
         'Razza e taglia',
         dogRazzaTagliaLabel(dog),
-        null,
+        DogDetailPage.razzaTagliaKey,
       ),
-      (
-        AppIcons.peso,
-        'Peso',
-        dogPesoLabel(dog.pesoKg),
-        null,
-      ),
+      (AppIcons.peso, 'Peso', dogPesoLabel(dog.pesoKg), null),
       (
         AppIcons.microchip,
         'Microchip',
@@ -354,7 +505,7 @@ class _DogHero extends StatelessWidget {
       (
         AppIcons.data,
         'Data di ingresso',
-        formatItalianDate(dog.dataIngresso),
+        dogIngressoLabel(dog),
         null,
       ),
     ];
@@ -415,10 +566,7 @@ class _CoverPhoto extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photos = ref
-        .watch(photosByDogProvider(dog.id))
-        .maybeWhen(data: (items) => items, orElse: () => const <Photo>[]);
-    final cover = coverPhotoOf(photos, dog.fotoCopertinaId);
+    final cover = ref.watch(coverPhotoProvider(dog.id));
     return GestureDetector(
       key: DogDetailPage.coverKey,
       onTap: () => context.push(AppRoutes.dogFoto(dog.id)),
@@ -464,14 +612,15 @@ class _Quote extends StatelessWidget {
   }
 }
 
-class _StatGrid extends StatelessWidget {
+class _StatGrid extends ConsumerWidget {
   const _StatGrid({required this.dog, required this.requestCount});
 
   final Dog dog;
   final int requestCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileW = (constraints.maxWidth - AppDim.gapM) / 2;
@@ -488,6 +637,9 @@ class _StatGrid extends StatelessWidget {
                 ),
                 label: 'Stato attuale',
                 value: dogStatoLabel(dog.stato),
+                onTap: canWrite
+                    ? () => context.push(AppRoutes.dogStato(dog.id))
+                    : null,
               ),
             ),
             SizedBox(
@@ -497,8 +649,19 @@ class _StatGrid extends StatelessWidget {
                   AppIcons.sterilizzato,
                   size: IconBadge.inStat,
                 ),
-                label: dogSterilizedLabel(dog),
-                value: yesNo(dog.sterilizzato),
+                label: 'Situazione',
+                value: dogSituazioneValue(dog),
+                onTap: canWrite
+                    ? () => showSituazioneSheet(
+                          context: context,
+                          dog: dog,
+                          onSave: (sterilizzato, data) {
+                            unawaited(
+                              _saveSituazione(ref, dog, sterilizzato, data),
+                            );
+                          },
+                        )
+                    : null,
               ),
             ),
             SizedBox(
@@ -510,6 +673,15 @@ class _StatGrid extends StatelessWidget {
                 ),
                 label: 'Adottabile',
                 value: yesNo(dog.adottabile),
+                onTap: canWrite
+                    ? () => showAdottabileSheet(
+                          context: context,
+                          dog: dog,
+                          onSave: (adottabile) {
+                            unawaited(_saveAdottabile(ref, dog, adottabile));
+                          },
+                        )
+                    : null,
               ),
             ),
             SizedBox(
@@ -528,6 +700,53 @@ class _StatGrid extends StatelessWidget {
       },
     );
   }
+}
+
+Future<void> _saveSituazione(
+  WidgetRef ref,
+  Dog dog,
+  bool sterilizzato,
+  DateTime? data,
+) async {
+  final repo = ref.read(dogRepositoryProvider);
+  final volunteer = ref.read(currentVolunteerProvider);
+  if (repo == null || volunteer == null) {
+    return;
+  }
+  final now = DateTime.now();
+  await repo.save(
+    dog.copyWith(
+      sterilizzato: sterilizzato,
+      dataSterilizzazione: data,
+      clearDataSterilizzazione: !sterilizzato || data == null,
+      audit: Audit(
+        createdAt: dog.audit.createdAt,
+        createdBy: dog.audit.createdBy,
+        updatedAt: now,
+        updatedBy: volunteer.id,
+      ),
+    ),
+  );
+}
+
+Future<void> _saveAdottabile(WidgetRef ref, Dog dog, bool adottabile) async {
+  final repo = ref.read(dogRepositoryProvider);
+  final volunteer = ref.read(currentVolunteerProvider);
+  if (repo == null || volunteer == null) {
+    return;
+  }
+  final now = DateTime.now();
+  await repo.save(
+    dog.copyWith(
+      adottabile: adottabile,
+      audit: Audit(
+        createdAt: dog.audit.createdAt,
+        createdBy: dog.audit.createdBy,
+        updatedAt: now,
+        updatedBy: volunteer.id,
+      ),
+    ),
+  );
 }
 
 class _DogTabBarDelegate extends SliverPersistentHeaderDelegate {
