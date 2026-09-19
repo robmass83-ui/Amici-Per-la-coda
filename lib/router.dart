@@ -9,6 +9,8 @@ import 'core/app_navigation.dart';
 import 'data/data_providers.dart';
 import 'data/models/enums.dart';
 import 'data/models/volunteer.dart';
+import 'features/adoptions/adopter_detail_page.dart';
+import 'features/adoptions/adopter_form_page.dart';
 import 'features/adoptions/adopters_page.dart';
 import 'features/adoptions/adoption_detail_page.dart';
 import 'features/adoptions/adoptions_page.dart';
@@ -64,6 +66,7 @@ abstract final class AppRoutes {
   static const notifiche = '/notifiche';
   static const archiviati = '/archiviati';
   static const adottanti = '/adottanti';
+  static const adottanteNuovo = '/adottanti/nuovo';
   static const fornitori = '/fornitori';
   static const fornitoreNuovo = '/fornitori/nuovo';
   static const richieste = '/richieste';
@@ -119,6 +122,9 @@ abstract final class AppRoutes {
   }
 
   static String volontario(String id) => '$impostazioni/utenti/$id';
+
+  static String adottante(String id) => '$adottanti/$id';
+  static String adottanteModifica(String id) => '$adottanti/$id/modifica';
 
   static String fornitore(String id) => '$fornitori/$id';
   static String fornitoreModifica(String id) => '$fornitori/$id/modifica';
@@ -265,6 +271,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.adottanti,
         builder: (context, state) => const AdoptersPage(),
+        routes: [
+          GoRoute(
+            path: 'nuovo',
+            builder: (context, state) => AdopterFormPage(
+              dogId: state.uri.queryParameters['dogId'],
+            ),
+          ),
+          GoRoute(
+            path: ':adopterId',
+            builder: (context, state) => AdopterDetailPage(
+              adopterId: state.pathParameters['adopterId']!,
+            ),
+            routes: [
+              GoRoute(
+                path: 'modifica',
+                builder: (context, state) => AdopterFormPage(
+                  adopterId: state.pathParameters['adopterId'],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.fornitori,

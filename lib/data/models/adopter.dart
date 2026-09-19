@@ -96,4 +96,26 @@ class Adopter {
       audit: audit ?? this.audit,
     );
   }
+
+  Adopter withoutAdozioneId(String adoptionId, {Audit? audit}) {
+    return Adopter(
+      id: id,
+      nome: nome,
+      cognome: cognome,
+      telefono: telefono,
+      email: email,
+      citta: citta,
+      indirizzo: indirizzo,
+      docTipo: docTipo,
+      docNumero: docNumero,
+      dataNascita: dataNascita,
+      note: note,
+      adozioniIds: [
+        for (final item in adozioniIds)
+          if (item != adoptionId) item,
+      ],
+      affidabilita: affidabilita,
+      audit: audit ?? this.audit,
+    );
+  }
 }

@@ -317,6 +317,7 @@ Adopter testAdopter({
   String cognome = 'Verdi',
   String telefono = '3331234567',
   String email = 'luca@example.it',
+  String citta = 'Potenza',
   List<String> adozioniIds = const [],
 }) {
   return Adopter(
@@ -325,7 +326,7 @@ Adopter testAdopter({
     cognome: cognome,
     telefono: telefono,
     email: email,
-    citta: 'Potenza',
+    citta: citta,
     indirizzo: 'Via Roma 1',
     docTipo: 'CI',
     docNumero: 'AB123',
