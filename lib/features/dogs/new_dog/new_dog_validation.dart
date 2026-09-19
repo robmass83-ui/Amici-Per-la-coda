@@ -1,3 +1,5 @@
+import '../../../core/format_it.dart';
+
 const microchipCifre = 15;
 
 String? validateNomeCane(String raw) {
@@ -32,6 +34,16 @@ String? extractMicrochipDigits(String raw) {
   }
   if (digits.length > microchipCifre) {
     return digits.substring(0, microchipCifre);
+  }
+  return null;
+}
+
+String? validateOptionalItalianDate(String raw) {
+  if (raw.trim().isEmpty) {
+    return null;
+  }
+  if (parseItalianDate(raw) == null) {
+    return 'Data non valida (gg/mm/aaaa).';
   }
   return null;
 }

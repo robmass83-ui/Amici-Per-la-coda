@@ -32,4 +32,14 @@ void main() {
     expect(validateDataIngresso(null), 'Inserisci la data di ingresso.');
     expect(validateDataIngresso(DateTime(2026, 9, 8)), isNull);
   });
+
+  test('data opzionale: vuota ok, valida ok, invalida errore', () {
+    expect(validateOptionalItalianDate(''), isNull);
+    expect(validateOptionalItalianDate('  '), isNull);
+    expect(validateOptionalItalianDate('19/09/2026'), isNull);
+    expect(
+      validateOptionalItalianDate('32/13/2026'),
+      'Data non valida (gg/mm/aaaa).',
+    );
+  });
 }
