@@ -13,12 +13,12 @@ bool shouldUseEmulators({
   bool? dartDefine,
 }) {
   final web = isWeb ?? kIsWeb;
+  if (!web) {
+    return false;
+  }
   final define = dartDefine ?? amiciUseEmulatorDefine;
   if (define) {
     return true;
-  }
-  if (!web) {
-    return false;
   }
   final name = host ?? Uri.base.host;
   return name == 'localhost' || name == '127.0.0.1';

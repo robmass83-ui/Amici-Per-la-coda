@@ -31,6 +31,13 @@ void main() {
     );
   });
 
+  test('APK ignora dart-define: mai emulatore', () {
+    expect(
+      shouldUseEmulators(isWeb: false, host: 'localhost', dartDefine: true),
+      isFalse,
+    );
+  });
+
   test('dart-define forza l’emulatore anche fuori localhost', () {
     expect(
       shouldUseEmulators(
