@@ -3,50 +3,47 @@ import { test } from 'node:test';
 
 const host = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099';
 
-function hostnameFromAuthEmulatorHost(value) {
+function parseAllowedAuthEmulatorAuthority(value) {
   if (typeof value !== 'string') {
-    return '';
+    return null;
   }
   const raw = value.trim();
-  if (!raw || raw.includes('://')) {
-    return '';
+  if (!raw || raw.includes('://') || raw.startsWith('[')) {
+    return null;
   }
-  if (raw.startsWith('[')) {
-    const close = raw.indexOf(']');
-    if (close < 0) {
-      return '';
-    }
-    const hostname = raw.slice(1, close);
-    const rest = raw.slice(close + 1);
-    if (rest !== '' && !/^:\d+$/.test(rest)) {
-      return '';
-    }
-    return hostname;
+  const colon = raw.lastIndexOf(':');
+  if (colon <= 0 || colon === raw.length - 1) {
+    return null;
   }
-  const match = raw.match(/^(localhost|127\.0\.0\.1|::1)(?::(\d+))?$/);
-  return match ? match[1] : '';
+  const hostname = raw.slice(0, colon);
+  const portText = raw.slice(colon + 1);
+  if (!/^\d+$/.test(portText)) {
+    return null;
+  }
+  const port = Number(portText);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return null;
+  }
+  if (hostname !== '127.0.0.1' && hostname !== 'localhost') {
+    return null;
+  }
+  return { host: hostname, port };
 }
 
 function isAllowedAuthEmulatorHost(value) {
-  const hostname = hostnameFromAuthEmulatorHost(value);
-  return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1';
+  return parseAllowedAuthEmulatorAuthority(value) !== null;
 }
 
-function authUrl(path) {
-  return `http://${host}/identitytoolkit.googleapis.com/v1/${path}?key=fake-api-key`;
+function authUrl(path, emulatorHost = host) {
+  const parsed = parseAllowedAuthEmulatorAuthority(emulatorHost);
+  if (!parsed) {
+    throw new Error('Questo test gira solo sull’Auth emulator locale.');
+  }
+  return `http://${parsed.host}:${parsed.port}/identitytoolkit.googleapis.com/v1/${path}?key=fake-api-key`;
 }
 
 test('accetta solo hostname Auth emulator loopback esatti', () => {
-  for (const value of [
-    '127.0.0.1:9099',
-    'localhost:9099',
-    '[::1]:9099',
-    '::1:9099',
-    '127.0.0.1',
-    'localhost',
-    '::1',
-    '[::1]',
-  ]) {
+  for (const value of ['127.0.0.1:9099', 'localhost:9099']) {
     assert.equal(isAllowedAuthEmulatorHost(value), true, value);
   }
 });
@@ -63,9 +60,28 @@ test('rifiuta host Auth emulator non loopback', () => {
     'http://127.0.0.1:9099',
     '0.0.0.0:9099',
     '10.0.0.1:9099',
+    '::1',
+    '::1:9099',
+    '[::1]',
+    '[::1]:9099',
+    '[127.0.0.1]',
+    '[127.0.0.1]:9099',
+    '127.0.0.1',
+    'localhost',
+    '127.0.0.1:',
+    'localhost:0',
+    '127.0.0.1:65536',
   ]) {
     assert.equal(isAllowedAuthEmulatorHost(value), false, value);
   }
+});
+
+test('costruisce URL Auth emulator dal host:port parsato', () => {
+  assert.equal(
+    authUrl('accounts:signUp', '127.0.0.1:9099'),
+    'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key',
+  );
+  assert.throws(() => authUrl('accounts:signUp', '::1:9099'));
 });
 
 async function post(path, body) {
