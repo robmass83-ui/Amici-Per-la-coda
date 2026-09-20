@@ -905,6 +905,8 @@ class FirestoreSettingsRepository implements SettingsRepository {
   }
 }
 
+/// Persistenza esplicita. Su Android è la cache nativa; sul web IndexedDB.
+/// Se il browser rifiuta, `settings` lancia e il catch lascia l'app online-only.
 void enableFirestoreOffline(FirebaseFirestore db) {
   try {
     db.settings = const Settings(
