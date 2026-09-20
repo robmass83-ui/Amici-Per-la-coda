@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../web_surface.dart';
 import 'app_install_channel.dart';
 import 'app_update_state.dart';
 import 'github_release.dart';
@@ -12,7 +13,9 @@ import 'github_release_feed.dart';
 /// Consegna di test: `tool/publish_test_release.ps1` (stesso versionCode su
 /// GitHub e ADB). Si confronta solo versionCode: se il telefono ha già quella
 /// build, `isNewerThan` è falso e il foglio non compare.
-final appUpdateEnabledProvider = Provider<bool>((ref) => !kDebugMode);
+final appUpdateEnabledProvider = Provider<bool>(
+  (ref) => !kDebugMode && showAndroidOnlyTools(),
+);
 
 final githubReleaseFeedProvider = Provider<GithubReleaseFeed>((ref) {
   return GithubReleaseFeed();

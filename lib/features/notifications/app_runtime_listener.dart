@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_connectivity.dart';
 import '../../core/local_notifications.dart';
+import '../../core/web_surface.dart';
 import '../../data/data_providers.dart';
 import '../dashboard/home_providers.dart';
 import '../dogs/dogs_providers.dart';
@@ -12,7 +13,9 @@ import 'local_notification_plan.dart';
 import 'notice_providers.dart';
 
 final localNotificationsProvider = Provider<LocalNotifications>(
-  (ref) => PluginLocalNotifications(),
+  (ref) => showAndroidOnlyTools()
+      ? PluginLocalNotifications()
+      : const NoopLocalNotifications(),
 );
 
 final pendingWritesFlushProvider = Provider<Future<void> Function()?>((ref) {

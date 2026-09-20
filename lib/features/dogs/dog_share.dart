@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../data/models/dog.dart';
 import '../../data/models/photo.dart';
@@ -10,6 +7,7 @@ import '../../data/photos/cover_photo.dart';
 import '../../data/photos/photo_codec.dart';
 import '../../data/repositories/data_repositories.dart';
 import 'dog_labels.dart';
+import 'dog_share_io.dart' if (dart.library.html) 'dog_share_web.dart';
 
 String testoCondivisioneScheda(Dog dog, DateTime now) {
   final nome = dogDisplayName(dog.nome);
@@ -42,13 +40,14 @@ Future<void> condividiSchedaCane({
   }
   try {
     if (bytes != null && bytes.isNotEmpty) {
-      final file = File(
-        '${Directory.systemTemp.path}${Platform.pathSeparator}scheda_${dog.id}.${photoFileExtension(cover?.mime ?? photoMimeJpeg)}',
+      await shareSchedaBytes(
+        bytes: bytes,
+        fileName:
+            'scheda_${dog.id}.${photoFileExtension(cover?.mime ?? photoMimeJpeg)}',
+        text: text,
       );
-      await file.writeAsBytes(bytes, flush: true);
-      await Share.shareXFiles([XFile(file.path)], text: text);
     } else {
-      await Share.share(text);
+      await shareSchedaTesto(text);
     }
   } catch (_) {
     // Plugin assente nei test: resta il testo negli appunti.
@@ -56,8 +55,5 @@ Future<void> condividiSchedaCane({
 }
 
 bool get _inWidgetTest {
-  if (Platform.environment.containsKey('FLUTTER_TEST')) {
-    return true;
-  }
   return WidgetsBinding.instance.runtimeType.toString().contains('Test');
 }

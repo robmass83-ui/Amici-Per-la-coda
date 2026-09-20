@@ -3,12 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_links.dart';
-import '../features/dogs/export/gal_gallery_saver.dart';
 import '../features/dogs/export/gallery_saver.dart';
 import 'documents/device_document_file_picker.dart';
-import 'documents/device_file_actions.dart';
 import 'documents/document_file_picker.dart';
 import 'documents/file_actions.dart';
+import 'documents/file_actions_factory.dart'
+    if (dart.library.html) 'documents/file_actions_factory_web.dart';
 import 'documents/template_assets.dart';
 import 'firestore/firestore_repositories.dart';
 import 'repositories/data_repositories.dart';
@@ -126,11 +126,11 @@ final documentFilePickerProvider = Provider<DocumentFilePicker>(
   (ref) => DeviceDocumentFilePicker(),
 );
 
-final fileShareProvider = Provider<FileShare>((ref) => SharePlusFileShare());
+final fileShareProvider = Provider<FileShare>((ref) => createFileShare());
 
-final gallerySaverProvider = Provider<GallerySaver>((ref) => GalGallerySaver());
+final gallerySaverProvider = Provider<GallerySaver>((ref) => createGallerySaver());
 
-final fileOpenerProvider = Provider<FileOpener>((ref) => OpenFilexOpener());
+final fileOpenerProvider = Provider<FileOpener>((ref) => createFileOpener());
 
 final appLinkOpenerProvider = Provider<AppLinkOpener>(
   (ref) => UrlLauncherLinkOpener(),

@@ -1,28 +1,40 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import '../../core/auth_errors.dart';
+import '../../core/firebase_emulators.dart';
 import '../repositories/auth_repository.dart';
+import 'identity_toolkit_http.dart';
+import 'identity_toolkit_http_factory.dart';
 
 /// REST Identity Toolkit: crea/elimina utenti senza toccare la sessione SDK.
 class IdentityToolkitApi {
-  IdentityToolkitApi({required this.apiKey, this._httpClient});
+  IdentityToolkitApi({
+    required this.apiKey,
+    IdentityToolkitHttp? http,
+    String? emulatorOrigin,
+  })  : _http = http ?? createIdentityToolkitHttp(),
+        _ownedHttp = http == null,
+        emulatorOrigin = emulatorOrigin ?? identityToolkitEmulatorOrigin();
 
   final String apiKey;
-  final HttpClient? _httpClient;
+  final IdentityToolkitHttp _http;
+  final bool _ownedHttp;
+  final String? emulatorOrigin;
 
   Future<CreatedAuthUser> signUp({
     required String email,
     required String password,
   }) {
-    return _credentialPost(
-      'accounts:signUp',
-      {
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      },
+    return _runOwned(
+      () => _credentialPost(
+        'accounts:signUp',
+        {
+          'email': email,
+          'password': password,
+          'returnSecureToken': true,
+        },
+      ),
     );
   }
 
@@ -30,28 +42,42 @@ class IdentityToolkitApi {
     required String email,
     required String password,
   }) {
-    return _credentialPost(
-      'accounts:signInWithPassword',
-      {
-        'email': email,
-        'password': password,
-        'returnSecureToken': true,
-      },
+    return _runOwned(
+      () => _credentialPost(
+        'accounts:signInWithPassword',
+        {
+          'email': email,
+          'password': password,
+          'returnSecureToken': true,
+        },
+      ),
     );
   }
 
-  Future<void> deleteAccount({required String refreshToken}) async {
-    final idToken = await _idTokenFromRefresh(refreshToken);
-    try {
-      await _postJson(
-        _authUri('accounts:delete'),
-        {'idToken': idToken},
-      );
-    } on AuthFailure catch (error) {
-      if (isAuthUserMissing(error)) {
-        return;
+  Future<void> deleteAccount({required String refreshToken}) {
+    return _runOwned(() async {
+      final idToken = await _idTokenFromRefresh(refreshToken);
+      try {
+        await _postJson(
+          _authUri('accounts:delete'),
+          {'idToken': idToken},
+        );
+      } on AuthFailure catch (error) {
+        if (isAuthUserMissing(error)) {
+          return;
+        }
+        rethrow;
       }
-      rethrow;
+    });
+  }
+
+  Future<T> _runOwned<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } finally {
+      if (_ownedHttp) {
+        _http.close();
+      }
     }
   }
 
@@ -86,6 +112,10 @@ class IdentityToolkitApi {
   }
 
   Uri _authUri(String path) {
+    final origin = emulatorOrigin;
+    if (origin != null && origin.isNotEmpty) {
+      return Uri.parse('$origin/identitytoolkit.googleapis.com/v1/$path?key=$apiKey');
+    }
     return Uri.https(
       'identitytoolkit.googleapis.com',
       '/v1/$path',
@@ -97,7 +127,7 @@ class IdentityToolkitApi {
     return _send(
       uri,
       utf8.encode(jsonEncode(body)),
-      ContentType.json,
+      'application/json',
     );
   }
 
@@ -105,24 +135,20 @@ class IdentityToolkitApi {
     return _send(
       uri,
       utf8.encode(body),
-      ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8'),
+      'application/x-www-form-urlencoded; charset=utf-8',
     );
   }
 
   Future<Map<String, dynamic>> _send(
     Uri uri,
     List<int> bytes,
-    ContentType contentType,
+    String contentType,
   ) async {
-    final client = _httpClient ?? HttpClient();
-    final owned = _httpClient == null;
     try {
-      final request = await client.postUrl(uri).timeout(_timeout);
-      request.headers.contentType = contentType;
-      request.add(bytes);
-      final response = await request.close().timeout(_timeout);
-      final text = await utf8.decodeStream(response).timeout(_timeout);
-      final decoded = jsonDecode(text);
+      final response = await _http
+          .post(uri: uri, bytes: bytes, contentType: contentType)
+          .timeout(_timeout);
+      final decoded = jsonDecode(response.body);
       if (decoded is! Map) {
         throw const AuthFailure('Accesso non riuscito. Riprova.');
       }
@@ -137,16 +163,8 @@ class IdentityToolkitApi {
       rethrow;
     } on TimeoutException {
       throw const AuthFailure('Il salvataggio sta impiegando troppo. Riprova.');
-    } on SocketException {
-      throw AuthFailure(italianAuthMessage('network-request-failed'));
-    } on HttpException {
-      throw AuthFailure(italianAuthMessage('network-request-failed'));
     } catch (_) {
       throw const AuthFailure('Accesso non riuscito. Riprova.');
-    } finally {
-      if (owned) {
-        client.close(force: true);
-      }
     }
   }
 

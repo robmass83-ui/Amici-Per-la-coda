@@ -1,10 +1,11 @@
-import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import '../../core/firestore_codec.dart';
+import 'photo_codec_env.dart'
+    if (dart.library.io) 'photo_codec_env_io.dart';
 import 'photo_limit.dart';
 
 // Limiti foto — coincidono con backend/firestore.rules (thumb < 25 KB,
@@ -149,7 +150,7 @@ Future<CompressedPhoto> _compressDogPhoto(
       return jpeg;
     }
   }
-  if (_inFlutterTest) {
+  if (photoCodecInTest) {
     return _uiPipeline(source, profile);
   }
   try {
@@ -190,23 +191,11 @@ Future<Map<String, Object>> _softwareCompressJpeg(Uint8List source) async {
   return _photoToIsolate(await _uiPipeline(source, _jpegLegacyProfile));
 }
 
-bool get _inFlutterTest {
-  try {
-    return Platform.environment.containsKey('FLUTTER_TEST');
-  } catch (_) {
-    return false;
-  }
-}
-
 bool get _useNativePlugin {
   if (kIsWeb) {
     return false;
   }
-  try {
-    return Platform.isAndroid || Platform.isIOS;
-  } catch (_) {
-    return false;
-  }
+  return photoCodecNativePlatform;
 }
 
 Future<CompressedPhoto?> _nativePipeline(

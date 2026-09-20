@@ -49,4 +49,9 @@ void main() {
   test('GetOptions Source.cache è nel codec', () {
     expect(Source.cache, isNotNull);
   });
+
+  test('enableFirestoreOffline non lancia', () {
+    final db = FakeFirebaseFirestore();
+    expect(() => enableFirestoreOffline(db), returnsNormally);
+  });
 }

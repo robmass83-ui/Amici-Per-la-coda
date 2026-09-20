@@ -114,6 +114,9 @@ abstract final class AppDim {
   static const logoHeaderH = 32.0;
   static const logoBarH = 52.0;
 
+  /// Colonna web: larghezza massima già verificata sulle schermate telefono.
+  static const webMaxContentWidth = 430.0;
+
   /// Foto copertina nella scheda cane (riferimento HTML 158×212, ridotta per 320 dp).
   static const photoW = 120.0;
   static const photoH = 168.0;
