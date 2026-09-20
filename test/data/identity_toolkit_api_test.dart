@@ -136,6 +136,24 @@ void main() {
     expect(http.closeCount, 0);
   });
 
+  test('deleteAccount sull’emulatore fa refresh e delete su 127.0.0.1:9099', () async {
+    final http = _FakeHttp();
+    final api = IdentityToolkitApi(
+      apiKey: 'fake',
+      http: http,
+      emulatorOrigin: 'http://127.0.0.1:9099',
+    );
+    await api.deleteAccount(refreshToken: 'refresh-1');
+    expect(http.uris.length, 2);
+    expect(http.uris[0].host, '127.0.0.1');
+    expect(http.uris[0].port, 9099);
+    expect(http.uris[0].path, contains('securetoken.googleapis.com'));
+    expect(http.uris[0].path, contains('/v1/token'));
+    expect(http.uris[1].host, '127.0.0.1');
+    expect(http.uris[1].port, 9099);
+    expect(http.uris[1].path, contains('accounts:delete'));
+  });
+
   test('chiamate owned sovrapposte usano adapter distinti e chiudono ciascuno una volta', () async {
     final adapters = <_OwnedProbeHttp>[];
     final refreshStarted = Completer<void>();

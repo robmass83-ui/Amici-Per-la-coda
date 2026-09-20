@@ -100,7 +100,7 @@ class IdentityToolkitApi {
   ) async {
     final data = await _postForm(
       http,
-      Uri.https('securetoken.googleapis.com', '/v1/token', {'key': apiKey}),
+      _secureTokenUri(),
       'grant_type=refresh_token&refresh_token=${Uri.encodeQueryComponent(refreshToken)}',
     );
     final idToken = data['id_token'] as String? ?? '';
@@ -120,6 +120,18 @@ class IdentityToolkitApi {
       );
     }
     return Uri.https('identitytoolkit.googleapis.com', '/v1/$path', {
+      'key': apiKey,
+    });
+  }
+
+  Uri _secureTokenUri() {
+    final origin = emulatorOrigin;
+    if (origin != null && origin.isNotEmpty) {
+      return Uri.parse(
+        '$origin/securetoken.googleapis.com/v1/token?key=$apiKey',
+      );
+    }
+    return Uri.https('securetoken.googleapis.com', '/v1/token', {
       'key': apiKey,
     });
   }
