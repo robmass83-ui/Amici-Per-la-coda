@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/app_navigation.dart';
+import 'core/web_surface.dart';
 import 'data/data_providers.dart';
 import 'data/models/enums.dart';
 import 'data/models/volunteer.dart';
@@ -84,6 +85,7 @@ abstract final class AppRoutes {
   static void openDog(BuildContext context, String id, {String? from}) {
     GoRouter.of(context).go(dog(id, from: from));
   }
+
   static String dogFoto(String id, {bool aggiungi = false}) {
     final path = '$animali/$id/foto';
     if (!aggiungi) {
@@ -124,10 +126,8 @@ abstract final class AppRoutes {
 
   static String adottante(String id) => '$adottanti/$id';
   static String adottanteModifica(String id) => '$adottanti/$id/modifica';
-  static String adottanteNuovoPer(String dogId) => Uri(
-        path: adottanteNuovo,
-        queryParameters: {'dogId': dogId},
-      ).toString();
+  static String adottanteNuovoPer(String dogId) =>
+      Uri(path: adottanteNuovo, queryParameters: {'dogId': dogId}).toString();
 
   static String fornitore(String id) => '$fornitori/$id';
   static String fornitoreModifica(String id) => '$fornitori/$id/modifica';
@@ -277,9 +277,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'nuovo',
-            builder: (context, state) => AdopterFormPage(
-              dogId: state.uri.queryParameters['dogId'],
-            ),
+            builder: (context, state) =>
+                AdopterFormPage(dogId: state.uri.queryParameters['dogId']),
           ),
           GoRoute(
             path: ':adopterId',
@@ -310,15 +309,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: ':vendorId',
-            builder: (context, state) => VendorDetailPage(
-              vendorId: state.pathParameters['vendorId']!,
-            ),
+            builder: (context, state) =>
+                VendorDetailPage(vendorId: state.pathParameters['vendorId']!),
             routes: [
               GoRoute(
                 path: 'modifica',
-                builder: (context, state) => VendorFormPage(
-                  vendorId: state.pathParameters['vendorId'],
-                ),
+                builder: (context, state) =>
+                    VendorFormPage(vendorId: state.pathParameters['vendorId']),
               ),
             ],
           ),
@@ -354,11 +351,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         // I tab restano montati: i listener `dogs` e copertine non si ricreano.
         builder: (context, state, navigationShell) {
-          return AppUpdateListener(
-            child: AppRuntimeListener(
-              child: AppShell(navigationShell: navigationShell),
-            ),
+          final shell = AppRuntimeListener(
+            child: AppShell(navigationShell: navigationShell),
           );
+          if (!showAndroidOnlyTools()) {
+            return shell;
+          }
+          return AppUpdateListener(child: shell);
         },
         branches: [
           StatefulShellBranch(

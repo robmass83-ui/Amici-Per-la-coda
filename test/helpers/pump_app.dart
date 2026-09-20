@@ -5,6 +5,7 @@ import 'package:amici_per_la_coda/core/local_notifications.dart';
 import 'package:amici_per_la_coda/core/app_update/app_update_controller.dart';
 import 'package:amici_per_la_coda/core/app_update/installed_apk_share.dart';
 import 'package:amici_per_la_coda/core/app_version.dart';
+import 'package:amici_per_la_coda/core/web_surface.dart';
 import 'package:amici_per_la_coda/data/data_providers.dart';
 import 'package:amici_per_la_coda/data/documents/document_file_picker.dart';
 import 'package:amici_per_la_coda/data/documents/file_actions.dart';
@@ -90,6 +91,7 @@ Future<void> pumpApp(
   SeedCleanup? seedCleanup,
   SearchRecentsStore? searchRecents,
   String? appVersion,
+  bool? webSurfaceIsWeb,
 }) async {
   await _ensureItalianDates();
   if (size != null) {
@@ -133,6 +135,8 @@ Future<void> pumpApp(
         appVersionProvider.overrideWith(
           (ref) async => appVersion ?? pubspecVersionName(),
         ),
+        if (webSurfaceIsWeb != null)
+          webSurfaceIsWebProvider.overrideWith((ref) => webSurfaceIsWeb),
         authRepositoryProvider.overrideWith((ref) => repository),
         if (initialLocation != null)
           initialLocationProvider.overrideWith((ref) => initialLocation),

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/app_update/app_update_controller.dart';
 import '../../core/app_version.dart';
+import '../../core/web_surface.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
@@ -33,8 +34,8 @@ import 'share_installed_apk.dart';
 // ├ SizedBox 12
 // ├ ARCHIVIO  Documenti (canWrite) · Famiglie · Fornitori · Archiviati
 // ├ SizedBox 12
-// └ APP  Statistiche · Notifiche · Aggiornamenti · Condividi app
-//    · Impostazioni · Esci rosso
+// └ APP  Statistiche · Notifiche · Impostazioni · Esci rosso
+//    Aggiornamenti e Condividi app solo se non web
 //    Catalogo UI solo kDebugMode
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -66,18 +67,18 @@ class AltroPage extends ConsumerWidget {
     final nome = volunteer == null
         ? ref.watch(homeVolunteerNameProvider)
         : volunteerDisplayName(volunteer);
-    final ruolo = volunteer == null
-        ? ''
-        : volunteerRuoloLabel(volunteer.ruolo);
-    final associazione = ref.watch(associationSettingsProvider).maybeWhen(
-          data: (item) => item?.denominazione ?? '',
-          orElse: () => '',
-        );
+    final ruolo = volunteer == null ? '' : volunteerRuoloLabel(volunteer.ruolo);
+    final associazione = ref
+        .watch(associationSettingsProvider)
+        .maybeWhen(data: (item) => item?.denominazione ?? '', orElse: () => '');
     final initial = nome.trim().isEmpty ? '?' : nome.trim()[0].toUpperCase();
     final subtitle = [
       if (ruolo.isNotEmpty) ruolo,
       if (associazione.isNotEmpty) associazione,
     ].join(' · ');
+    final androidTools = showAndroidOnlyTools(
+      isWeb: ref.watch(webSurfaceIsWebProvider),
+    );
 
     return ListView(
       key: listKey,
@@ -228,27 +229,31 @@ class AltroPage extends ConsumerWidget {
               title: 'Notifiche',
               onTap: () => context.push(AppRoutes.notifiche),
             ),
-            _menuRow(
-              key: aggiornamentiKey,
-              icon: AppIcons.aggiornamenti,
-              title: 'Aggiornamenti',
-              subtitle: ref.watch(appVersionProvider).maybeWhen(
-                    data: (version) => 'Versione $version',
-                    orElse: () => 'Controlla su GitHub',
-                  ),
-              onTap: () => unawaited(
-                ref
-                    .read(appUpdateControllerProvider.notifier)
-                    .check(userInitiated: true),
+            if (androidTools)
+              _menuRow(
+                key: aggiornamentiKey,
+                icon: AppIcons.aggiornamenti,
+                title: 'Aggiornamenti',
+                subtitle: ref
+                    .watch(appVersionProvider)
+                    .maybeWhen(
+                      data: (version) => 'Versione $version',
+                      orElse: () => 'Controlla su GitHub',
+                    ),
+                onTap: () => unawaited(
+                  ref
+                      .read(appUpdateControllerProvider.notifier)
+                      .check(userInitiated: true),
+                ),
               ),
-            ),
-            _menuRow(
-              key: condividiAppKey,
-              icon: AppIcons.condividi,
-              title: 'Condividi app',
-              subtitle: 'Invia l\'APK via WhatsApp o email',
-              onTap: () => unawaited(shareInstalledApk(context, ref)),
-            ),
+            if (androidTools)
+              _menuRow(
+                key: condividiAppKey,
+                icon: AppIcons.condividi,
+                title: 'Condividi app',
+                subtitle: 'Invia l\'APK via WhatsApp o email',
+                onTap: () => unawaited(shareInstalledApk(context, ref)),
+              ),
             _menuRow(
               key: impostazioniKey,
               icon: AppIcons.impostazioni,
@@ -331,7 +336,10 @@ class _MenuGroup extends StatelessWidget {
                 if (i > 0)
                   const ColoredBox(
                     color: AppColor.line2,
-                    child: SizedBox(height: AppDim.gapHair, width: double.infinity),
+                    child: SizedBox(
+                      height: AppDim.gapHair,
+                      width: double.infinity,
+                    ),
                   ),
                 rows[i],
               ],
