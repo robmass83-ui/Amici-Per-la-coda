@@ -3,9 +3,70 @@ import { test } from 'node:test';
 
 const host = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099';
 
+function hostnameFromAuthEmulatorHost(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  const raw = value.trim();
+  if (!raw || raw.includes('://')) {
+    return '';
+  }
+  if (raw.startsWith('[')) {
+    const close = raw.indexOf(']');
+    if (close < 0) {
+      return '';
+    }
+    const hostname = raw.slice(1, close);
+    const rest = raw.slice(close + 1);
+    if (rest !== '' && !/^:\d+$/.test(rest)) {
+      return '';
+    }
+    return hostname;
+  }
+  const match = raw.match(/^(localhost|127\.0\.0\.1|::1)(?::(\d+))?$/);
+  return match ? match[1] : '';
+}
+
+function isAllowedAuthEmulatorHost(value) {
+  const hostname = hostnameFromAuthEmulatorHost(value);
+  return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1';
+}
+
 function authUrl(path) {
   return `http://${host}/identitytoolkit.googleapis.com/v1/${path}?key=fake-api-key`;
 }
+
+test('accetta solo hostname Auth emulator loopback esatti', () => {
+  for (const value of [
+    '127.0.0.1:9099',
+    'localhost:9099',
+    '[::1]:9099',
+    '::1:9099',
+    '127.0.0.1',
+    'localhost',
+    '::1',
+    '[::1]',
+  ]) {
+    assert.equal(isAllowedAuthEmulatorHost(value), true, value);
+  }
+});
+
+test('rifiuta host Auth emulator non loopback', () => {
+  for (const value of [
+    'localhost.example.com:9099',
+    'evil.com:9099',
+    '',
+    '   ',
+    'example.com:9099',
+    '127.0.0.1.nip.io:9099',
+    'notlocalhost:9099',
+    'http://127.0.0.1:9099',
+    '0.0.0.0:9099',
+    '10.0.0.1:9099',
+  ]) {
+    assert.equal(isAllowedAuthEmulatorHost(value), false, value);
+  }
+});
 
 async function post(path, body) {
   const res = await fetch(authUrl(path), {
@@ -18,7 +79,7 @@ async function post(path, body) {
 }
 
 test('createUser via Identity Toolkit non sostituisce la sessione del presidente', async () => {
-  if (!host.includes('127.0.0.1') && !host.includes('localhost')) {
+  if (!isAllowedAuthEmulatorHost(host)) {
     throw new Error('Questo test gira solo sull’Auth emulator locale.');
   }
   const suffix = Date.now();

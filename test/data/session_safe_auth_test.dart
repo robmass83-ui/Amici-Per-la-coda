@@ -36,4 +36,26 @@ void main() {
       throwsA(isA<AuthFailure>()),
     );
   });
+
+  test('se before è null: errore', () {
+    expect(
+      () => ensureSameSession(
+        before: null,
+        after: president,
+        created: const CreatedAuthUser(uid: 'uid-nuovo'),
+      ),
+      throwsA(isA<AuthFailure>()),
+    );
+  });
+
+  test('se created.uid è quello già in sessione: errore', () {
+    expect(
+      () => ensureSameSession(
+        before: president,
+        after: president,
+        created: const CreatedAuthUser(uid: 'uid-presidente'),
+      ),
+      throwsA(isA<AuthFailure>()),
+    );
+  });
 }
