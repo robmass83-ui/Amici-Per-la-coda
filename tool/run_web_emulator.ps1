@@ -29,14 +29,14 @@ Start-Process -WorkingDirectory (Join-Path $root 'backend') npx -ArgumentList '-
 $deadline = (Get-Date).AddSeconds(60)
 $ready = $false
 while ((Get-Date) -lt $deadline) {
-  if ((Test-TcpOpen -TargetHost '127.0.0.1' -Port 8080) -or (Test-TcpOpen -TargetHost '127.0.0.1' -Port 9099)) {
+  if ((Test-TcpOpen -TargetHost '127.0.0.1' -Port 8080) -and (Test-TcpOpen -TargetHost '127.0.0.1' -Port 9099) -and (Test-TcpOpen -TargetHost '127.0.0.1' -Port 5000)) {
     $ready = $true
     break
   }
   Start-Sleep -Milliseconds 500
 }
 if (-not $ready) {
-  Write-Error 'Emulatori Firebase non pronti entro 60s (127.0.0.1:8080 / 9099). Flutter non viene avviato.'
+  Write-Error 'Emulatori Firebase non pronti entro 60s (127.0.0.1:8080 Firestore, 9099 Auth, 5000 Hosting). Flutter non viene avviato.'
   exit 1
 }
 
