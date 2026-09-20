@@ -115,3 +115,13 @@ test('presidente scrive settings e volunteers', async () => {
     db.doc('volunteers/vol-volontario').update({ attivo: false }),
   );
 });
+
+test('mustChangePassword true non blocca le letture se attivo', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('volunteers/vol-must').set(
+      volunteer('volontario', { mustChangePassword: true }),
+    );
+  });
+  const db = testEnv.authenticatedContext('vol-must').firestore();
+  await assertSucceeds(db.doc('dogs/fenice').get());
+});
