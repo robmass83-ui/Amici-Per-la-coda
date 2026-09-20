@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app_navigation.dart';
 import 'router.dart';
+import 'ui/components.dart';
 import 'ui/theme.dart';
 
 /// Radice dell'applicazione.
@@ -43,6 +44,9 @@ class _AmiciPerLaCodaAppState extends ConsumerState<AmiciPerLaCodaApp>
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: router,
+      builder: (context, child) {
+        return WebContentColumn(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_version.dart';
 import '../../core/auth_errors.dart';
+import '../../core/web_surface.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import '../dogs/dogs_providers.dart';
@@ -10,12 +11,37 @@ import '../dogs/record_actions.dart';
 import '../volunteers/volunteer_providers.dart';
 import 'auth_providers.dart';
 
+// ── CONTRATTO DI LAYOUT · Login ────────────────────────────────────────────
+// SCHERMATA A SCHERMO INTERO  NESSUNA bottom nav  NESSUN FAB
+// Scaffold bg greenTint  gradient card→greenTint
+// └ SafeArea  SingleChildScrollView padding=12
+//    Column stretch
+//     ├ SizedBox 32  AppLogo hero  SizedBox 9
+//     ├ caption "Gestionale rifugio e adozioni"
+//     ├ SizedBox 16  email  SizedBox 9  password
+//     ├ SizedBox 6  "Password dimenticata?"
+//     ├ SizedBox 9  AppButton "Accedi"  larghezza piena
+//     ├ [solo web non-standalone] SizedBox 9 + 2 righe caption
+//       "Su iPhone: tocca Condividi e poi Aggiungi a Home.
+//        Poi apri l'icona e accedi."
+//     └ SizedBox 12  versione caption
+// Pixel telefono invariati: hint assente se kIsWeb false / override null.
+// ───────────────────────────────────────────────────────────────────────────
+
 /// Schermata 1 del riferimento: logo, email, password, accesso.
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({
+    super.key,
+    this.isWebOverride,
+    this.standaloneOverride,
+  });
 
   static const forgotPasswordKey = Key('login-password-dimenticata');
   static const versionKey = Key('login-versione');
+  static const addToHomeHintKey = Key('login-add-to-home');
+
+  final bool? isWebOverride;
+  final bool? standaloneOverride;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -145,6 +171,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     label: _busy ? 'Accesso…' : 'Accedi',
                     onPressed: _busy ? null : _submit,
                   ),
+                  if (showWebInstallHint(
+                    isWeb: widget.isWebOverride,
+                    standalone: widget.standaloneOverride,
+                  )) ...[
+                    const SizedBox(height: AppDim.gapM),
+                    const Text(
+                      key: LoginPage.addToHomeHintKey,
+                      'Su iPhone: tocca Condividi e poi Aggiungi a Home. '
+                      'Poi apri l\'icona e accedi.',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: AppText.caption,
+                        color: AppColor.muted,
+                        height: AppDim.lineH,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppDim.gapL),
                   Text(
                     key: LoginPage.versionKey,

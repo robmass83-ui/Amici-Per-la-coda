@@ -26,3 +26,4 @@ export 'components/option_row.dart';
 export 'components/section_title.dart';
 export 'components/stat_tile.dart';
 export 'components/timeline_list.dart';
+export 'components/web_content_column.dart';
