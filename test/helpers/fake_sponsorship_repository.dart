@@ -16,16 +16,26 @@ class InMemorySponsorshipRepository implements SponsorshipRepository {
     yield* _controller.stream.map((_) => _of(dogId));
   }
 
+  @override
+  Stream<List<Sponsorship>> watchAll() async* {
+    yield List<Sponsorship>.unmodifiable(_items);
+    yield* _controller.stream;
+  }
+
   List<Sponsorship> _of(String dogId) {
-    return _items
-        .where((item) => item.dogId == dogId)
-        .toList(growable: false);
+    return _items.where((item) => item.dogId == dogId).toList(growable: false);
   }
 
   @override
   Future<void> save(Sponsorship sponsorship) async {
     _items.removeWhere((item) => item.id == sponsorship.id);
     _items.add(sponsorship);
+    _controller.add(List<Sponsorship>.unmodifiable(_items));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
     _controller.add(List<Sponsorship>.unmodifiable(_items));
   }
 }

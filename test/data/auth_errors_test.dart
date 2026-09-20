@@ -32,6 +32,22 @@ void main() {
       italianAuthMessage('operation-not-allowed'),
       'Accesso con email non abilitato.',
     );
+    expect(
+      italianAuthMessage('email-already-in-use'),
+      'Questa email è già registrata.',
+    );
+    expect(
+      italianAuthMessage('invalid-refresh-token'),
+      'Non è stato possibile eliminare l\'accesso. Riprova.',
+    );
+    expect(
+      italianAuthMessage('weak-password'),
+      'La password è troppo debole.',
+    );
+    expect(
+      italianAuthMessage('requires-recent-login'),
+      'Per cambiare la password accedi di nuovo, poi riprova.',
+    );
     expect(italianAuthMessage('unknown-code'), 'Accesso non riuscito. Riprova.');
   });
 }

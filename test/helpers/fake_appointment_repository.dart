@@ -10,6 +10,8 @@ class InMemoryAppointmentRepository implements AppointmentRepository {
   final List<Appointment> _items;
   final _controller = StreamController<List<Appointment>>.broadcast();
 
+  List<Appointment> get items => List.unmodifiable(_items);
+
   @override
   Stream<List<Appointment>> watchAll() async* {
     yield List<Appointment>.unmodifiable(_items);
@@ -20,6 +22,12 @@ class InMemoryAppointmentRepository implements AppointmentRepository {
   Future<void> save(Appointment appointment) async {
     _items.removeWhere((item) => item.id == appointment.id);
     _items.add(appointment);
+    _controller.add(List<Appointment>.unmodifiable(_items));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
     _controller.add(List<Appointment>.unmodifiable(_items));
   }
 }

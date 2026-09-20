@@ -328,9 +328,17 @@ settore: string                // "B"
 box: string                    // "7"
 stato: 'in_rifugio'|'in_stallo'|'preaffido'|'adottato'|'in_cura'|'restituito'|'deceduto'
 statoDal: Timestamp
-adottabile: bool
-sterilizzato: bool
+adottabile: bool | null
+sterilizzato: bool | null
 dataSterilizzazione: Timestamp | null
+tipoPelo: 'corto'|'medio'|'lungo'|'non_indicato' | null
+purezza: 'meticcio'|'in_purezza' | null
+dataApplicazioneChip: Timestamp | null
+zonaApplicazioneChip: string
+veterinarioApplicatore: string
+dataIscrizioneAnagrafe: Timestamp | null
+ultimaUbicazione: string
+dataIngressoStimata: bool
 slogan: string                 // 2 righe sotto il nome
 descrizione: string            // testo dell'annuncio
 carattere: string[]            // ["Dolce","Socievole","Equilibrata"]

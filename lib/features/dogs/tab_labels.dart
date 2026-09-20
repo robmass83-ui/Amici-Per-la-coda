@@ -1,5 +1,6 @@
 import '../../data/models/enums.dart';
 import '../../data/models/volunteer.dart';
+import '../volunteers/volunteer_labels.dart';
 
 String adoptionStatoLabel(AdoptionStato stato) {
   return switch (stato) {
@@ -37,10 +38,19 @@ String noteTipoLabel(NoteTipo tipo) {
   };
 }
 
+String noteTipoShortLabel(NoteTipo tipo) {
+  return switch (tipo) {
+    NoteTipo.generale => 'Generale',
+    NoteTipo.comportamento => 'Comportam.',
+    NoteTipo.alimentazione => 'Aliment.',
+    NoteTipo.attenzione => 'Attenzione',
+  };
+}
+
 String volunteerNomeDi(List<Volunteer> volunteers, String id) {
   for (final volunteer in volunteers) {
     if (volunteer.id == id) {
-      return volunteer.nome;
+      return volunteerDisplayName(volunteer);
     }
   }
   return '';
@@ -49,4 +59,14 @@ String volunteerNomeDi(List<Volunteer> volunteers, String id) {
 String autoreEtichetta(List<Volunteer> volunteers, String id) {
   final nome = volunteerNomeDi(volunteers, id);
   return nome.isEmpty ? 'Volontario' : nome;
+}
+
+String appointmentTipoLabel(AppointmentTipo tipo) {
+  return switch (tipo) {
+    AppointmentTipo.visita => 'Visita',
+    AppointmentTipo.colloquio => 'Colloquio',
+    AppointmentTipo.verificaPreaffido => 'Verifica preaffido',
+    AppointmentTipo.scadenza => 'Scadenza',
+    AppointmentTipo.altro => 'Altro',
+  };
 }

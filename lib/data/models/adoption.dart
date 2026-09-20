@@ -258,6 +258,29 @@ class Adoption {
     };
   }
 
+  Adoption copyWith({
+    String? dogId,
+    String? adopterId,
+    Richiedente? richiedente,
+    Questionario? questionario,
+    Audit? audit,
+  }) {
+    return Adoption(
+      id: id,
+      dogId: dogId ?? this.dogId,
+      adopterId: adopterId ?? this.adopterId,
+      richiedente: richiedente ?? this.richiedente,
+      questionario: questionario ?? this.questionario,
+      stato: stato,
+      storicoStati: storicoStati,
+      preaffidoDal: preaffidoDal,
+      preaffidoAl: preaffidoAl,
+      referenteId: referenteId,
+      dataRichiesta: dataRichiesta,
+      audit: audit ?? this.audit,
+    );
+  }
+
   Adoption withQuestionario(Questionario questionario, {Audit? audit}) {
     return Adoption(
       id: id,

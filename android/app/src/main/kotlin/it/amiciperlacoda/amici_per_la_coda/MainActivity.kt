@@ -70,6 +70,17 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                 }
+                "copyInstalledApkForShare" -> {
+                    try {
+                        result.success(copyInstalledApkForShare())
+                    } catch (error: Exception) {
+                        result.error(
+                            "share",
+                            error.message ?: "Impossibile preparare l'APK da condividere.",
+                            null,
+                        )
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -97,6 +108,32 @@ class MainActivity : FlutterActivity() {
             dir.mkdirs()
         }
         return File(dir, "update.apk")
+    }
+
+    private fun copyInstalledApkForShare(): Map<String, Any> {
+        val source = File(applicationInfo.sourceDir)
+        if (!source.exists() || source.length() < 1024 * 1024) {
+            throw IllegalStateException("APK installato non trovato.")
+        }
+        val info = installedPackageInfo(0)
+        val versionName = info.versionName ?: "0.0.0"
+        val versionCode = versionCodeOf(info)
+        val fileName = "Amici-per-la-Coda-$versionName+$versionCode.apk"
+        val dir = File(cacheDir, "share")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        val dest = File(dir, fileName)
+        source.copyTo(dest, overwrite = true)
+        if (!dest.exists() || dest.length() < 1024 * 1024) {
+            throw IllegalStateException("Copia dell'APK non riuscita.")
+        }
+        return mapOf(
+            "path" to dest.absolutePath,
+            "fileName" to fileName,
+            "versionName" to versionName,
+            "versionCode" to versionCode,
+        )
     }
 
     private fun canInstallPackages(): Boolean {

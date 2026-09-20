@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +8,7 @@ import '../../core/auth_errors.dart';
 import '../../firebase_options.dart';
 import '../repositories/auth_repository.dart';
 import 'firestore_repositories.dart';
+import 'identity_toolkit_api.dart';
 
 /// Implementazione Firebase Auth (email + password).
 /// Su Android la sessione è persistente di default (resta loggati).
@@ -19,7 +22,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Stream<AuthUser?> watchUser() {
-    return _auth.authStateChanges().map(_map);
+    return _auth.userChanges().map(_map);
   }
 
   @override
@@ -38,7 +41,142 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(italianAuthMessage(error.code));
+    }
+  }
+
+  @override
   Future<void> signOut() => _auth.signOut();
+
+  IdentityToolkitApi get _toolkit {
+    return IdentityToolkitApi(apiKey: _auth.app.options.apiKey);
+  }
+
+  @override
+  Future<CreatedAuthUser> createUserAccount({
+    required String email,
+    required String password,
+  }) {
+    return _toolkit.signUp(
+      email: email.trim(),
+      password: password,
+    );
+  }
+
+  @override
+  Future<CreatedAuthUser> reclaimDeletedAccount({
+    required String email,
+    required String password,
+  }) async {
+    final trimmed = email.trim();
+    CreatedAuthUser existing;
+    try {
+      existing = await _toolkit.signIn(email: trimmed, password: password);
+    } on AuthFailure {
+      throw AuthFailure(italianAuthMessage('email-already-in-use'));
+    }
+    final token = existing.refreshToken;
+    if (token == null || token.isEmpty) {
+      throw AuthFailure(italianAuthMessage('email-already-in-use'));
+    }
+    await _toolkit.deleteAccount(refreshToken: token);
+    return _toolkit.signUp(email: trimmed, password: password);
+  }
+
+  @override
+  Future<String?> captureRefreshToken({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final created = await _toolkit.signIn(
+        email: email.trim(),
+        password: password,
+      );
+      final token = created.refreshToken;
+      if (token == null || token.isEmpty) {
+        return null;
+      }
+      return token;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> deleteUserAccount({
+    required String uid,
+    String? refreshToken,
+  }) async {
+    final token = refreshToken?.trim() ?? '';
+    if (uid.isEmpty || token.isEmpty) {
+      throw const AuthFailure(
+        'Non è stato possibile eliminare l\'accesso. '
+        'Chiedi a questa persona di accedere una volta con l\'app, poi riprova.',
+      );
+    }
+    try {
+      await _toolkit.deleteAccount(refreshToken: token);
+    } on AuthFailure catch (error) {
+      if (isAuthUserMissing(error)) {
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updatePassword(
+    String newPassword, {
+    String? currentPassword,
+  }) async {
+    var user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthFailure('Sessione scaduta. Accedi di nuovo.');
+    }
+    if (currentPassword != null &&
+        currentPassword.isNotEmpty &&
+        currentPassword == newPassword) {
+      return;
+    }
+    try {
+      final email = user.email;
+      if (currentPassword != null &&
+          currentPassword.isNotEmpty &&
+          email != null &&
+          email.isNotEmpty) {
+        await user.reauthenticateWithCredential(
+          EmailAuthProvider.credential(
+            email: email,
+            password: currentPassword,
+          ),
+        );
+        user = _auth.currentUser ?? user;
+      }
+      await user.updatePassword(newPassword).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw const AuthFailure(
+          'Il salvataggio sta impiegando troppo. Riprova.',
+        ),
+      );
+      await user.reload();
+      await _auth.currentUser?.getIdToken(true);
+    } on AuthFailure {
+      rethrow;
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(italianAuthMessage(error.code));
+    } on TimeoutException {
+      throw const AuthFailure('Il salvataggio sta impiegando troppo. Riprova.');
+    } catch (_) {
+      throw const AuthFailure(
+        'Non è stato possibile aggiornare la password. Riprova.',
+      );
+    }
+  }
 
   static AuthUser? _map(User? user) {
     if (user == null) {
@@ -66,18 +204,74 @@ class UnconfiguredAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail({required String email}) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
+
+  @override
   Future<void> signOut() async {}
+
+  @override
+  Future<CreatedAuthUser> createUserAccount({
+    required String email,
+    required String password,
+  }) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
+
+  @override
+  Future<CreatedAuthUser> reclaimDeletedAccount({
+    required String email,
+    required String password,
+  }) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
+
+  @override
+  Future<String?> captureRefreshToken({
+    required String email,
+    required String password,
+  }) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
+
+  @override
+  Future<void> deleteUserAccount({
+    required String uid,
+    String? refreshToken,
+  }) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
+
+  @override
+  Future<void> updatePassword(
+    String newPassword, {
+    String? currentPassword,
+  }) {
+    throw const AuthFailure(
+      'Firebase non è ancora configurato. Esegui flutterfire configure.',
+    );
+  }
 }
 
 /// Inizializza Firebase se le opzioni di piattaforma sono disponibili.
 Future<void> bootstrapFirebase() async {
-  if (Firebase.apps.isNotEmpty) {
-    return;
-  }
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
     enableFirestoreOffline(FirebaseFirestore.instance);
   } on FirebaseException {
     // Senza google-services.json / flutterfire configure l'app parte lo stesso.

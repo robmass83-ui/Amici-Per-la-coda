@@ -12,11 +12,14 @@ import '../../data/models/volunteer.dart';
 import '../../data/photos/cover_photo.dart';
 import '../../data/photos/photo_codec.dart';
 import '../../data/photos/photo_limit.dart';
+import '../affido/affido_providers.dart';
 import '../auth/auth_providers.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'dogs_providers.dart';
+import 'dog_share.dart';
+import 'edit_permissions.dart';
 import 'photo_thumb.dart';
 import 'tab_labels.dart';
 
@@ -25,38 +28,52 @@ import 'tab_labels.dart';
 // ├ SafeArea  bottom=false
 // │  └ AppHeader  h=44  back 34×34  titolo «Foto di {nome}»
 // └ Expanded ListView
-//    ├ hero  h=AppDim.galleryHeroH(300)  larghezza piena
+//    ├ se photos.isEmpty: niente hero, niente griglia, niente bottoni copertina
+//    ├ se photos.isNotEmpty:
+//    │  hero  h=AppDim.galleryHeroH(300)  larghezza piena
 //    │    Image full (o thumb)  BoxFit.cover
 //    │    overlay basso  padding 10/12  testo bianco su AppColor.ink
 //    │       titolo 12sp w700 maxLines=1  sottotitolo 10.5sp maxLines=1
 //    │    counter  in alto a destra  MiniBadge
 //    ├ Padding  12
-//    │  ├ Wrap  spacing=6 runSpacing=6  3 colonne quadrate
-//    │  │    thumb + COPERTINA + elimina 40×40  + tessera aggiungi
-//    │  ├ SizedBox 9
-//    │  ├ SectionTitle  Carica nuove foto
-//    │  ├ SizedBox 9
-//    │  ├ area upload  padding=10  radius=12
+//    │  ├ se photos.isNotEmpty:
+//    │  │  Wrap  spacing=6 runSpacing=6  3 colonne quadrate
+//    │  │    thumb + COPERTINA + (se canWrite: elimina 40×40)  + tessera +
+//    │  ├ se canWrite:
+//    │  │  (se photos.isNotEmpty) SizedBox 9
+//    │  │  SectionTitle  Carica nuove foto
+//    │  │  SizedBox 9
+//    │  │  area upload  padding=10  radius=12
 //    │  │    IconBadge galleria 32  + testi 12sp / 10sp  maxLines=2
-//    │  ├ (limite) Text 12sp rosso
-//    │  ├ SizedBox 9
-//    │  └ Row  gap=9
-//    │       AppButton ghost  Imposta copertina  h=40
-//    │       AppButton grey   Usa per annuncio   h=40
+//    │  │  (limite) Text 12sp rosso
+//    │  │  se photos.isNotEmpty:
+//    │  │    SizedBox 9
+//    │  │    Row  gap=9
+//    │  │         AppButton ghost  Imposta copertina  h=40
+//    │  │         AppButton grey   Usa per annuncio   h=40
+//    │  se !canWrite: niente +, upload, elimina, copertina, annuncio
 // ───────────────────────────────────────────────────────────────────────────
 
 class DogGalleryPage extends ConsumerStatefulWidget {
-  const DogGalleryPage({super.key, required this.dogId});
+  const DogGalleryPage({
+    super.key,
+    required this.dogId,
+    this.openAddOnStart = false,
+  });
 
   final String dogId;
+  final bool openAddOnStart;
 
   static const heroKey = Key('gallery-hero');
   static const addKey = Key('gallery-add');
   static const uploadKey = Key('gallery-upload');
   static const setCoverKey = Key('gallery-set-cover');
+  static const useForAdKey = Key('gallery-use-ad');
   static const limitKey = Key('gallery-limit');
   static const cameraKey = Key('gallery-camera');
   static const galleryPickKey = Key('gallery-pick');
+
+  static Key deleteKey(String photoId) => Key('gallery-delete-$photoId');
 
   @override
   ConsumerState<DogGalleryPage> createState() => _DogGalleryPageState();
@@ -68,9 +85,19 @@ class _DogGalleryPageState extends ConsumerState<DogGalleryPage> {
   Uint8List? _full;
   String? _limitMessage;
   var _busy = false;
+  var _didAutoOpen = false;
 
   @override
   Widget build(BuildContext context) {
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
+    if (widget.openAddOnStart && !_didAutoOpen && canWrite) {
+      _didAutoOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_openSource());
+        }
+      });
+    }
     final dog = ref.watch(dogByIdProvider(widget.dogId)).asData?.value;
     final photos =
         ref
@@ -120,90 +147,92 @@ class _DogGalleryPageState extends ConsumerState<DogGalleryPage> {
         Expanded(
           child: ListView(
             children: [
-              _Hero(
-                nome: nome,
-                photo: selected,
-                full: _full,
-                isCover: isCover,
-                index: selectedIndex < 0 ? 0 : selectedIndex + 1,
-                total: photos.length,
-                author: selected == null
-                    ? ''
-                    : autoreEtichetta(volunteers, selected.createdBy),
-              ),
-              Padding(
-                padding: AppDim.pagePad,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _ThumbGrid(
-                      nome: nome,
-                      photos: photos,
-                      selectedId: selected?.id,
-                      coverId: coverPhotoOf(
-                        photos,
-                        dog?.fotoCopertinaId,
-                      )?.id,
-                      onSelect: (id) => setState(() => _userSelectedId = id),
-                      onDelete: _delete,
-                      onAdd: _openSource,
-                    ),
-                    const SizedBox(height: AppDim.gapM),
-                    const SectionTitle(
-                      title: 'Carica nuove foto',
-                      icon: IconBadge(
-                        AppIcons.galleria,
-                        size: IconBadge.inTitle,
-                      ),
-                    ),
-                    const SizedBox(height: AppDim.gapM),
-                    _UploadArea(onTap: _openSource),
-                    if (_limitMessage != null) ...[
-                      const SizedBox(height: AppDim.gapS),
-                      Text(
-                        _limitMessage!,
-                        key: DogGalleryPage.limitKey,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: AppText.body,
-                          color: AppColor.red,
-                          height: AppDim.lineH,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: AppDim.gapM),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
-                            key: DogGalleryPage.setCoverKey,
-                            label: 'Imposta copertina',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: selected == null
-                                ? null
-                                : () => _setCover(selected.id),
-                          ),
-                        ),
-                        const SizedBox(width: AppDim.gapM),
-                        Expanded(
-                          child: AppButton(
-                            label: 'Usa per annuncio',
-                            variant: AppButtonVariant.grey,
-                            onPressed: selected == null
-                                ? null
-                                : () => AppToast.show(
-                                    context,
-                                    'Foto usata nell\'annuncio',
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              if (selected != null)
+                _Hero(
+                  nome: nome,
+                  photo: selected,
+                  full: _full,
+                  isCover: isCover,
+                  index: selectedIndex < 0 ? 0 : selectedIndex + 1,
+                  total: photos.length,
+                  author: autoreEtichetta(volunteers, selected.createdBy),
                 ),
-              ),
+              if (photos.isNotEmpty || canWrite)
+                Padding(
+                  padding: AppDim.pagePad,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (photos.isNotEmpty)
+                        _ThumbGrid(
+                          nome: nome,
+                          photos: photos,
+                          selectedId: selected?.id,
+                          coverId: coverPhotoOf(
+                            photos,
+                            dog?.fotoCopertinaId,
+                          )?.id,
+                          canWrite: canWrite,
+                          onSelect: (id) => setState(() => _userSelectedId = id),
+                          onDelete: canWrite ? _delete : null,
+                          onAdd: canWrite ? _openSource : null,
+                        ),
+                      if (canWrite) ...[
+                        if (photos.isNotEmpty)
+                          const SizedBox(height: AppDim.gapM),
+                        const SectionTitle(
+                          title: 'Carica nuove foto',
+                          icon: IconBadge(
+                            AppIcons.galleria,
+                            size: IconBadge.inTitle,
+                          ),
+                        ),
+                        const SizedBox(height: AppDim.gapM),
+                        _UploadArea(onTap: _openSource),
+                        if (_limitMessage != null) ...[
+                          const SizedBox(height: AppDim.gapS),
+                          Text(
+                            _limitMessage!,
+                            key: DogGalleryPage.limitKey,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: AppText.body,
+                              color: AppColor.red,
+                              height: AppDim.lineH,
+                            ),
+                          ),
+                        ],
+                        if (selected != null) ...[
+                          const SizedBox(height: AppDim.gapM),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppButton(
+                                  key: DogGalleryPage.setCoverKey,
+                                  label: 'Imposta copertina',
+                                  variant: AppButtonVariant.ghost,
+                                  onPressed: () => _setCover(selected.id),
+                                ),
+                              ),
+                              const SizedBox(width: AppDim.gapM),
+                              Expanded(
+                                child: AppButton(
+                                  key: DogGalleryPage.useForAdKey,
+                                  label: 'Usa per annuncio',
+                                  variant: AppButtonVariant.grey,
+                                  onPressed: () =>
+                                      unawaited(_useForAd(selected.id)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -314,6 +343,13 @@ class _DogGalleryPageState extends ConsumerState<DogGalleryPage> {
           setState(() => _limitMessage = PhotoLimitReached.message);
           AppToast.show(context, PhotoLimitReached.message);
           return;
+        } on PhotoTooLarge {
+          if (!mounted) {
+            return;
+          }
+          setState(() => _limitMessage = PhotoTooLarge.message);
+          AppToast.show(context, PhotoTooLarge.message);
+          return;
         }
       }
     } finally {
@@ -331,6 +367,30 @@ class _DogGalleryPageState extends ConsumerState<DogGalleryPage> {
     await repo.setCover(widget.dogId, photoId);
     if (mounted) {
       AppToast.show(context, 'Impostata come copertina');
+    }
+  }
+
+  Future<void> _useForAd(String photoId) async {
+    final repo = ref.read(photoRepositoryProvider);
+    if (repo == null) {
+      return;
+    }
+    await repo.setCover(widget.dogId, photoId);
+    final dog = ref.read(dogByIdProvider(widget.dogId)).asData?.value;
+    if (dog == null) {
+      return;
+    }
+    final photos = ref
+        .read(photosByDogProvider(widget.dogId))
+        .maybeWhen(data: (items) => items, orElse: () => const <Photo>[]);
+    await condividiSchedaCane(
+      dog: dog,
+      now: ref.read(dogListNowProvider),
+      photos: photos,
+      photosRepo: repo,
+    );
+    if (mounted) {
+      AppToast.show(context, 'Testo copiato negli appunti.');
     }
   }
 
@@ -355,7 +415,7 @@ class _Hero extends StatelessWidget {
   });
 
   final String nome;
-  final Photo? photo;
+  final Photo photo;
   final Uint8List? full;
   final bool isCover;
   final int index;
@@ -364,37 +424,26 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget image;
-    if (full != null) {
-      image = Image.memory(
-        full!,
-        key: DogGalleryPage.heroKey,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: AppDim.galleryHeroH,
-        gaplessPlayback: true,
-      );
-    } else if (photo != null) {
-      image = PhotoThumb(
-        key: DogGalleryPage.heroKey,
-        nome: nome,
-        photo: photo,
-        width: double.infinity,
-        height: AppDim.galleryHeroH,
-        radius: 0,
-      );
-    } else {
-      image = PhotoThumb(
-        key: DogGalleryPage.heroKey,
-        nome: nome,
-        width: double.infinity,
-        height: AppDim.galleryHeroH,
-        radius: 0,
-      );
-    }
+    final Widget image = full != null
+        ? Image.memory(
+            full!,
+            key: DogGalleryPage.heroKey,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: AppDim.galleryHeroH,
+            gaplessPlayback: true,
+          )
+        : PhotoThumb(
+            key: DogGalleryPage.heroKey,
+            nome: nome,
+            photo: photo,
+            width: double.infinity,
+            height: AppDim.galleryHeroH,
+            radius: 0,
+          );
 
     final title = isCover ? 'Foto principale' : 'Foto';
-    final date = photo == null ? '' : formatItalianDate(photo!.createdAt);
+    final date = formatItalianDate(photo.createdAt);
     final headline = date.isEmpty ? title : '$title · $date';
     final subtitle = author.isEmpty ? '' : 'Scattata da $author';
 
@@ -472,6 +521,7 @@ class _ThumbGrid extends StatelessWidget {
     required this.photos,
     required this.selectedId,
     required this.coverId,
+    required this.canWrite,
     required this.onSelect,
     required this.onDelete,
     required this.onAdd,
@@ -481,9 +531,10 @@ class _ThumbGrid extends StatelessWidget {
   final List<Photo> photos;
   final String? selectedId;
   final String? coverId;
+  final bool canWrite;
   final ValueChanged<String> onSelect;
-  final ValueChanged<String> onDelete;
-  final VoidCallback onAdd;
+  final ValueChanged<String>? onDelete;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -505,14 +556,16 @@ class _ThumbGrid extends StatelessWidget {
                   selected: photo.id == selectedId,
                   isCover: photo.id == coverId,
                   onSelect: () => onSelect(photo.id),
-                  onDelete: () => onDelete(photo.id),
+                  onDelete: onDelete == null
+                      ? null
+                      : () => onDelete!(photo.id),
                 ),
               ),
-            if (photos.length < photoMaxPerDog)
+            if (canWrite && onAdd != null && photos.length < photoMaxPerDog)
               SizedBox(
                 width: tile,
                 height: tile,
-                child: _AddTile(onTap: onAdd),
+                child: _AddTile(onTap: onAdd!),
               ),
           ],
         );
@@ -536,7 +589,7 @@ class _ThumbCell extends StatelessWidget {
   final bool selected;
   final bool isCover;
   final VoidCallback onSelect;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -571,24 +624,26 @@ class _ThumbCell extends StatelessWidget {
                   variant: MiniBadgeVariant.green,
                 ),
               ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: SizedBox(
-                width: AppDim.minTouch,
-                height: AppDim.minTouch,
-                child: GestureDetector(
-                  onTap: onDelete,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Center(
-                    child: IconBadge(
-                      AppIcons.elimina,
-                      size: IconBadge.inTitle,
+            if (onDelete != null)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SizedBox(
+                  key: DogGalleryPage.deleteKey(photo.id),
+                  width: AppDim.minTouch,
+                  height: AppDim.minTouch,
+                  child: GestureDetector(
+                    onTap: onDelete,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Center(
+                      child: IconBadge(
+                        AppIcons.elimina,
+                        size: IconBadge.inTitle,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

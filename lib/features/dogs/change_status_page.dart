@@ -10,11 +10,14 @@ import '../../data/models/volunteer.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
+import '../affido/affido_providers.dart';
 import '../auth/auth_providers.dart';
 import 'dog_labels.dart';
 import 'dog_stato.dart';
 import 'dogs_providers.dart';
+import 'edit_permissions.dart';
 import 'tab_labels.dart';
+import '../volunteers/volunteer_labels.dart';
 
 // ── CONTRATTO DI LAYOUT · Cambio stato ─────────────────────────────────────
 // Column
@@ -28,33 +31,42 @@ import 'tab_labels.dart';
 //    │   └ Expanded Column
 //    │      ├ Text stato  13sp w800  maxLines=1 ellipsis
 //    │      └ Text box/giorni  10.5sp muted  maxLines=2 ellipsis
-//    ├ SizedBox 12
-//    ├ SectionTitle Cambia stato  icona 20
-//    ├ SizedBox 9
-//    ├ AppCard padding 10
-//    │  └ 7 × riga  minHeight=40
-//    │     IconBadge 32 · titolo 12sp · sottotitolo 10sp · radio 18
-//    ├ SizedBox 12
-//    ├ SectionTitle Dettagli del cambio  icona 20
-//    ├ SizedBox 9
-//    ├ AppTextField Data effettiva  h=40
-//    ├ SizedBox 9
-//    ├ AppTextField Motivazione  h=64  maxLines=3
-//    ├ SizedBox 9
-//    ├ AppTextField Volontario  h=40  readOnly → sheet
-//    ├ SizedBox 6
-//    └ AppButton Salva nuovo stato  h=40
+//    ├ se canWrite:
+//    │  SizedBox 12
+//    │  SectionTitle Cambia stato  icona 20
+//    │  SizedBox 9
+//    │  AppCard padding 10
+//    │    └ n × riga  minHeight=40
+//    │       IconBadge 32 · titolo 12sp · sottotitolo 10sp · radio 18
+//    │  SizedBox 12
+//    │  SectionTitle Dettagli del cambio  icona 20
+//    │  SizedBox 9
+//    │  AppTextField Data effettiva  h=40
+//    │  se trasferito: SizedBox 9 · AppTextField Struttura di destinazione
+//    │  SizedBox 9
+//    │  AppTextField Motivazione  h=64  maxLines=3
+//    │  SizedBox 9
+//    │  AppTextField Volontario  h=40  readOnly → sheet
+//    │  SizedBox 6
+//    │  AppButton Salva nuovo stato  h=40
+//    se !canWrite: niente selettore, campi, Salva
 // ───────────────────────────────────────────────────────────────────────────
 
 class ChangeStatusPage extends ConsumerStatefulWidget {
-  const ChangeStatusPage({super.key, required this.dogId});
+  const ChangeStatusPage({
+    super.key,
+    required this.dogId,
+    this.initialStato,
+  });
 
   final String dogId;
+  final DogStato? initialStato;
 
   static const saveKey = Key('stato-salva');
   static const dataKey = Key('stato-data');
   static const noteKey = Key('stato-note');
   static const autoreKey = Key('stato-autore');
+  static const strutturaKey = Key('stato-struttura');
   static const confirmKey = Key('stato-conferma');
   static const cancelKey = Key('stato-annulla');
 
@@ -68,14 +80,17 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
   final _data = TextEditingController();
   final _note = TextEditingController();
   final _autore = TextEditingController();
+  final _struttura = TextEditingController();
   DogStato? _selected;
   String? _autoreId;
   String? _dataError;
+  String? _strutturaError;
   var _busy = false;
 
   @override
   void initState() {
     super.initState();
+    _selected = widget.initialStato;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -92,6 +107,7 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
     _data.dispose();
     _note.dispose();
     _autore.dispose();
+    _struttura.dispose();
     super.dispose();
   }
 
@@ -104,13 +120,13 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
         for (final volunteer in attivi)
           OptionRow(
             icon: const IconBadge(AppIcons.volontari, size: IconBadge.inMenu),
-            title: volunteer.nome,
+            title: volunteerDisplayName(volunteer),
             subtitle: volunteer.email,
             onTap: () {
               Navigator.of(context).pop();
               setState(() {
                 _autoreId = volunteer.id;
-                _autore.text = volunteer.nome;
+                _autore.text = volunteerDisplayName(volunteer);
               });
             },
           ),
@@ -138,6 +154,13 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
       return;
     }
     setState(() => _dataError = null);
+    if (selected == DogStato.trasferito && _struttura.text.trim().isEmpty) {
+      setState(
+        () => _strutturaError = 'Indica la struttura di destinazione.',
+      );
+      return;
+    }
+    setState(() => _strutturaError = null);
     if (statoRequiresConfirmation(selected)) {
       final ok = await _confirm(selected);
       if (!ok || !mounted) {
@@ -159,12 +182,20 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
         note: _note.text,
         autoreId: _autoreId ?? '',
         now: now,
+        strutturaDestinazione: selected == DogStato.trasferito
+            ? _struttura.text
+            : null,
       );
       await repo.save(updated);
       if (!mounted) {
         return;
       }
-      AppToast.show(context, 'Stato aggiornato.');
+      AppToast.show(
+        context,
+        statoArchiviaScheda(selected)
+            ? 'Stato aggiornato. Il cane è in Cani archiviati.'
+            : 'Stato aggiornato.',
+      );
       if (context.canPop()) {
         context.pop();
       } else {
@@ -230,6 +261,7 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
   @override
   Widget build(BuildContext context) {
     final asyncDog = ref.watch(dogByIdProvider(widget.dogId));
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
     final volunteers = ref
         .watch(volunteersStreamProvider)
         .maybeWhen(data: (items) => items, orElse: () => const <Volunteer>[]);
@@ -284,14 +316,17 @@ class _ChangeStatusPageState extends ConsumerState<ChangeStatusPage> {
                 dog: dog,
                 now: now,
                 selected: _selected ?? dog.stato,
+                canWrite: canWrite,
                 dataController: _data,
                 noteController: _note,
                 autoreController: _autore,
+                strutturaController: _struttura,
                 dataError: _dataError,
+                strutturaError: _strutturaError,
                 busy: _busy,
                 onSelect: (stato) => _onSelect(dog, stato),
                 onPickAutore: () => _pickAutore(volunteers),
-                onSave: _busy ? null : () => _save(dog),
+                onSave: !canWrite || _busy ? null : () => _save(dog),
               );
             },
           ),
@@ -340,10 +375,13 @@ class _ChangeStatusBody extends StatelessWidget {
     required this.dog,
     required this.now,
     required this.selected,
+    required this.canWrite,
     required this.dataController,
     required this.noteController,
     required this.autoreController,
+    required this.strutturaController,
     required this.dataError,
+    required this.strutturaError,
     required this.busy,
     required this.onSelect,
     required this.onPickAutore,
@@ -353,10 +391,13 @@ class _ChangeStatusBody extends StatelessWidget {
   final Dog dog;
   final DateTime now;
   final DogStato selected;
+  final bool canWrite;
   final TextEditingController dataController;
   final TextEditingController noteController;
   final TextEditingController autoreController;
+  final TextEditingController strutturaController;
   final String? dataError;
+  final String? strutturaError;
   final bool busy;
   final ValueChanged<DogStato> onSelect;
   final VoidCallback onPickAutore;
@@ -411,65 +452,77 @@ class _ChangeStatusBody extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: AppDim.gapL),
-        const SectionTitle(
-          title: 'Cambia stato',
-          icon: IconBadge(AppIcons.cambiaStato, size: IconBadge.inTitle),
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppCard(
-          child: Column(
-            children: [
-              for (final stato in DogStato.values)
-                _StatoChoiceRow(
-                  key: ChangeStatusPage.optionKey(stato),
-                  stato: stato,
-                  selected: selected == stato,
-                  enabled:
-                      stato == dog.stato ||
-                      statoTransitionAllowed(dog.stato, stato),
-                  onTap: () => onSelect(stato),
-                ),
-            ],
+        if (canWrite) ...[
+          const SizedBox(height: AppDim.gapL),
+          const SectionTitle(
+            title: 'Cambia stato',
+            icon: IconBadge(AppIcons.cambiaStato, size: IconBadge.inTitle),
           ),
-        ),
-        const SizedBox(height: AppDim.gapL),
-        const SectionTitle(
-          title: 'Dettagli del cambio',
-          icon: IconBadge(AppIcons.note, size: IconBadge.inTitle),
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: ChangeStatusPage.dataKey,
-          label: 'Data effettiva',
-          hint: 'gg/mm/aaaa',
-          controller: dataController,
-          errorText: dataError,
-          keyboardType: TextInputType.datetime,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: ChangeStatusPage.noteKey,
-          label: 'Motivazione / note',
-          hint: 'Es. trasferita in stallo da Marta R. per socializzazione…',
-          controller: noteController,
-          maxLines: 3,
-          fieldHeight: AppDim.statoNoteH,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: ChangeStatusPage.autoreKey,
-          label: 'Volontario che registra',
-          controller: autoreController,
-          readOnly: true,
-          onTap: onPickAutore,
-        ),
-        const SizedBox(height: AppDim.gapS),
-        AppButton(
-          key: ChangeStatusPage.saveKey,
-          label: busy ? 'Salvataggio…' : 'Salva nuovo stato',
-          onPressed: onSave,
-        ),
+          const SizedBox(height: AppDim.gapM),
+          AppCard(
+            child: Column(
+              children: [
+                for (final stato in DogStato.values)
+                  _StatoChoiceRow(
+                    key: ChangeStatusPage.optionKey(stato),
+                    stato: stato,
+                    selected: selected == stato,
+                    enabled:
+                        stato == dog.stato ||
+                        statoTransitionAllowed(dog.stato, stato),
+                    onTap: () => onSelect(stato),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDim.gapL),
+          const SectionTitle(
+            title: 'Dettagli del cambio',
+            icon: IconBadge(AppIcons.note, size: IconBadge.inTitle),
+          ),
+          const SizedBox(height: AppDim.gapM),
+          AppTextField(
+            key: ChangeStatusPage.dataKey,
+            label: 'Data effettiva',
+            hint: 'gg/mm/aaaa',
+            controller: dataController,
+            errorText: dataError,
+            keyboardType: TextInputType.datetime,
+          ),
+          if (selected == DogStato.trasferito) ...[
+            const SizedBox(height: AppDim.gapM),
+            AppTextField(
+              key: ChangeStatusPage.strutturaKey,
+              label: 'Struttura di destinazione',
+              hint: 'Nome del canile o della struttura',
+              controller: strutturaController,
+              errorText: strutturaError,
+            ),
+          ],
+          const SizedBox(height: AppDim.gapM),
+          AppTextField(
+            key: ChangeStatusPage.noteKey,
+            label: 'Motivazione / note',
+            hint: 'Es. trasferita in stallo da Marta R. per socializzazione…',
+            controller: noteController,
+            maxLines: 3,
+            fieldHeight: AppDim.statoNoteH,
+          ),
+          const SizedBox(height: AppDim.gapM),
+          AppTextField(
+            key: ChangeStatusPage.autoreKey,
+            label: 'Volontario che registra',
+            controller: autoreController,
+            readOnly: true,
+            onTap: onPickAutore,
+          ),
+          const SizedBox(height: AppDim.gapS),
+          AppButton(
+            key: ChangeStatusPage.saveKey,
+            label: busy ? 'Salvataggio…' : 'Salva nuovo stato',
+            onPressed: onSave,
+          ),
+        ],
       ],
     );
   }

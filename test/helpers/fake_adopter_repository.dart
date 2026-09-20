@@ -10,6 +10,13 @@ class InMemoryAdopterRepository implements AdopterRepository {
   final List<Adopter> _items;
   final _controller = StreamController<List<Adopter>>.broadcast();
 
+  List<Adopter> get items => List.unmodifiable(_items);
+
+  Future<void> removePrefixed(String prefix) async {
+    _items.removeWhere((item) => item.id.startsWith(prefix));
+    _controller.add(List<Adopter>.unmodifiable(_items));
+  }
+
   @override
   Stream<List<Adopter>> watchAll() async* {
     yield List<Adopter>.unmodifiable(_items);

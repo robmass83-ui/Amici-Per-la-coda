@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:amici_per_la_coda/core/firestore_codec.dart';
 import 'package:amici_per_la_coda/data/firestore/firestore_repositories.dart';
@@ -7,6 +8,7 @@ import 'package:amici_per_la_coda/data/models/photo.dart';
 import 'package:amici_per_la_coda/data/seed/cani_csv_parser.dart';
 import 'package:amici_per_la_coda/data/seed/seed_data.dart';
 import 'package:amici_per_la_coda/data/seed/seed_ids.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -184,6 +186,8 @@ void main() {
     final photos = FirestorePhotoRepository(db);
     final at = DateTime.utc(2026, 9, 8);
 
+    final thumb = Uint8List.fromList(utf8.encode('thumb'));
+    final fullBytes = Uint8List.fromList(utf8.encode('full-bytes'));
     await photos.saveMeta(
       Photo(
         id: 'ph1',
@@ -192,17 +196,27 @@ void main() {
         w: 160,
         h: 120,
         mime: 'image/jpeg',
-        thumbB64: 'thumb',
-        bytesFull: 1000,
+        thumb: thumb,
+        bytesFull: fullBytes.lengthInBytes,
         createdAt: at,
         createdBy: 'seed',
       ),
     );
-    await photos.saveFull(
-      'ph1',
-      PhotoFull(b64: base64Encode(utf8.encode('full-bytes'))),
-    );
-    expect(await photos.loadFull('ph1'), utf8.encode('full-bytes'));
+    await photos.saveFull('ph1', PhotoFull(dati: fullBytes));
+    final stored = (await db.collection('photos').doc('ph1').get()).data()!;
+    expect(stored['thumb'], isA<Blob>());
+    expect(stored.containsKey('thumbB64'), isFalse);
+    final storedFull =
+        (await db
+                .collection('photos')
+                .doc('ph1')
+                .collection('full')
+                .doc('data')
+                .get())
+            .data()!;
+    expect(storedFull['dati'], isA<Blob>());
+    expect(storedFull.containsKey('b64'), isFalse);
+    expect(await photos.loadFull('ph1'), fullBytes);
 
     await photos.setCover('seed_fenice', 'ph1');
     final list = await photos.watchByDog('seed_fenice').first;

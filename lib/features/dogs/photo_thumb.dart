@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../../data/models/photo.dart';
@@ -30,13 +28,13 @@ class PhotoThumb extends StatelessWidget {
     final h = height ?? AppDim.listAvatar;
     final r = radius ?? AppDim.gapM;
     Widget child;
-    final b64 = photo?.thumbB64 ?? '';
-    if (b64.isNotEmpty) {
+    final bytes = photo?.thumb;
+    if (bytes != null && bytes.isNotEmpty) {
       try {
         child = ClipRRect(
           borderRadius: BorderRadius.circular(r),
           child: Image.memory(
-            base64Decode(b64),
+            bytes,
             key: imageKey,
             width: w,
             height: h,

@@ -1106,3 +1106,626 @@ per abilitare un account estraneo, ed è voluto.
 10. Un utente attivo può aggiornare `mustChangePassword` e `ultimoAccesso` sul proprio
     documento e **non** `ruolo` né `attivo` (emulatore).
 11. Nessun overflow delle schermate nuove a 320/360/411/430 dp.
+
+---
+
+# PARTE 6 — Step 18-bis: i form di inserimento diventano popup centrali
+
+**Richiesta del committente (10/09/2026), da fare prima dello Step 19.** Tutti i form brevi
+oggi sono fogli che salgono dal basso, costruiti prima dei componenti del blocco 14-ter.7 e
+mai adeguati: campi da 40 dp, etichette a 12 sp, un campo per riga, nessuna card, e con la
+tastiera aperta il pulsante Salva finisce sotto il bordo.
+
+Diventano **popup centrali**, tutti fatti con **un solo componente**, con gli stessi campi
+compatti di Modifica cane. Riferimento visivo: `design/confronto-popup.html`.
+
+## 18-bis.1 · Il componente `AppDialog`
+
+Un solo widget in `lib/ui/components/app_dialog.dart`, usato da tutti i form. Nessun form
+costruisce il proprio contenitore.
+
+```
+AppDialog
+├ posizione: centrato; larghezza = schermo − 24 (12 per lato); maxHeight = 82% dell'altezza
+│            disponibile SOPRA la tastiera (MediaQuery.viewInsets.bottom sottratto)
+├ aspetto: fondo bianco, radius 14, bordo AppColor.line, ombra morbida, barrier scuro al 45%
+├ Header  h=42  FISSO
+│    IconBadge(20) · titolo 13sp w700 · × a destra (26 dp, fondo neutralSoft)
+├ Body    scorrevole, padding 12, gap 8 fra i campi
+│    usa SOLO FormField / FormRow2 / CompatRow / AppChip / AppSegmented del 14-ter.7
+│    il campo con il focus viene portato in vista (Scrollable.ensureVisible)
+└ Footer  h=46  FISSO, bordo superiore line2
+     [🗑 32dp, solo in modifica]  [Annulla ghost]  [Salva primario]   — Annulla e Salva 50/50
+     Salva è disabilitato (verde chiaro) finché il form non è valido
+```
+
+Comportamento:
+- **Tastiera:** il dialog sale con `AnimatedPadding` su `viewInsets.bottom`; il footer resta
+  sempre visibile. Questo è il punto che rende accettabile un popup centrale su un telefono.
+- **Chiusura:** × o tap fuori. Se il form è stato modificato, conferma «Scartare le
+  modifiche?». Il tasto indietro del telefono fa la stessa cosa.
+- **Crea e modifica sono lo stesso dialog**: `AppDialog.show(context, form: X(existing: y))`.
+  In modifica cambia il titolo («Modifica trattamento»), i campi sono precompilati, e nel
+  footer compare il cestino, che chiede conferma nominando la cosa che sparisce.
+- **Errori:** sotto il campo, 10 sp `AppColor.red`; mai in un toast.
+- **Salvataggio:** Salva mostra uno spinner da 16 dp al posto del testo, poi chiude e la lista
+  sottostante si aggiorna. In caso di errore il dialog resta aperto con il messaggio.
+
+## 18-bis.2 · I form, uno per uno
+
+Tutti con il contratto in cima al file. Le etichette sono maiuscolette da 10 sp.
+
+**Trattamento** (`AppIcons.vaccino`)
+```
+TIPO            Wrap di AppChip: Vaccino · Sterilizzazione · Sverminazione · Antiparassitario ·
+                Visita · Esame · Terapia · Altro
+DESCRIZIONE     FormField
+DATA            | PROSSIMA SCADENZA          FormRow2, entrambi date picker
+VETERINARIO     | LOTTO                      veterinario: dropdown da vendors con "+ nuovo",
+                                             testo libero ammesso
+COSTO (€)       | nota 9.5sp "Se inserito, crea anche la spesa"
+```
+
+**Pesata** (`AppIcons.peso`) — `PESO (KG) | DATA` · `NOTE`. Tre righe, dialog minimo.
+
+**Spesa** (`AppIcons.spese`)
+```
+CATEGORIA       Wrap di AppChip: Visite veterinarie · Sterilizzazione · Farmaci · Esami ·
+                Cibo · Altro
+IMPORTO (€)     | DATA
+DESCRIZIONE
+FORNITORE       dropdown da vendors con "+ nuovo", testo libero ammesso
+```
+Aperto dal FAB senza cane: in cima una riga `CANE` con il selettore e la voce «Spesa generale
+del rifugio».
+
+**Adozione a distanza** (`AppIcons.aDistanza`)
+```
+NOME            | COGNOME
+EMAIL           | TELEFONO
+IMPORTO MENSILE (€) | DAL
+NOTE
+```
+In modifica il cestino è sostituito da «Chiudi adozione» (imposta `al` e `attiva = false`).
+
+**Documento** (`AppIcons.documenti`)
+```
+TIPO            Wrap di AppChip (i dieci tipi attuali)
+NOME            FormField, opzionale
+FILE            due pulsanti affiancati 50/50: "Scegli PDF" · "Scegli foto"
+                dopo la scelta compare una riga: icona · nome file · dimensione · ✕
+                Salva si attiva SOLO con un file scelto. Nessun documento senza contenuto.
+```
+
+**Nota** (`AppIcons.note`)
+```
+TIPO            AppSegmented 4: Generale · Comportam. · Aliment. · Attenzione  (FittedBox)
+TESTO           multilinea, parte da 3 righe, cresce fino a 8
+riga finale 9.5sp: "<autore> · <data>"  (solo in modifica)
+```
+
+**Appuntamento** (`AppIcons.data`)
+```
+TIPO            Wrap di AppChip: Visita · Colloquio · Verifica preaffido · Scadenza · Altro
+TITOLO
+DATA            | ORA          (ORA disabilitata se "tutto il giorno")
+CANE            | RICHIESTA    entrambi opzionali; RICHIESTA filtrata per cane
+LUOGO
+☐ Tutto il giorno   (riga 30 dp, checkbox a sinistra)
+```
+
+**Nuovo volontario** e **Modifica volontario** (blocco 14-ter.8): stesso `AppDialog`, stessi
+campi già specificati lì.
+
+**Cambio stato**: resta la pagina che è, non è un form breve.
+
+## 18-bis.3 · Nuova richiesta di adozione — resta una pagina, ma compatta
+
+Quindici campi più il questionario: come popup sarebbe un tubo da scorrere. Resta a schermo
+intero come Modifica cane, con la stessa grammatica, senza bottom nav né FAB:
+
+```
+NUOVA RICHIESTA   (e MODIFICA RICHIESTA: stessa pagina precompilata)
+├ AppBar h=40: ← · titolo · "Salva" pillola verde quando valido
+├ FormCard "Cane"           riga con thumb 28 + nome + chevron → selettore
+├ FormCard "Richiedente"    AppIcons.richieste
+│    NOME | COGNOME
+│    TELEFONO | EMAIL
+│    CITTÀ | ETÀ
+│    INDIRIZZO
+│    DOCUMENTO (seg CI / Patente / Passaporto) | NUMERO
+│    riga 10sp: "Trovato: Marta Rossi, 2 richieste precedenti" quando telefono o email
+│    corrispondono a un adottante esistente → tap per usare i suoi dati
+└ FormCard "Questionario"   AppIcons.modulo
+     ABITAZIONE (seg Casa / Appartamento / Altro) | ORE DA SOLO (numero)
+     CompatRow  Giardino recintato  | Sì / No        + ALTEZZA (m) se Sì
+     CompatRow  Altri animali       | Sì / No        + QUALI se Sì
+     CompatRow  Bambini in casa     | Sì / No        + ETÀ se Sì
+     CompatRow  Esperienza con cani | Sì / No
+     DOVE DORMIRÀ (seg In casa / Fuori / Entrambi)
+     NOTE  multilinea
+```
+Da ~1.500 dp a ~900 dp. Stessa pagina per la modifica del questionario (oggi è un foglio a
+parte).
+
+## 18-bis.4 · Test
+
+1. Ogni form brevе apre un `AppDialog` centrato (il widget è `Center`-ato, non ancorato in
+   basso: `tester.getTopLeft` ha `dy` > 0 e il dialog non tocca il bordo inferiore).
+2. Con `viewInsets.bottom = 300` il footer con Salva resta visibile e il dialog non va in
+   overflow.
+3. Salva è disabilitato a form vuoto e si attiva quando i campi obbligatori sono validi.
+4. Chiudere con modifiche non salvate chiede conferma; senza modifiche chiude subito.
+5. Lo stesso form aperto con `existing:` mostra il titolo «Modifica …», i valori precompilati
+   e il cestino; senza `existing:` non c'è cestino.
+6. Documento: Salva resta disabilitato finché non c'è un file; dopo la scelta compare la riga
+   con nome e dimensione.
+7. Nota: le quattro etichette del segmentato stanno su una riga a 320 dp senza overflow.
+8. Nuova richiesta: altezza del contenuto sotto i 950 dp a 360 dp; nessuna bottom nav né FAB.
+9. Nessun `showModalBottomSheet` resta nel codice dei form (grep): i fogli dal basso restano
+   ammessi solo per i menu di scelta (FAB, ⋮, filtri, selettore cane).
+10. Tutti i dialog a 320/360/411/430 dp senza overflow; golden di trattamento e nota dopo
+    approvazione.
+
+## 18-bis.5 · Cosa NON cambia
+
+I **menu di scelta** — FAB «+», ⋮ della scheda, filtri dell'elenco, selettore del cane, foto
+(fotocamera/galleria) — restano fogli dal basso: sono liste di azioni, non form, e dal basso
+sono più comodi da raggiungere con il pollice. Cambiano solo i form.
+
+---
+
+# PARTE 7 — Step 18-ter: scheda di adozione esportabile (PDF e immagine)
+
+**Richiesta del committente (10/09/2026), da fare dopo lo Step 18-bis e prima dello Step 19.**
+L'associazione deve poter mandare il profilo di un cane a chi vuole adottarlo, e pubblicarlo
+sui social. L'export attuale è testo nudo: va sostituito con una **scheda progettata**, in due
+formati, dal menu ⋮ della scheda cane. Riferimento visivo: `design/scheda-adozione-export.html`.
+
+## 18-ter.1 · Un solo profilo pubblico per entrambi i formati
+
+Crea `lib/features/dogs/export/adoption_profile.dart` con una classe immutabile
+`AdoptionProfile` e una funzione pura `AdoptionProfile.fromDog(dog, health, weights, photos,
+association)`. È l'**unica** sorgente per PDF e immagine: quello che non c'è qui non può
+finire in nessun export.
+
+**Campi ammessi (allowlist):**
+```
+nome, slogan, descrizione
+sesso, etaTesto ("Circa 1 anno e mezzo"), razza, taglia, pesoTesto
+provenienza (solo il comune), inRifugioDa (mese e anno: "Giugno 2024")
+stato pubblico: 'cerca_famiglia' | 'in_preaffido' | 'adottato'
+sterilizzato + data · vaccinatoInRegola (bool) + data ultimo vaccino/richiamo
+antiparassitarioInRegola (bool) · testLeishmania ('negativo'|'positivo'|null)
+carattere[] · conPersone · conCani · conGatti · conBambini · noteCarattere
+fotoCopertina (bytes) · altreFoto (max 4, bytes)
+associazione: nome, citta, telefono, email, logo (da settings/association)
+dataGenerazione
+```
+
+**Esclusi per contratto, mai presenti nell'oggetto:** microchip, box e settore, spese,
+adozione a distanza, richieste ricevute e nomi di adottanti, note interne, referente,
+storico stati, documenti, `createdBy`/`updatedBy`, qualsiasi id.
+
+`vaccinatoInRegola` = esiste un trattamento di tipo vaccino con `prossimaScadenza` futura o
+assente e data negli ultimi 12 mesi. `antiparassitarioInRegola` = ultimo antiparassitario
+negli ultimi 45 giorni. Sono le uniche due regole di calcolo; il resto è copia.
+
+## 18-ter.2 · PDF — «Scheda di adozione», A4
+
+Costruito con il pacchetto `pdf` già presente, **font Roboto incorporato** (aggiungi i TTF
+Regular, Italic, Bold in `assets/fonts/` e dichiarali: senza font incorporato accenti e
+simboli escono male). Colori da `AppColor`, tradotti in `PdfColor`.
+
+```
+PAGINA 1  (A4, margini 18 mm)
+├ Testata   **il LOGO dell'associazione come immagine** (assets/logo.png: il marchio con il
+│           cane e la scritta) a sinistra, altezza 14 mm, proporzioni originali · "SCHEDA DI
+│           ADOZIONE" 7pt maiuscolo verde a destra · filo verde 2pt sotto
+│           NON il nome scritto in un font: il logo vero, lo stesso dell'header dell'app
+├ Hero      foto copertina 62×78 mm radius 3 mm a sinistra
+│           a destra: NOME 30pt w800 · slogan 9pt corsivo · pillola stato ("CERCA FAMIGLIA"
+│           verde / "IN PREAFFIDO" arancio / "ADOTTATO" grigio) · griglia 2×3 di fatti:
+│           sesso · età · razza e taglia · peso · arrivata da · in rifugio da
+├ Salute    4 riquadri in riga: Sterilizzata (data) · Vaccinata (data richiamo) ·
+│           Antiparassitario (in regola / da fare) · Leishmania (negativa / —)
+│           se un dato manca il riquadro dice "non registrato", non sparisce
+├ Colonne   sinistra "CARATTERE": chip + tabella compatibilità (persone/cani/gatti/bambini
+│           con valore colorato: verde sì, arancio selettivo/da testare, rosso no) + note
+│           destra "LA SUA STORIA": descrizione, giustificata, 8pt interlinea 1.5
+├ Galleria  fino a 4 foto in riga, 4:3, radius 2 mm  (assente se non ci sono altre foto)
+└ Piè       "Vuoi conoscere <nome>?" + nome associazione, città, telefono, email
+            + logo piccolo (8 mm) a sinistra del blocco contatti
+            a destra: "Scheda generata il <data> · i dati sanitari sono aggiornati a questa data"
+
+PAGINA 2  solo se la descrizione o le foto non stanno in pagina 1: continua storia + galleria
+          fino a 8 foto. Mai una terza pagina.
+```
+Nome file: `Scheda-<Nome>-AmiciPerLaCoda.pdf`. Peso obiettivo < 2 MB: le foto vanno
+ridimensionate a 1200 px lato lungo, qualità 80, prima di entrare nel PDF.
+
+## 18-ter.3 · Immagine — «Card per i social», JPEG 1080×1350
+
+Formato 4:5, quello che Facebook e Instagram mostrano per intero nel feed. **Non** è la
+pagina PDF rasterizzata: è un poster, con la foto protagonista.
+
+Costruzione: un widget Flutter `AdoptionCardWidget(profile)` di 1080×1350 px logici, reso
+**fuori schermo** con `RepaintBoundary` + `toImage(pixelRatio: 1)`, convertito in JPEG
+qualità 90 con `flutter_image_compress`. Così usa gli stessi `AppColor`, `AppText`,
+`IconBadge` dell'app e non serve un secondo sistema grafico.
+
+```
+CARD 1080×1350
+├ Foto      58% dell'altezza, copertina in cover-fit
+│           gradiente scuro dal basso (trasparente → 72% nero) e leggero dall'alto
+│           badge in alto a sinistra: "CERCA FAMIGLIA" pillola verde, 26px w800 spaziato
+│           **il LOGO come immagine** in alto a destra, altezza 90 px, su un riquadro bianco
+│           semitrasparente (bianco 85%, radius 16, padding 12) così resta leggibile su
+│           qualsiasi foto — mai il nome scritto in un font al posto del logo
+│           NOME sovrapposto in basso a sinistra: 110px w800 bianco con ombra · slogan 30px corsivo
+├ 4 fatti   riga di 4 riquadri su fondo AppColor.bg: età/sesso · taglia/peso ·
+│           sterilizzat* · vaccini in regola   (icona 36px, valore 26px w800, etichetta 19px)
+├ Chip      carattere + compatibilità positive come chip verdi ("Ok cani", "Ok gatti", "Ok
+│           bambini" solo se sì) — max 6, i restanti si omettono
+├ Testo     descrizione troncata a ~220 caratteri sull'ultimo punto fermo, 24px interlinea 1.45
+└ CTA       barra verde: "Vuoi conoscerl*? Scrivici" + telefono e città in bianco
+
+Il logo si legge da `assets/logo.png` (già nel progetto). Se il presidente carica un logo
+diverso in `settings/association.logoB64`, vince quello. Se per errore nessuno dei due esiste,
+l'export usa il nome dell'associazione in testo e lo segnala nel log: non fallisce, ma non
+deve capitare.
+```
+Nome file: `<Nome>-AmiciPerLaCoda.jpg`.
+
+Insieme all'immagine si condivide anche un **testo per il post**, così Giovanna non deve
+riscriverlo: nome, età, taglia, due righe di carattere, "sterilizzat* e vaccinat*",
+"Per informazioni: <telefono>", e gli hashtag `#adozione #<città> #amiciperlacoda`.
+`share_plus` manda file e testo insieme.
+
+## 18-ter.4 · Dove sta nell'app
+
+Menu ⋮ della scheda cane, sostituendo «Esporta scheda PDF»:
+
+```
+📄  Scheda di adozione (PDF)     → genera, mostra anteprima a schermo intero
+                                   (printing: PdfPreview) con "Condividi" e "Salva"
+🖼  Card per i social (immagine) → genera, mostra anteprima, "Condividi" (immagine + testo)
+                                   e "Salva nella galleria"
+```
+Entrambe le voci si vedono per tutti i ruoli, volontario compreso: condividere un cane non
+è una scrittura. La generazione mostra un indicatore («Preparo la scheda…») e va fatta fuori
+dal thread UI (`compute`) per le foto.
+
+Le stesse due azioni compaiono nella **tab Adozione** del cane, sotto il banner «adottabile»,
+al posto dell'attuale «Condividi scheda» testuale, che diventa una terza voce «Copia testo
+dell'annuncio».
+
+**Rimuovi dal menu ⋮:** «Copia link scheda pubblica» — non esiste un sito, il link non
+porta da nessuna parte (Parte 2, punto 11). **Rimuovi anche «Elimina definitivamente»**:
+la specifica prevede solo «Archivia» (14-ter.2). Un cane con foto, trattamenti, spese e
+richieste non si cancella con un tap; se serve davvero, si fa dalla console. Se vuoi tenerla,
+va limitata al presidente e a cani senza nessun record collegato, con conferma che chiede di
+riscrivere il nome.
+
+## 18-ter.5 · Test
+
+1. `AdoptionProfile.fromDog` con un cane completo: l'oggetto **non ha** nessun campo
+   contenente microchip, box, settore, id, referente (test per riflessione/serializzazione:
+   `toJson()` non contiene le chiavi né i valori).
+2. Il testo estratto dal PDF generato non contiene il microchip, il box, nessun importo in
+   euro, nessun nome di adottante, nessuna nota interna (dati di prova con valori sentinella
+   riconoscibili, es. microchip `999999999999999`, nota «SENTINELLA-NOTA»).
+3. Il PDF ha 1 pagina con descrizione breve e ≤ 4 foto; 2 pagine con descrizione lunga o
+   8 foto; mai 3.
+4. Il PDF pesa meno di 2 MB con 8 foto da 4 MB in ingresso.
+5. La card è esattamente 1080×1350 px, JPEG, sotto 600 KB.
+6. Con `conCani == 'no'` la chip «Ok cani» non compare nella card; con `'si'` compare.
+7. Cane senza foto: PDF e card usano un segnaposto con l'iniziale (come l'elenco), non
+   falliscono.
+8. Cane senza vaccini registrati: il riquadro dice «non registrato», la card dice «—».
+9. Il testo per il post contiene nome, telefono e almeno un hashtag.
+10. Il menu ⋮ non contiene più «Copia link scheda pubblica» né «Esporta scheda PDF»; contiene
+    le due voci nuove per ogni ruolo, «Elimina definitivamente» non c'è più (o è limitata
+    come sopra, se scelto).
+11. Il PDF contiene un'immagine nella testata (estrazione delle immagini dal PDF: almeno
+    una oltre alle foto del cane, con le proporzioni del logo); la card ha il logo in alto a
+    destra (golden).
+12. Golden della card a 1080×1350 dopo approvazione visiva: è l'unico modo per bloccare
+    l'aspetto di un'immagine esportata.
+
+## 18-ter.6 · Dipendenze
+
+`flutter_image_compress` (già presente), `printing` (già presente, per l'anteprima PDF),
+`share_plus` (già presente), `gal` o `image_gallery_saver_plus` per «Salva nella galleria».
+Font Roboto TTF in `assets/fonts/`.
+
+## 18-ter.7 · Impaginazione delle foto e delle sezioni vuote — correzione del 10/09/2026
+
+**Problema rilevato sul PDF reale di Pongo (2 pagine, 9 foto):** la galleria è ancorata in
+fondo alla pagina, quindi fra il testo e le foto resta un buco grande quanto lo spazio non
+usato; la pagina 2 ripete il titolo «La sua storia» senza contenuto, con altre 4 foto in fondo.
+E per un cane appena inserito, senza descrizione e senza trattamenti, la scheda mostra «—» e
+quattro riquadri «non registrato»: sembra abbandonata. Riferimento visivo:
+`design/scheda-adozione-foto.html`.
+
+### Regola 1 — il contenuto scorre, niente è ancorato in fondo
+
+La pagina si costruisce dall'alto verso il basso: testata, hero, salute, carattere e storia,
+**poi subito la griglia delle foto**, senza spazio elastico in mezzo. Il piè di pagina è
+l'unico elemento fisso in basso. Con il pacchetto `pdf` questo significa `MultiPage` con
+`header`/`footer` e un flusso di widget: **nessun `Spacer`, nessun `Expanded`, nessun
+`Positioned` in basso** nel corpo.
+
+### Regola 2 — la griglia delle foto
+
+- Griglia a **3 colonne**, celle di ugual misura, rapporto **1,1 : 1** (quasi quadrate: le
+  foto in verticale e in orizzontale si tagliano poco, e le righe restano uniformi), spazio
+  fra le celle 4 mm, angoli 2 mm, foto in `cover`-fit centrata.
+- La copertina **non** compare nella griglia. Ordine: quello della galleria dell'app.
+- Titolo «Le foto di <nome>» 8,5 pt maiuscolo verde sopra la prima riga, una volta sola.
+- **Pagina 1:** dopo la storia si calcola lo spazio verticale rimasto sopra il piè di pagina;
+  si inseriscono **tante righe complete quante ne stanno** (0, 1, 2 o 3). Se non ci sta
+  nemmeno una riga, la pagina 1 non ha foto e la griglia inizia in pagina 2.
+- **Pagine successive:** pagine galleria con solo testata (etichetta «LE FOTO DI <NOME>»),
+  griglia e piè di pagina: **12 foto per pagina** (3×4). L'ultima pagina, se parziale, è
+  compatta in alto, con l'ultima riga che parte da sinistra.
+- Con il limite di 20 foto per cane il massimo assoluto è **3 pagine**. Non esistono casi
+  oltre.
+- Foto della griglia ridimensionate a **700 px lato lungo, qualità 75** prima di entrare nel
+  PDF; la copertina a 1200 px, qualità 80. Così 20 foto pesano ~1,5 MB.
+
+### Regola 3 — le sezioni vuote non si mostrano vuote
+
+| Caso | Adesso | Deve fare |
+|---|---|---|
+| Descrizione assente | «—» sotto «La sua storia» | testo **generato dai dati**, senza segnalarlo: «<Nome> è un<a> <razza> di taglia <taglia>, <sesso>, arrivat<o/a> a <comune> nel <mese anno>. <Con le persone …>. <Sterilizzat* e vaccinat*.>» Due-tre frasi, solo con i dati che ci sono. |
+| Nessun trattamento registrato | 4 riquadri «non registrato» | una riga sola: «Dati sanitari non ancora registrati: chiedici pure.» Se anche uno solo dei quattro esiste, tornano i 4 riquadri. |
+| Età, peso o razza sconosciuti | «—» nella griglia dei fatti | la cella **non si disegna**; la griglia si compatta |
+| Slogan assente | riga vuota | la riga non si disegna |
+| Carattere senza chip | «—» | la riga delle chip non si disegna; resta la tabella di compatibilità |
+| Compatibilità tutta «da testare» | quattro «Da testare» | resta com'è: è un'informazione vera e utile |
+
+Nessuna sezione ripete il proprio titolo in una pagina successiva. Solo la galleria continua,
+con la sua etichetta in testata.
+
+### Regola 4 — piè di pagina
+
+Su ogni pagina: contatti a sinistra, «pagina n di N» e data di generazione a destra. Il
+piè di pagina della pagina 1 tiene «Vuoi conoscere <nome>?»; le pagine galleria tengono solo
+il nome dell'associazione e i contatti.
+
+### Test aggiuntivi
+
+12. Cane con 1 foto: 1 pagina, nessuna griglia, nessun titolo «Le foto di».
+13. Cane con 5 foto e descrizione breve: 1 pagina, 4 foto sotto il testo in due righe.
+14. Cane con 20 foto: 3 pagine esatte; pagina 2 ha 12 foto; pagina 3 le rimanenti compatte in
+    alto; nessuna pagina contiene il titolo «La sua storia» oltre la prima.
+15. Cane con descrizione molto lunga (1.500 caratteri) e 20 foto: la storia resta intera in
+    pagina 1 (font a 7,5 pt se serve, mai troncata), la griglia inizia dove c'è spazio; mai
+    più di 3 pagine.
+16. Cane senza descrizione: il PDF contiene il testo generato con nome, razza e comune; non
+    contiene «—» né «non registrato» ripetuto quattro volte.
+17. Nessun `Spacer`/`Expanded` nel corpo del documento PDF (grep sul file del builder).
+18. Il file con 20 foto pesa meno di 2 MB.
+
+---
+
+# PARTE 8 — Step 18-quater: tema scuro
+
+**Richiesta del committente (11/09/2026).** La specifica originale (§3.3) diceva «solo tema
+chiaro nella v1»: superata. Il tema scuro va fatto **prima dello Step 19**, perché tocca ogni
+schermata e va bloccato con i golden prima delle rifiniture finali. Riferimento visivo con la
+palette e i contrasti misurati: `design/tema-scuro.html`.
+
+## 18-quater.1 · Perché è un intervento strutturale
+
+Oggi ogni colore arriva da costanti statiche (`AppColor.green`). Una costante non può cambiare
+con il tema. Quindi: `AppColor` diventa una **palette per tema** letta dal contesto, con gli
+**stessi nomi di campo** di oggi, così la migrazione è meccanica.
+
+```dart
+// lib/ui/palette.dart
+@immutable
+class AppPalette extends ThemeExtension<AppPalette> {
+  // stessi nomi di AppColor, più i nuovi:
+  final Color bg, card, card2, line, line2, ink, ink2, muted, faint;
+  final Color green, greenDark, greenSoft, greenTint, greenSoftFg;
+  final Color accent;              // NUOVO: verde per testi/icone attive (in chiaro = green)
+  final Color blue, blueSoft, blueSoftFg, red, redSoft, redSoftFg,
+              purple, purpleSoft, purpleSoftFg, orange, orangeSoft, orangeSoftFg,
+              pinkSoft, pinkSoftFg, neutralSoft, neutralSoftFg;
+  final Color onPrimary;           // testo sui pulsanti verdi: bianco in entrambi
+  final List<BoxShadow> cardShadow;// ombra in chiaro, nessuna in scuro
+  final Brightness brightness;
+  static const light = AppPalette(/* valori attuali di AppColor */);
+  static const dark  = AppPalette(/* tabella 18-quater.2 */);
+  // lerp, copyWith
+}
+extension PaletteX on BuildContext {
+  AppPalette get c => Theme.of(this).extension<AppPalette>()!;
+}
+```
+
+Migrazione: `AppColor.xxx` → `context.c.xxx` in tutti i widget. Nei pochi punti senza
+contesto (painter del grafico peso, aggregatori che restituiscono un colore) la palette si
+passa come parametro. `AppIcons` smette di avere colori costanti: ogni voce indica un **ruolo**
+(`green`, `blue`, `red`, `purple`, `orange`, `pink`, `neutral`) e `IconBadge` risolve sfondo
+e colore del simbolo dalla palette corrente.
+
+**Il tema chiaro non deve cambiare di un pixel.** I golden chiari esistenti sono il test della
+migrazione: se dopo il blocco 1 restano verdi, la migrazione è corretta.
+
+## 18-quater.2 · Palette scura
+
+| Campo | Chiaro (invariato) | Scuro |
+|---|---|---|
+| `bg` | #F5F7F3 | #0F1412 |
+| `card` | #FFFFFF | #171D1A |
+| `card2` (segmentati, input dentro card) | #EFF1ED | #1F2622 |
+| `line` / `line2` | #E9EBE4 / #F1F3EC | #2B332E / #232A26 |
+| `ink` / `ink2` | #16211B / #2C3A32 | #EEF2EE / #D3DAD5 |
+| `muted` / `faint` | #6E7B72 / #9AA69E | #9AA69E / #6F7B73 |
+| `green` (riempimenti, pulsanti) | #157A3C | #157A3C |
+| `greenDark` (pressed) | #0F5C2C | #0F5C2C |
+| `accent` (testo e icone attive) | #157A3C | **#4FC57E** |
+| `greenSoft` / `greenSoftFg` | #E7F4EB / #136135 | #1B3A28 / #8BE0AB |
+| `greenTint` (box citazione) | #F2FAF4 | #16261D |
+| `blue` / `blueSoft` / `blueSoftFg` | #2E7FD6 / #E7F1FC / #1D5F9E | #6AAAF2 / #1A2C42 / #9CC6F5 |
+| `red` / `redSoft` / `redSoftFg` | #E04552 / #FDECEE / #B0303B | #F26B75 / #3F2024 / #F5A0A6 |
+| `purple` / `purpleSoft` / `purpleSoftFg` | #7B4CC0 / #F2EAFC / #5C33A0 | #B08FE8 / #2D2542 / #C9B3F0 |
+| `orange` / `orangeSoft` / `orangeSoftFg` | #DE8A22 / #FDF1DF / #9D6212 | #F2AD4E / #3E2F18 / #F5C67F |
+| `pinkSoft` / `pinkSoftFg` | #FCE9F1 / #C2185B | #3F2331 / #F2A6C8 |
+| `neutralSoft` / `neutralSoftFg` | #EFF1ED / #5F6B62 | #262E29 / #B9C3BC |
+| `onPrimary` | #FFFFFF | #FFFFFF |
+| `cardShadow` | ombra tenue | **nessuna** (solo bordo) |
+
+Contrasti misurati nel tema scuro: testo principale 15,1:1, etichette 6,8:1, accent 7,8:1,
+bianco su verde pieno 5,4:1, ogni badge fra 7,2 e 8,2:1. Il segnaposto è 3,9:1: accettabile
+per un segnaposto, non per un testo.
+
+**Dove va `accent` e dove `green`:** i riempimenti (pulsante primario, FAB, barra di
+occupazione, tab attiva della bottom nav come sfondo, segmento selezionato) restano `green`
+con testo `onPrimary`. I **testi e le icone** che oggi sono verdi (titoli di sezione, «Vedi
+tutti ›», tab attiva, prezzo in evidenza, link, icona della bottom nav attiva) diventano
+`accent`. In chiaro i due coincidono, quindi la regola non cambia nulla nel tema chiaro.
+
+## 18-quater.3 · Casi particolari
+
+- **Logo.** Il logo è nero su trasparente: sullo sfondo scuro sparisce. Nell'header, nel login
+  e nella card profilo si mostra su una **targhetta bianca** (radius 14, padding 6×12, bianco
+  pieno) quando il tema è scuro. Se in futuro l'associazione fornisce `assets/logo_dark.png`,
+  l'app lo usa al posto della targhetta. Nessuna inversione automatica dei colori: il cuore
+  rosso diventerebbe ciano.
+- **Foto e segnaposto con l'iniziale**: invariati; il segnaposto usa `greenSoft`/`greenSoftFg`.
+- **Barra di stato e di navigazione di sistema**: icone chiare su scuro
+  (`SystemUiOverlayStyle`), sfondo della nav bar = `card`.
+- **Dialog e bottom sheet**: fondo `card`, barrier al 60% invece che 45%.
+- **Scheletri di caricamento**: `card2` con shimmer verso `line`.
+- **Grafico peso e barre delle statistiche**: colori dalla palette, griglia `line`.
+- **Export PDF e card social: sempre chiari.** Sono carta, non schermo. Il builder riceve
+  `AppPalette.light` esplicitamente, mai `context.c`.
+- **Golden test**: ogni golden esistente viene affiancato dalla versione scura
+  (`home_dark_360.png`, ecc.). Stessi widget, `ThemeMode.dark`.
+
+## 18-quater.4 · Impostazione
+
+Impostazioni → Aspetto e dati → **Tema**: foglio con tre scelte, `Chiaro · Scuro · Sistema`.
+Predefinito **Sistema**. Salvato localmente (`shared_preferences`), applicato subito senza
+riavvio (`MaterialApp.themeMode` da un provider). Il toast «Disponibile solo il tema chiaro»
+sparisce.
+
+## 18-quater.5 · Ordine di lavoro — due blocchi, con lo stop in mezzo
+
+**Blocco A — migrazione a palette, tema chiaro identico.** `AppPalette` con solo `light`,
+`context.c`, migrazione meccanica di tutti i file, `AppIcons` a ruoli, `IconBadge` che risolve
+dalla palette. Nessun colore nuovo. **Criterio di accettazione: tutti i golden chiari
+esistenti passano senza rigenerarli.** Se uno fallisce, la migrazione ha cambiato qualcosa e
+va capito perché — non si rigenera il golden.
+
+**Blocco B — tema scuro.** `AppPalette.dark`, il token `accent` applicato secondo la regola
+sopra, la targhetta del logo, l'impostazione con persistenza, i golden scuri, il test dei
+contrasti.
+
+## 18-quater.6 · Test
+
+1. **Test dei contrasti (unit).** Per la palette scura, per ogni coppia della tabella
+   (`ink`/`card`, `muted`/`card`, `accent`/`card`, `accent`/`bg`, `onPrimary`/`green`, ogni
+   `xSoftFg`/`xSoft`, `red`/`card`, `blue`/`card`, `orange`/`card`) il rapporto WCAG calcolato
+   nel test è ≥ 4,5. Stesso test sulla palette chiara. Se qualcuno in futuro ritocca un colore
+   e rompe la leggibilità, il test lo dice.
+2. Dopo il blocco A, tutti i golden chiari esistenti passano **senza** `--update-goldens`.
+3. `grep` su `lib/`: nessuna occorrenza di `AppColor.` fuori da `palette.dart`; nessun
+   `Color(0x` nei widget delle feature (i colori esistono solo nella palette).
+4. Con `ThemeMode.dark`, nessuna schermata usa un colore della palette chiara: test che
+   renderizza le schermate principali in scuro e verifica che lo sfondo del `Scaffold` sia
+   `AppPalette.dark.bg` e il testo del titolo `AppPalette.dark.ink`.
+5. Nel tema scuro il logo è dentro la targhetta bianca (widget presente); nel chiaro no.
+6. Cambiando il tema dalle impostazioni la home cambia senza riavvio; chiusa e riaperta l'app
+   il tema scelto è ricordato; «Sistema» segue la modalità del telefono.
+7. PDF e card social generati con il tema scuro attivo sono identici (byte a byte, a parità di
+   dati) a quelli generati con il chiaro.
+8. Golden scuri di home, elenco cani, scheda cane, modifica cane, un dialog e le impostazioni,
+   bloccati dopo approvazione visiva.
+9. Nessun overflow in scuro alle quattro larghezze (le stringhe non cambiano, ma il test
+   costa nulla).
+
+---
+
+# PARTE 9 — Step 19-bis: importazione dei dati reali (49 cani + archivio Facebook + foto)
+
+**Richiesta del committente (11/09/2026).** Caricare nell'app tutti i cani veri con le loro
+foto: i 49 in rifugio e i 106 dell'archivio Facebook. I file sono nella cartella `import/`
+del progetto (`import/README.md`). **Solo profili e foto**: niente altro.
+
+## 19-bis.1 · Uno script una tantum dal PC, non una schermata
+
+Script Node.js in `tool/import/` con `firebase-admin` (funziona sul piano Spark: è Cloud
+Functions a richiedere Blaze, non l'Admin SDK) e `sharp` per le foto. Nessuna modifica
+all'app, tranne una: `Dog.fromMap` deve accettare `sesso` nullo (i cani Facebook non ce
+l'hanno; la UI mostra «—»).
+
+Chiave: console Firebase → Impostazioni progetto → Account di servizio → «Genera nuova chiave
+privata» → salvare come `tool/import/serviceAccount.json` → **in `.gitignore`**.
+
+```
+node import.mjs --dry-run                          # stampa cosa farebbe, non scrive
+node import.mjs --backup                           # scarica tutte le collezioni in backup-<data>/
+node import.mjs --dogs                             # cani_rifugio.csv poi cani_facebook.csv
+node import.mjs --photos --dir "<cartella foto>"   # foto_facebook.csv
+node import.mjs --verify
+node import.mjs --restore backup-<data>/
+```
+
+## 19-bis.2 · Regole
+
+**Idempotenza.** Id deterministici: `csv_<slug>` per i 49, `fb_<n>_<slug>` per i Facebook,
+`fbphoto_<slug-file>` per le foto. Rilanciare aggiorna, non duplica.
+
+**Ordine.** Prima `cani_rifugio.csv` (49), poi `cani_facebook.csv` (106), poi le foto.
+
+**`azione = crea`** (98 cani): documento `dogs` con nome, stato, archiviato, statoDal,
+descrizione; campi assenti `null`; `createdBy: 'import'`; una voce in `storicoStati`
+(`note: "Importato da Facebook, data approssimativa"`); la colonna `nota` diventa un
+documento `notes` di tipo `generale`, autore `import`.
+
+**`azione = solo_foto`** (8 cani: Aramis, Diana, Duca, Flora, Max, Mirtillo, Molly, Totò):
+il cane **esiste già** fra i 49. Si cerca per nome normalizzato (minuscolo, senza accenti) e
+si aggiungono **solo le foto**. Non si tocca nessun altro campo, non si crea nessun documento
+`dogs`, nessuna nota. Se il cane non si trova, lo script si ferma e lo dice.
+
+**Foto** (`foto_facebook.csv`, colonna `caneNellApp` = il cane a cui appartiene):
+- orientamento EXIF applicato, metadati rimossi;
+- **full**: lato lungo **1400 px**, JPEG qualità 82; se supera **650 KB** si scende di 5 punti
+  di qualità fino a rientrare;
+- **thumb**: lato lungo 160 px, qualità 60;
+- struttura **copiata dal codice Dart di `PhotoRepository`**, campo per campo: `photos/{id}`
+  con `dogId, isCover, w, h, mime, thumbB64, bytesFull, createdAt, createdBy: 'import'` e
+  `photos/{id}/full/data` con `b64`;
+- `copertina = SI` → `isCover: true` e `dogs.fotoCopertinaId`; per i `solo_foto`, se il cane
+  ha già una copertina, quella resta e la foto Facebook entra come foto normale;
+- massimo 20 foto per cane: le eccedenti finiscono nel rapporto;
+- file mancante: si registra nel rapporto e si va avanti.
+
+**Non si importano** le foto della sottocartella `foto_di_gruppo`.
+
+**Rapporto** `tool/import/report-<data>.md`: cani creati / aggiornati solo foto / errori; foto
+importate / mancanti / oltre limite; MB scritti; tempo.
+
+## 19-bis.3 · Sicurezza
+
+- La prima esecuzione su un progetto che ha già documenti `fb_*` o `csv_*` richiede `--force`.
+- `--backup` prima dell'import vero; `--restore` per tornare indietro.
+- Le regole Firestore non cambiano.
+
+## 19-bis.4 · Test
+
+1. `--dry-run` sui CSV reali: 49 + 98 creazioni, 8 «solo foto», 267 foto, 0 errori, nessuna
+   scrittura (conteggio documenti prima/dopo identico).
+2. Dopo `--dogs`: `dogs` ha 147 documenti (49 + 98); gli 8 `solo_foto` non hanno creato nulla
+   e hanno tutti i campi **invariati** (confronto prima/dopo).
+3. Rilanciare `--dogs` non cambia il numero di documenti.
+4. Foto: ogni `full` ≤ 650 KB e ≥ 900 px sul lato lungo; ogni `thumb` ≤ 15 KB; l'app le mostra
+   in elenco e galleria (verifica manuale su 5 cani, incluso Duca con 10 foto).
+5. Gli 8 `solo_foto` hanno le foto in più e la stessa copertina di prima, se ne avevano una.
+6. `--verify`: nessuna foto orfana, nessun cane con `fotoCopertinaId` che non esiste.
+7. `--restore` riporta un cane cancellato a mano.

@@ -13,6 +13,7 @@ import 'package:amici_per_la_coda/features/adoptions/adoption_detail_page.dart';
 import 'package:amici_per_la_coda/features/affido/affido_copy.dart';
 import 'package:amici_per_la_coda/features/affido/affido_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dog_detail_page.dart';
+import 'package:amici_per_la_coda/features/settings/moduli_page.dart';
 import 'package:amici_per_la_coda/features/settings/settings_page.dart';
 import 'package:amici_per_la_coda/router.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -114,7 +115,7 @@ void main() {
       final templates = InMemoryTemplateRepository();
       await pumpLogged(
         tester,
-        location: AppRoutes.impostazioni,
+        location: AppRoutes.documenti,
         templates: templates,
         assets: const RootBundleAssetLoader(),
       );
@@ -125,10 +126,15 @@ void main() {
       );
       expect(templates.items.every((item) => item.versione == 1), isTrue);
       expect(templates.items.every((item) => item.pdfB64.isNotEmpty), isTrue);
-      expect(find.byType(SettingsPage), findsOneWidget);
+      expect(find.byType(ModuliPage), findsOneWidget);
       expect(find.text('Modulo di preaffido'), findsOneWidget);
       expect(find.text('Modulo di adozione'), findsOneWidget);
       expect(find.textContaining('Versione 1'), findsWidgets);
+      final router = GoRouter.of(tester.element(find.byType(ModuliPage)));
+      router.go(AppRoutes.impostazioni);
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsOneWidget);
+      expect(find.text('Modulo di preaffido'), findsNothing);
 
       final db = FakeFirebaseFirestore();
       final firestoreTemplates = FirestoreTemplateRepository(db);
@@ -180,13 +186,15 @@ void main() {
       );
       await pumpLogged(
         tester,
-        location: AppRoutes.impostazioni,
+        location: AppRoutes.documenti,
         templates: templates,
         share: share,
         picker: picker,
       );
-      final router = GoRouter.of(tester.element(find.byType(SettingsPage)));
-      await tester.tap(find.byKey(SettingsPage.replacePreaffidoKey));
+      final router = GoRouter.of(tester.element(find.byType(ModuliPage)));
+      await tester.tap(find.byKey(ModuliPage.rowKey(templatePreaffidoId)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ModuliPage.replacePreaffidoKey));
       await tester.pumpAndSettle();
       final updated = templates.items.firstWhere(
         (item) => item.id == templatePreaffidoId,

@@ -38,4 +38,18 @@ class Note {
       'createdAt': dateTimeTo(createdAt),
     };
   }
+
+  Note copyWith({
+    NoteTipo? tipo,
+    String? testo,
+  }) {
+    return Note(
+      id: id,
+      dogId: dogId,
+      tipo: tipo ?? this.tipo,
+      testo: testo ?? this.testo,
+      autoreId: autoreId,
+      createdAt: createdAt,
+    );
+  }
 }

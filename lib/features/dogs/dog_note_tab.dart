@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format_it.dart';
+import '../../data/data_providers.dart';
 import '../../data/models/dog.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/note.dart';
 import '../../data/models/volunteer.dart';
+import '../affido/affido_providers.dart';
+import '../auth/auth_providers.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'add_note_sheet.dart';
 import 'dogs_providers.dart';
+import 'edit_permissions.dart';
+import 'record_actions.dart';
 import 'tab_labels.dart';
 
 // ── CONTRATTO DI LAYOUT · Tab Note ─────────────────────────────────────────
@@ -19,7 +24,7 @@ import 'tab_labels.dart';
 // │  SizedBox 6
 // │  Text corpo 12sp  (wrap verticale)
 // ├ SizedBox 9
-// └ AppButton ghost  Aggiungi nota  h=40
+// └ se volunteer != null: AppButton ghost  Aggiungi nota  h=40
 // ───────────────────────────────────────────────────────────────────────────
 
 class DogNoteTab extends ConsumerWidget {
@@ -31,6 +36,7 @@ class DogNoteTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final volunteer = ref.watch(currentVolunteerProvider);
     final notes = ref
         .watch(notesByDogProvider(dog.id))
         .maybeWhen(data: (items) => items, orElse: () => const <Note>[]);
@@ -61,25 +67,42 @@ class DogNoteTab extends ConsumerWidget {
             _NoteCard(
               note: sorted[i],
               author: autoreEtichetta(volunteers, sorted[i].autoreId),
+              canEdit: canEditNote(volunteer, sorted[i]),
+              onEdit: () => AddNoteSheet.open(
+                context,
+                dogId: dog.id,
+                existing: sorted[i],
+              ),
+              onDelete: () => _deleteNote(context, ref, sorted[i]),
             ),
           ],
         const SizedBox(height: AppDim.gapM),
-        AppButton(
-          key: addKey,
-          label: 'Aggiungi nota',
-          variant: AppButtonVariant.ghost,
-          onPressed: () => AddNoteSheet.open(context, dogId: dog.id),
-        ),
+        if (canCreateNotes(volunteer))
+          AppButton(
+            key: addKey,
+            label: 'Aggiungi nota',
+            variant: AppButtonVariant.ghost,
+            onPressed: () => AddNoteSheet.open(context, dogId: dog.id),
+          ),
       ],
     );
   }
 }
 
 class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note, required this.author});
+  const _NoteCard({
+    required this.note,
+    required this.author,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Note note;
   final String author;
+  final bool canEdit;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +110,15 @@ class _NoteCard extends StatelessWidget {
     final header = note.tipo == NoteTipo.generale
         ? '$author · ${formatItalianDate(note.createdAt)}'
         : '${noteTipoLabel(note.tipo)} · $author · ${formatItalianDate(note.createdAt)}';
-    return DecoratedBox(
+    return GestureDetector(
+      onLongPress: canEdit
+          ? () => openRecordActions(
+              context,
+              onEdit: onEdit,
+              onDelete: onDelete,
+            )
+          : null,
+      child: DecoratedBox(
       decoration: BoxDecoration(
         color: colors.background,
         borderRadius: BorderRadius.circular(AppDim.radCard),
@@ -119,6 +150,12 @@ class _NoteCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                RecordMenuButton(
+                  id: note.id,
+                  canEdit: canEdit,
+                  onEdit: onEdit,
+                  onDelete: onDelete,
+                ),
               ],
             ),
             const SizedBox(height: AppDim.gapS),
@@ -134,8 +171,28 @@ class _NoteCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
+}
+
+Future<void> _deleteNote(
+  BuildContext context,
+  WidgetRef ref,
+  Note note,
+) async {
+  final snippet = note.testo.length > 40
+      ? '${note.testo.substring(0, 40)}…'
+      : note.testo;
+  final notes = ref.read(noteRepositoryProvider);
+  final dogs = ref.read(dogRepositoryProvider);
+  final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+  final ok = await confirmDeleteNamed(context, 'la nota «$snippet»');
+  if (!ok) {
+    return;
+  }
+  await notes?.delete(note.id);
+  await touchDogAudit(dogs: dogs, dogId: note.dogId, uid: uid);
 }
 
 ({Color background, Color border, Color header}) _noteColors(NoteTipo tipo) {

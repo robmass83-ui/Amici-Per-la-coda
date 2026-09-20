@@ -162,7 +162,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(horizontalScrollables(), findsNothing);
-      expect(find.text('Nome del cane *'), findsOneWidget);
+      expect(find.text('NOME *'), findsOneWidget);
 
       await tester.enterText(find.byKey(NewDogWizardPage.nomeKey), 'Nerone');
       await tester.tap(find.byKey(NewDogWizardPage.continuaKey));
@@ -183,9 +183,9 @@ void main() {
     await pumpWizard(tester, size: const Size(320, 1100));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Nome del cane *'), findsOneWidget);
-    expect(find.text('Microchip'), findsOneWidget);
-    expect(find.text('Iscritto in anagrafe canina'), findsOneWidget);
+    expect(find.text('NOME *'), findsOneWidget);
+    expect(find.text('MICROCHIP'), findsOneWidget);
+    expect(find.text('ANAGRAFE'), findsOneWidget);
     expect(find.text('Continua →'), findsOneWidget);
   });
 }

@@ -6,9 +6,15 @@ void main() {
   test('i path overlay coincidono con AppRoutes', () {
     expect(parentLocation(AppRoutes.nuovo), AppRoutes.home);
     expect(parentLocation(AppRoutes.affido), AppRoutes.home);
+    expect(parentLocation(AppRoutes.documenti), AppRoutes.home);
     expect(parentLocation(AppRoutes.impostazioni), AppRoutes.home);
     expect(parentLocation(AppRoutes.box), AppRoutes.home);
     expect(parentLocation(AppRoutes.statistiche), AppRoutes.home);
+    expect(parentLocation(AppRoutes.cerca), AppRoutes.home);
+    expect(parentLocation(AppRoutes.notifiche), AppRoutes.home);
+    expect(parentLocation(AppRoutes.archiviati), AppRoutes.home);
+    expect(parentLocation(AppRoutes.adottanti), AppRoutes.home);
+    expect(parentLocation(AppRoutes.fornitori), AppRoutes.home);
     expect(parentLocation(AppRoutes.richieste), AppRoutes.home);
     expect(parentLocation(AppRoutes.debugUi), AppRoutes.home);
     expect(parentLocation(AppRoutes.login), isNull);
@@ -19,6 +25,7 @@ void main() {
     expect(parentLocation(AppRoutes.dog('fenice')), AppRoutes.animali);
     expect(parentLocation(AppRoutes.dogFoto('fenice')), AppRoutes.dog('fenice'));
     expect(parentLocation(AppRoutes.dogStato('fenice')), AppRoutes.dog('fenice'));
+    expect(parentLocation(AppRoutes.dogModifica('fenice')), AppRoutes.dog('fenice'));
     expect(parentLocation(AppRoutes.animali), AppRoutes.home);
     expect(parentLocation(AppRoutes.calendario), AppRoutes.home);
     expect(parentLocation(AppRoutes.altro), AppRoutes.home);
@@ -39,6 +46,23 @@ void main() {
     history.record('/');
     expect(history.stack, ['/']);
     expect(history.previous, isNull);
+  });
+
+  test('dalla scheda aperta dall\'archivio si torna all\'archivio', () {
+    final history = AppNavigationHistory();
+    history.record('/altro');
+    history.record('/archiviati');
+    history.record('/animali');
+    history.record('/animali/gone');
+    expect(overlayOrigin(history), AppRoutes.archiviati);
+    expect(isDogProfileLocation('/animali/gone'), isTrue);
+    expect(isDogProfileLocation('/animali/gone/stato'), isFalse);
+
+    final fromList = AppNavigationHistory();
+    fromList.record('/');
+    fromList.record('/animali');
+    fromList.record('/animali/fenice');
+    expect(overlayOrigin(fromList), isNull);
   });
 
   test('login svuota la cronologia e i duplicati consecutivi si ignorano', () {

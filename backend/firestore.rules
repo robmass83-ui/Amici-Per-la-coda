@@ -10,13 +10,36 @@ service cloud.firestore {
       return get(/databases/$(db)/documents/volunteers/$(request.auth.uid)).data.ruolo;
     }
     function puoScrivere() { return attivo() && ruolo() in ['presidente','referente']; }
+    // Chi è loggato può sbloccare la propria password senza toccare anagrafe/ruolo.
+    function stessoProfilo() {
+      return request.resource.data.nome == resource.data.nome
+        && request.resource.data.cognome == resource.data.cognome
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.ruolo == resource.data.ruolo
+        && request.resource.data.attivo == resource.data.attivo
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.updatedBy == resource.data.updatedBy;
+    }
 
     match /volunteers/{id} {
-      allow read: if attivo();
-      allow write: if attivo() && ruolo() == 'presidente';
+      allow read: if attivo() || request.auth.uid == id;
+      allow create, delete: if attivo() && ruolo() == 'presidente';
+      allow update: if (attivo() && ruolo() == 'presidente')
+        || (attivo() && request.auth.uid == id && stessoProfilo());
     }
-    match /notes/{id}   { allow read: if attivo(); allow create: if attivo();
-                          allow update, delete: if puoScrivere(); }
+    match /authTokens/{id} {
+      // `read`/`write` (non `get`): `attivo()` chiama get() e l'emulatore
+      // segnala evaluation error se l'operazione si chiama allo stesso modo.
+      allow read, write: if attivo() &&
+        (ruolo() == 'presidente' || request.auth.uid == id);
+    }
+    match /notes/{id} {
+      allow read: if attivo();
+      allow create: if attivo();
+      allow update, delete: if puoScrivere() || (
+        attivo() && resource.data.autoreId == request.auth.uid
+      );
+    }
     match /settings/{id}{ allow read: if attivo(); allow write: if attivo() && ruolo()=='presidente'; }
     match /templates/{id} {
       allow read: if attivo();
@@ -26,8 +49,31 @@ service cloud.firestore {
     match /dogDrafts/{uid} {
       allow read, write: if attivo() && request.auth.uid == uid;
     }
-    match /{col}/{id}   { allow read: if attivo(); allow write: if puoScrivere(); }
-    match /{path=**}/full/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
+    match /searchRecents/{uid} {
+      allow read, write: if attivo() && request.auth.uid == uid;
+    }
+    // Limiti Blob: codec 12 KB / 450 KB; qui 25 KB / 600 KB di tetto server
+    // (margine JPEG fallback, sotto 1 MiB/doc). Il catch-all non deve
+    // scrivere `photos`, altrimenti bypassa questi size().
+    match /photos/{photoId} {
+      allow read: if attivo();
+      allow create, update: if puoScrivere()
+        && (!('thumb' in request.resource.data)
+            || request.resource.data.thumb.size() < 25000);
+      allow delete: if puoScrivere();
+      match /full/{docId} {
+        allow read: if attivo();
+        allow create, update: if puoScrivere()
+          && 'dati' in request.resource.data
+          && request.resource.data.dati.size() < 600000;
+        allow delete: if puoScrivere();
+      }
+    }
+    match /{col}/{id} {
+      allow read: if attivo() && col != 'authTokens';
+      allow write: if puoScrivere() &&
+        !(col in ['volunteers', 'settings', 'templates', 'dogDrafts', 'searchRecents', 'authTokens', 'photos']);
+    }
     match /{path=**}/chunks/{doc} { allow read: if attivo(); allow write: if puoScrivere(); }
   }
 }

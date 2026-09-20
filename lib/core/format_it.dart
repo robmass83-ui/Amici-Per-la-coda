@@ -37,6 +37,29 @@ String formatItalianTime(DateTime date) {
   return '$hour:$minute';
 }
 
+String formatItalianDayMonth(DateTime date) {
+  final local = date.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  return '$day/$month';
+}
+
+String formatItalianMonthYear(DateTime date) {
+  final raw = DateFormat('MMMM yyyy', 'it_IT').format(
+    DateTime(date.year, date.month),
+  );
+  if (raw.isEmpty) {
+    return raw;
+  }
+  return '${raw[0].toUpperCase()}${raw.substring(1)}';
+}
+
+String formatItalianWeekdayDay(DateTime date) {
+  return DateFormat('EEEE d', 'it_IT').format(
+    DateTime(date.year, date.month, date.day),
+  );
+}
+
 DateTime? parseItalianDate(String raw) {
   final parts = raw.trim().split(RegExp(r'[/\-.]'));
   if (parts.length != 3) {
@@ -53,6 +76,35 @@ DateTime? parseItalianDate(String raw) {
     return null;
   }
   return parsed;
+}
+
+String formatFileSize(int bytes) {
+  if (bytes < 1024) {
+    return '$bytes B';
+  }
+  final kb = bytes / 1024;
+  if (kb < 1024) {
+    final shown = kb >= 10 ? kb.round().toString() : formatItalianNumber(kb);
+    return '$shown KB';
+  }
+  final mb = kb / 1024;
+  return '${formatItalianNumber(mb)} MB';
+}
+
+DateTime? parseItalianTime(String raw, DateTime day) {
+  final parts = raw.trim().split(':');
+  if (parts.length < 2) {
+    return null;
+  }
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) {
+    return null;
+  }
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+  return DateTime(day.year, day.month, day.day, hour, minute);
 }
 
 double? parseItalianDecimal(String raw) {

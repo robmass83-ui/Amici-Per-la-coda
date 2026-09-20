@@ -11,7 +11,11 @@ String italianAuthMessage(String code) {
       'Nessuna connessione. Riprova quando hai rete.',
     'operation-not-allowed' => 'Accesso con email non abilitato.',
     'email-already-in-use' => 'Questa email è già registrata.',
+    'invalid-refresh-token' =>
+      'Non è stato possibile eliminare l\'accesso. Riprova.',
     'weak-password' => 'La password è troppo debole.',
+    'requires-recent-login' =>
+      'Per cambiare la password accedi di nuovo, poi riprova.',
     _ => 'Accesso non riuscito. Riprova.',
   };
 }
@@ -23,4 +27,12 @@ class AuthFailure implements Exception {
 
   @override
   String toString() => message;
+}
+
+bool isEmailAlreadyInUse(AuthFailure error) {
+  return error.message == italianAuthMessage('email-already-in-use');
+}
+
+bool isAuthUserMissing(AuthFailure error) {
+  return error.message == italianAuthMessage('user-not-found');
 }

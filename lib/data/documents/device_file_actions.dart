@@ -27,6 +27,19 @@ class SharePlusFileShare implements FileShare {
       text: text,
     );
   }
+
+  @override
+  Future<void> shareExistingFile({
+    required String path,
+    required String fileName,
+    required String mime,
+    required String text,
+  }) {
+    return Share.shareXFiles(
+      [XFile(path, mimeType: mime, name: fileName)],
+      text: text,
+    );
+  }
 }
 
 class OpenFilexOpener implements FileOpener {
@@ -37,6 +50,9 @@ class OpenFilexOpener implements FileOpener {
     required String mime,
   }) async {
     final file = await writeTempFile(bytes, fileName);
-    await OpenFilex.open(file.path, type: mime);
+    final result = await OpenFilex.open(file.path, type: mime);
+    if (result.type != ResultType.done) {
+      throw StateError(result.message);
+    }
   }
 }

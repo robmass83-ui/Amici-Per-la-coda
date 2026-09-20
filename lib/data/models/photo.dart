@@ -1,5 +1,11 @@
+import 'dart:typed_data';
+
 import '../../core/firestore_codec.dart';
 
+/// Metadati + miniatura in `photos/{id}`. Il Blob `thumb` è ≤ 12 KB (codec)
+/// e deve restare < 25 KB (regole). Alzare oltre 25 KB: Firestore rifiuta
+/// create/update. La foto piena sta in `photos/{id}/full/data` (`dati`,
+/// codec ≤ 450 KB, regole < 600 KB) così la lista non scarica i full.
 class Photo {
   const Photo({
     required this.id,
@@ -8,7 +14,7 @@ class Photo {
     required this.w,
     required this.h,
     required this.mime,
-    required this.thumbB64,
+    required this.thumb,
     required this.bytesFull,
     required this.createdAt,
     required this.createdBy,
@@ -20,7 +26,7 @@ class Photo {
   final int w;
   final int h;
   final String mime;
-  final String thumbB64;
+  final Uint8List thumb;
   final int bytesFull;
   final DateTime createdAt;
   final String createdBy;
@@ -33,7 +39,7 @@ class Photo {
       w: intFrom(map['w']),
       h: intFrom(map['h']),
       mime: map['mime'] as String? ?? 'image/jpeg',
-      thumbB64: map['thumbB64'] as String? ?? '',
+      thumb: bytesFrom(map['thumb'] ?? map['thumbB64']),
       bytesFull: intFrom(map['bytesFull']),
       createdAt: dateTimeRequired(map['createdAt']),
       createdBy: map['createdBy'] as String? ?? '',
@@ -47,7 +53,7 @@ class Photo {
       'w': w,
       'h': h,
       'mime': mime,
-      'thumbB64': thumbB64,
+      'thumb': blobTo(thumb),
       'bytesFull': bytesFull,
       'createdAt': dateTimeTo(createdAt),
       'createdBy': createdBy,
@@ -56,15 +62,17 @@ class Photo {
 }
 
 class PhotoFull {
-  const PhotoFull({required this.b64});
+  const PhotoFull({required this.dati});
 
-  final String b64;
+  /// Bytes della foto piena. Codec ≤ 450 KB; regole Firestore `dati.size() < 600000`.
+  /// Alzare il codec sopra 600 KB fa rifiutare il documento `full/data`.
+  final Uint8List dati;
 
   factory PhotoFull.fromMap(Map<String, dynamic> map) {
-    return PhotoFull(b64: map['b64'] as String? ?? '');
+    return PhotoFull(dati: bytesFrom(map['dati'] ?? map['b64']));
   }
 
-  Map<String, dynamic> toMap() => {'b64': b64};
+  Map<String, dynamic> toMap() => {'dati': blobTo(dati)};
 }
 
 extension PhotoCopy on Photo {
@@ -76,7 +84,7 @@ extension PhotoCopy on Photo {
       w: w,
       h: h,
       mime: mime,
-      thumbB64: thumbB64,
+      thumb: thumb,
       bytesFull: bytesFull,
       createdAt: createdAt,
       createdBy: createdBy,

@@ -1,3 +1,12 @@
+# Stessa regola di .cursor/rules/run-on-device.mdc e tool/publish_test_release.ps1:
+# un solo versionCode per pubspec, APK ABI, tag GitHub e (se presente) ADB.
+# Non ricostruire un tag che ha già gli APK: sarebbe un secondo binario allo stesso codice
+# e Android rifiuterebbe l'installazione in-app sopra il sideload ADB.
+#
+# versionCode successivo (solo workflow_dispatch, senza tag) =
+#   max(pubspec, ultima GitHub Release) + 1
+# Tag: non si ricostruisce mai. Lo script locale ha già caricato quegli APK
+# (stesso SHA-256 di ADB). Ricostruire main produrrebbe un altro binario.
 name: Release APK
 
 on:
@@ -5,6 +14,10 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+
+concurrency:
+  group: release-apk
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -20,7 +33,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Skip if this tag already has APKs (same bits as ADB/script)
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "Tag ${GITHUB_REF_NAME}: APK già pubblicati dallo script PC. Non ricostruisco."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "build=true" >> "$GITHUB_OUTPUT"
+
       - name: Restore the upload keystore
+        if: steps.gate.outputs.build == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
         run: |
@@ -39,13 +66,17 @@ jobs:
           echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_FILE" >> "$GITHUB_ENV"
 
       - uses: subosito/flutter-action@v2
+        if: steps.gate.outputs.build == 'true'
         with:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Flutter pub get
+        if: steps.gate.outputs.build == 'true'
+        run: flutter pub get
 
-      - name: Next versionCode (strictly newer than pubspec and last GitHub release)
+      - name: Resolve version (tag as-is, otherwise max+1)
+        if: steps.gate.outputs.build == 'true'
         id: ver
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,6 +88,23 @@ jobs:
           if ! [[ "$PUBSPEC_CODE" =~ ^[0-9]+$ ]]; then
             PUBSPEC_CODE=0
           fi
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG_RAW="${GITHUB_REF_NAME#v}"
+            TAG_NAME="${TAG_RAW%%+*}"
+            TAG_CODE="${TAG_RAW##*+}"
+            if [[ "$TAG_RAW" == *+* ]] && [[ "$TAG_CODE" =~ ^[0-9]+$ ]]; then
+              NAME="$TAG_NAME"
+              CODE="$TAG_CODE"
+              echo "tag ${GITHUB_REF_NAME} -> $NAME+$CODE (nessun incremento)"
+              echo "name=$NAME" >> "$GITHUB_OUTPUT"
+              echo "code=$CODE" >> "$GITHUB_OUTPUT"
+              echo "version=$NAME+$CODE" >> "$GITHUB_OUTPUT"
+              echo "tag=v$NAME+$CODE" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
           PREV_CODE=0
           PREV_JSON=$(curl -sS -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
@@ -81,6 +129,7 @@ jobs:
           echo "tag=v$NAME+$CODE" >> "$GITHUB_OUTPUT"
 
       - name: Build ABI APKs
+        if: steps.gate.outputs.build == 'true'
         run: |
           flutter build apk --release --split-per-abi \
             --build-name="${{ steps.ver.outputs.name }}" \
@@ -88,13 +137,16 @@ jobs:
             -Pforce-version-code-ignoring-abi=true
 
       - name: Verify signature, versionCode and size
+        if: steps.gate.outputs.build == 'true'
         run: |
           set -euo pipefail
           EXPECTED="${EXPECTED_CERT_SHA256,,}"
+          EXPECTED_CODE="${{ steps.ver.outputs.code }}"
           shopt -s nullglob
           APKS=(build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
                 build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk)
           COUNT=0
+          AAPT=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/aapt 2>/dev/null | tail -1)
           for APK in "${APKS[@]}"; do
             if [ ! -f "$APK" ]; then
               echo "Manca $APK"
@@ -105,6 +157,15 @@ jobs:
             if [ "$SIZE" -gt 31457280 ]; then
               echo "APK sopra 30 MB: $SIZE"
               exit 1
+            fi
+            if [ -n "$AAPT" ]; then
+              BADGING=$("$AAPT" dump badging "$APK")
+              APK_CODE=$(printf '%s\n' "$BADGING" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" | head -1)
+              echo "versionCode=$APK_CODE (atteso $EXPECTED_CODE)"
+              if [ "$APK_CODE" != "$EXPECTED_CODE" ]; then
+                echo "versionCode APK $APK_CODE diverso da $EXPECTED_CODE"
+                exit 1
+              fi
             fi
             APKSIGNER=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/apksigner 2>/dev/null | tail -1)
             if [ -z "$APKSIGNER" ]; then
@@ -135,6 +196,7 @@ jobs:
           fi
 
       - uses: softprops/action-gh-release@v2
+        if: steps.gate.outputs.build == 'true'
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: Amici per la Coda ${{ steps.ver.outputs.version }}
@@ -143,3 +205,6 @@ jobs:
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           generate_release_notes: true
           fail_on_unmatched_files: true
+          body: |
+            Stesso versionCode ${{ steps.ver.outputs.code }} su ogni ABI.
+            L'app controlla GitHub Releases all'avvio; a parità di codice non chiede l'aggiornamento.

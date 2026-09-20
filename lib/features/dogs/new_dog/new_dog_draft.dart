@@ -4,6 +4,22 @@ enum WizardSterilizzazione { si, no, programmata }
 
 enum WizardAdottabile { si, nonAncora, nonAdottabile }
 
+WizardSterilizzazione? sterilizzazioneFromDog({
+  required bool? sterilizzato,
+  DateTime? dataSterilizzazione,
+}) {
+  if (sterilizzato == true) {
+    return WizardSterilizzazione.si;
+  }
+  if (dataSterilizzazione != null) {
+    return WizardSterilizzazione.programmata;
+  }
+  if (sterilizzato == false) {
+    return WizardSterilizzazione.no;
+  }
+  return null;
+}
+
 class PendingTreatment {
   const PendingTreatment({
     required this.tipo,

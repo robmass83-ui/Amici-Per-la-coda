@@ -57,7 +57,7 @@ void main() {
       dogListNow: now,
     );
 
-    await tester.tap(find.text('[PROVA] Fenice'));
+    await tester.tap(find.text('Fenice'));
     await tester.pumpAndSettle();
 
     expect(find.byType(DogDetailPage), findsOneWidget);

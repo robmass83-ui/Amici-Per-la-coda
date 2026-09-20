@@ -6,3 +6,13 @@ class PhotoLimitReached implements Exception {
   @override
   String toString() => message;
 }
+
+class PhotoTooLarge implements Exception {
+  const PhotoTooLarge();
+
+  static const message =
+      'La foto è troppo grande per essere salvata. Prova con un\'altra immagine.';
+
+  @override
+  String toString() => message;
+}

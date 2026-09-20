@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:amici_per_la_coda/data/documents/template_assets.dart';
 import 'package:amici_per_la_coda/data/models/document_template.dart';
+import 'package:amici_per_la_coda/data/models/enums.dart';
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 
 class InMemoryTemplateRepository implements TemplateRepository {
@@ -38,16 +39,22 @@ class InMemoryTemplateRepository implements TemplateRepository {
   }
 
   @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
+    _controller.add(List<DocumentTemplate>.unmodifiable(_items));
+  }
+
+  @override
   Future<void> ensureDefaults({
     required AssetBytesLoader loader,
     required String uid,
     DateTime? now,
   }) async {
+    if (_items.isNotEmpty) {
+      return;
+    }
     final at = now ?? DateTime.now();
     for (final spec in defaultTemplates) {
-      if (await getById(spec.id) != null) {
-        continue;
-      }
       final bytes = await loader.load(spec.assetPath);
       await save(
         DocumentTemplate(
@@ -64,4 +71,28 @@ class InMemoryTemplateRepository implements TemplateRepository {
       );
     }
   }
+}
+
+DocumentTemplate testTemplate({
+  String id = templatePreaffidoId,
+  String nome = templatePreaffidoNome,
+  String fileName = 'modulo-preaffido.pdf',
+  String pdfB64 = 'abc',
+  int versione = 1,
+  DateTime? aggiornatoIl,
+  String aggiornatoDa = 'u1',
+  TemplateVisibilita visibilita = TemplateVisibilita.entrambi,
+}) {
+  return DocumentTemplate(
+    id: id,
+    nome: nome,
+    descrizione: '',
+    fileName: fileName,
+    mime: 'application/pdf',
+    pdfB64: pdfB64,
+    versione: versione,
+    aggiornatoIl: aggiornatoIl ?? DateTime(2026, 9, 12),
+    aggiornatoDa: aggiornatoDa,
+    visibilita: visibilita,
+  );
 }

@@ -1,0 +1,13 @@
+# Copia questo file in android/key.properties (gitignored) e adatta i percorsi.
+# Non committare mai key.properties né il .jks.
+#
+# La chiave di produzione è quella già installata sui telefoni dei volontari
+# (SHA-256 1aa1211e900e794873ea1632ed09f5ce116e20f87010d96a9ecbf699c9d68fe2).
+# Non generarne una nuova: Android rifiuterebbe l'aggiornamento sopra l'app esistente.
+#
+# Prevale la variabile d'ambiente ANDROID_KEYSTORE_PATH (usata dalla CI).
+
+storePassword=android
+keyPassword=android
+keyAlias=androiddebugkey
+storeFile=C:\\Users\\TUO_UTENTE\\.android\\debug.keystore

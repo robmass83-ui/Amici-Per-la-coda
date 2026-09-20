@@ -29,6 +29,34 @@ Future<Uint8List> solidPng({
   return data!.buffer.asUint8List();
 }
 
+Future<Uint8List> transparentPng({int width = 256, int height = 256}) async {
+  final pixels = Uint8List(width * height * 4);
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      final i = (y * width + x) * 4;
+      pixels[i] = 21;
+      pixels[i + 1] = 122;
+      pixels[i + 2] = 60;
+      pixels[i + 3] = (x + y).isEven ? 0 : 255;
+    }
+  }
+  final done = Completer<ui.Image>();
+  ui.decodeImageFromPixels(
+    pixels,
+    width,
+    height,
+    ui.PixelFormat.rgba8888,
+    done.complete,
+  );
+  final image = await done.future;
+  try {
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  } finally {
+    image.dispose();
+  }
+}
+
 Future<Uint8List> noisyPng({required int width, required int height}) async {
   final pixels = Uint8List(width * height * 4);
   var state = 1103515245;

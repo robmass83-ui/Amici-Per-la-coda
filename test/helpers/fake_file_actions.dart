@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:amici_per_la_coda/data/documents/document_file_picker.dart';
 import 'package:amici_per_la_coda/data/documents/file_actions.dart';
 import 'package:amici_per_la_coda/data/documents/template_assets.dart';
+import 'package:amici_per_la_coda/features/dogs/export/gallery_saver.dart';
 
 class FakeAssetBytesLoader implements AssetBytesLoader {
   FakeAssetBytesLoader(this.files);
@@ -34,6 +35,7 @@ class FakeDocumentFilePicker implements DocumentFilePicker {
 
 class RecordingFileShare implements FileShare {
   Uint8List? lastBytes;
+  String? lastPath;
   String? lastFileName;
   String? lastMime;
   String? lastText;
@@ -46,14 +48,42 @@ class RecordingFileShare implements FileShare {
     required String text,
   }) async {
     lastBytes = Uint8List.fromList(bytes);
+    lastPath = null;
+    lastFileName = fileName;
+    lastMime = mime;
+    lastText = text;
+  }
+
+  @override
+  Future<void> shareExistingFile({
+    required String path,
+    required String fileName,
+    required String mime,
+    required String text,
+  }) async {
+    lastBytes = null;
+    lastPath = path;
     lastFileName = fileName;
     lastMime = mime;
     lastText = text;
   }
 }
 
-class FakeFileOpener implements FileOpener {
+class RecordingGallerySaver implements GallerySaver {
+  Uint8List? lastBytes;
   String? lastFileName;
+
+  @override
+  Future<void> saveImage(Uint8List bytes, {required String fileName}) async {
+    lastBytes = Uint8List.fromList(bytes);
+    lastFileName = fileName;
+  }
+}
+
+class FakeFileOpener implements FileOpener {
+  Uint8List? lastBytes;
+  String? lastFileName;
+  String? lastMime;
 
   @override
   Future<void> openFile({
@@ -61,6 +91,8 @@ class FakeFileOpener implements FileOpener {
     required String fileName,
     required String mime,
   }) async {
+    lastBytes = Uint8List.fromList(bytes);
     lastFileName = fileName;
+    lastMime = mime;
   }
 }

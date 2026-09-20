@@ -9,16 +9,20 @@ class AppChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onSelected,
+    this.height = AppDim.chipH,
+    this.padding = const EdgeInsets.symmetric(horizontal: AppDim.gapM),
   });
 
   final String label;
   final bool selected;
   final VoidCallback onSelected;
+  final double height;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: AppDim.chipH,
+      height: height,
       child: Material(
         color: selected ? AppColor.green : AppColor.card,
         shape: StadiumBorder(
@@ -28,7 +32,7 @@ class AppChip extends StatelessWidget {
           customBorder: const StadiumBorder(),
           onTap: onSelected,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDim.gapM),
+            padding: padding,
             child: Center(
               widthFactor: 1,
               heightFactor: 1,

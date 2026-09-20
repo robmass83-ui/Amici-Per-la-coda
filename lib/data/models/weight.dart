@@ -41,4 +41,21 @@ class Weight {
       ...audit.toMap(),
     };
   }
+
+  Weight copyWith({
+    DateTime? data,
+    double? kg,
+    String? note,
+    Audit? audit,
+  }) {
+    return Weight(
+      id: id,
+      dogId: dogId,
+      data: data ?? this.data,
+      kg: kg ?? this.kg,
+      autoreId: autoreId,
+      note: note ?? this.note,
+      audit: audit ?? this.audit,
+    );
+  }
 }

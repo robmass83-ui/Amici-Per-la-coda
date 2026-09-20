@@ -1,4 +1,5 @@
 import '../../core/format_it.dart';
+import '../../data/dog_archive.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/appointment.dart';
 import '../../data/models/dog.dart';
@@ -17,6 +18,9 @@ class TodoItem {
     required this.resto,
     required this.trailing,
     required this.priority,
+    this.dogId,
+    this.appointmentId,
+    this.adoptionId,
   });
 
   final AppIconSpec icon;
@@ -24,6 +28,9 @@ class TodoItem {
   final String resto;
   final String trailing;
   final int priority;
+  final String? dogId;
+  final String? appointmentId;
+  final String? adoptionId;
 }
 
 enum OccupancyKind {
@@ -81,7 +88,11 @@ class HomeSummary {
 DateTime dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
 
-OccupancyDisplay occupazioneDi(int caniInRifugio, int postiTotali) {
+OccupancyDisplay occupazioneDi(
+  int caniInRifugio,
+  int postiTotali, {
+  bool daCapienzaAutorizzata = false,
+}) {
   if (postiTotali <= 0) {
     return const OccupancyDisplay(
       kind: OccupancyKind.nonConfigurato,
@@ -95,7 +106,9 @@ OccupancyDisplay occupazioneDi(int caniInRifugio, int postiTotali) {
     return OccupancyDisplay(
       kind: OccupancyKind.oltreCapienza,
       barFill: barFill,
-      caption: '$caniInRifugio su $postiTotali posti · oltre capienza',
+      caption: daCapienzaAutorizzata
+          ? '$caniInRifugio su $postiTotali · oltre capienza autorizzata'
+          : '$caniInRifugio su $postiTotali posti · oltre capienza',
     );
   }
   final percentuale = (ratio * 100).round();
@@ -103,7 +116,9 @@ OccupancyDisplay occupazioneDi(int caniInRifugio, int postiTotali) {
     kind: OccupancyKind.sottoCapienza,
     barFill: barFill,
     percentuale: percentuale,
-    caption: '$percentuale% dei $postiTotali posti',
+    caption: daCapienzaAutorizzata
+        ? '$percentuale% della capienza autorizzata'
+        : '$percentuale% dei $postiTotali posti',
   );
 }
 
@@ -113,10 +128,20 @@ int caniInRifugioDi(List<Dog> dogs) {
       .length;
 }
 
-int postiTotaliDi(List<ShelterBox> boxes) {
+bool boxContaNeiPosti(ShelterBox box) {
+  return !box.inManutenzione && box.tipo == BoxTipo.normale;
+}
+
+int postiTotaliDi(
+  List<ShelterBox> boxes, {
+  int capienzaAutorizzata = 0,
+}) {
+  if (boxes.isEmpty) {
+    return capienzaAutorizzata;
+  }
   var total = 0;
   for (final box in boxes) {
-    if (!box.inManutenzione) {
+    if (boxContaNeiPosti(box)) {
       total += box.capienza;
     }
   }
@@ -126,7 +151,7 @@ int postiTotaliDi(List<ShelterBox> boxes) {
 int occupantiDelBox(ShelterBox box, List<Dog> dogs) {
   var n = 0;
   for (final dog in dogs) {
-    if (dog.archiviato) {
+    if (dogEsclusoDaConteggiRifugio(dog)) {
       continue;
     }
     if (dog.settore == box.settore && dog.box == box.numero) {
@@ -139,7 +164,7 @@ int occupantiDelBox(ShelterBox box, List<Dog> dogs) {
 int boxLiberiDi(List<ShelterBox> boxes, List<Dog> dogs) {
   var n = 0;
   for (final box in boxes) {
-    if (box.inManutenzione) {
+    if (!boxContaNeiPosti(box)) {
       continue;
     }
     if (occupantiDelBox(box, dogs) < box.capienza) {
@@ -259,6 +284,7 @@ List<TodoItem> _scadenzeScadute(
         resto: ' · ${healthTipoLabel(record.tipo)} scaduto da $days gg',
         trailing: '⚠️',
         priority: 1,
+        dogId: dog.id,
       ),
     );
   }
@@ -288,6 +314,8 @@ List<TodoItem> _appuntamentiOggi(
         resto: nome.isEmpty ? titolo : ' · $titolo',
         trailing: formatItalianTime(item.inizio),
         priority: 2,
+        appointmentId: item.id,
+        dogId: item.dogId,
       ),
     );
   }
@@ -323,6 +351,8 @@ List<TodoItem> _preaffidiInScadenza(
             : ' · preaffido in scadenza',
         trailing: '→',
         priority: 3,
+        adoptionId: adoption.id,
+        dogId: adoption.dogId,
       ),
     );
   }
@@ -353,6 +383,8 @@ List<TodoItem> _richiesteFerme(
         resto: nome.isEmpty ? ' · richiesta ferma' : ' → $nome',
         trailing: '→',
         priority: 4,
+        adoptionId: adoption.id,
+        dogId: adoption.dogId,
       ),
     );
   }
@@ -375,13 +407,21 @@ HomeSummary buildHomeSummary({
   required List<HealthRecord> health,
   required List<Appointment> appointments,
   required DateTime now,
+  int capienzaAutorizzata = 0,
 }) {
   final cani = caniInRifugioDi(dogs);
-  final posti = postiTotaliDi(boxes);
+  final posti = postiTotaliDi(
+    boxes,
+    capienzaAutorizzata: capienzaAutorizzata,
+  );
   return HomeSummary(
     caniInRifugio: cani,
     postiTotali: posti,
-    occupancy: occupazioneDi(cani, posti),
+    occupancy: occupazioneDi(
+      cani,
+      posti,
+      daCapienzaAutorizzata: boxes.isEmpty && capienzaAutorizzata > 0,
+    ),
     adozioniAnnoCorrente: adozioniDellAnno(adoptions, now.year),
     adozioniAnnoPrecedente: adozioniDellAnno(adoptions, now.year - 1),
     boxLiberi: boxLiberiDi(boxes, dogs),

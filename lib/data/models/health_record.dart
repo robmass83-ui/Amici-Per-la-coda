@@ -54,4 +54,32 @@ class HealthRecord {
       ...audit.toMap(),
     };
   }
+
+  HealthRecord copyWith({
+    HealthTipo? tipo,
+    DateTime? data,
+    String? descrizione,
+    String? veterinario,
+    String? lotto,
+    DateTime? prossimaScadenza,
+    bool clearProssimaScadenza = false,
+    double? costo,
+    bool clearCosto = false,
+    Audit? audit,
+  }) {
+    return HealthRecord(
+      id: id,
+      dogId: dogId,
+      tipo: tipo ?? this.tipo,
+      data: data ?? this.data,
+      descrizione: descrizione ?? this.descrizione,
+      veterinario: veterinario ?? this.veterinario,
+      lotto: lotto ?? this.lotto,
+      prossimaScadenza: clearProssimaScadenza
+          ? null
+          : (prossimaScadenza ?? this.prossimaScadenza),
+      costo: clearCosto ? null : (costo ?? this.costo),
+      audit: audit ?? this.audit,
+    );
+  }
 }

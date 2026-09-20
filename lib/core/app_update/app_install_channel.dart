@@ -64,4 +64,23 @@ abstract final class AppInstallChannel {
   static Future<void> installApk(String path) {
     return _channel.invokeMethod<void>('installApk', {'path': path});
   }
+
+  /// Copia l'APK installato in cache. Chiavi: path, fileName, versionName, versionCode.
+  static Future<Map<String, Object?>> copyInstalledApkForShare() async {
+    final raw = await _channel.invokeMethod<Map<Object?, Object?>>(
+      'copyInstalledApkForShare',
+    );
+    final map = <String, Object?>{};
+    if (raw != null) {
+      for (final entry in raw.entries) {
+        map['${entry.key}'] = entry.value;
+      }
+    }
+    final path = map['path'] as String? ?? '';
+    final fileName = map['fileName'] as String? ?? '';
+    if (path.isEmpty || fileName.isEmpty) {
+      throw StateError('APK installato non disponibile.');
+    }
+    return map;
+  }
 }

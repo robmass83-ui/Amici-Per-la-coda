@@ -14,8 +14,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/dog_fixtures.dart';
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_document_repository.dart';
 import '../../helpers/fake_dog_repository.dart';
 import '../../helpers/fake_expense_repository.dart';
+import '../../helpers/fake_file_actions.dart';
 import '../../helpers/fake_note_repository.dart';
 import '../../helpers/fake_volunteer_repository.dart';
 import '../../helpers/pump_app.dart';
@@ -78,6 +80,8 @@ void main() {
       ]),
       volunteers: InMemoryVolunteerRepository([testVolunteer()]),
       dogListNow: now,
+      documentPicker: FakeDocumentFilePicker(),
+      documents: InMemoryDocumentRepository(),
     );
   }
 
@@ -107,7 +111,9 @@ void main() {
       expect(find.textContaining('Visualizzazioni'), findsNothing);
       expect(find.text('Pubblicato'), findsOneWidget);
       expect(find.text('01/07/2024'), findsOneWidget);
-      expect(find.text('Condividi scheda'), findsOneWidget);
+      expect(find.text('Scheda di adozione (PDF)'), findsOneWidget);
+      expect(find.text('Card per i social (immagine)'), findsOneWidget);
+      expect(find.text('Copia testo dell\'annuncio'), findsOneWidget);
     },
   );
 
@@ -138,6 +144,8 @@ void main() {
         find.byKey(AddNoteSheet.testoKey),
         'Oggi ha giocato con Luna.',
       );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(AddNoteSheet.saveKey));
       await tester.tap(find.byKey(AddNoteSheet.saveKey));
       await tester.pumpAndSettle();
 
@@ -176,9 +184,10 @@ void main() {
       await tester.tap(find.byKey(DogDocumentiTab.addKey));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(AddDocumentSheet.saveKey), findsOneWidget);
-      expectAboveSystemNav(tester, find.byKey(AddDocumentSheet.saveKey));
-      await tester.tap(find.byKey(AddDocumentSheet.saveKey));
+      expect(find.byKey(AddDocumentSheet.pdfKey), findsOneWidget);
+      await tester.ensureVisible(find.byKey(AddDocumentSheet.pdfKey));
+      expectAboveSystemNav(tester, find.byKey(AddDocumentSheet.pdfKey));
+      await tester.tap(find.byKey(AddDocumentSheet.pdfKey));
       await tester.pump();
     },
   );

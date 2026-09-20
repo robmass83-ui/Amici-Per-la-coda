@@ -12,6 +12,11 @@ class InMemoryAdoptionRepository implements AdoptionRepository {
 
   List<Adoption> get items => List.unmodifiable(_items);
 
+  Future<void> removePrefixed(String prefix) async {
+    _items.removeWhere((item) => item.id.startsWith(prefix));
+    _controller.add(List<Adoption>.unmodifiable(_items));
+  }
+
   @override
   Stream<List<Adoption>> watchAll() async* {
     yield List<Adoption>.unmodifiable(_items);
@@ -32,6 +37,12 @@ class InMemoryAdoptionRepository implements AdoptionRepository {
   Future<void> save(Adoption adoption) async {
     _items.removeWhere((item) => item.id == adoption.id);
     _items.add(adoption);
+    _controller.add(List<Adoption>.unmodifiable(_items));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
     _controller.add(List<Adoption>.unmodifiable(_items));
   }
 }

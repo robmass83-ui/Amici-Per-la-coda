@@ -82,7 +82,7 @@ Dog _dogFromRow(List<String> header, List<String> row, Audit audit) {
   final sessoRaw = cell('sesso');
   final dataNascita = _parseDate(cell('dataNascita'));
   final nascitaPresuntaRaw = cell('nascitaPresunta');
-  final sterilizzato = _parseSiNo(cell('sterilizzato')) ?? false;
+  final sterilizzato = _parseSiNo(cell('sterilizzato'));
   final provenienza = cell('provenienza');
   final noteCsv = cell('note');
   final noteCarattereCsv = cell('noteCarattere');
@@ -107,7 +107,7 @@ Dog _dogFromRow(List<String> header, List<String> row, Audit audit) {
   return Dog(
     id: slugDogId(nome),
     nome: nome,
-    sesso: sessoRaw.isEmpty ? DogSex.M : DogSex.parse(sessoRaw),
+    sesso: sessoRaw.isEmpty ? null : DogSex.parse(sessoRaw),
     dataNascita: dataNascita,
     nascitaPresunta: nascitaPresunta,
     razza: cell('razza').isEmpty ? 'Meticcia' : cell('razza'),
@@ -119,7 +119,7 @@ Dog _dogFromRow(List<String> header, List<String> row, Audit audit) {
       cell('iscrittoAnagrafe').isEmpty ? null : cell('iscrittoAnagrafe'),
     ),
     provenienza: provenienza,
-    modalitaIngresso: ModalitaIngresso.parse(
+    modalitaIngresso: ModalitaIngresso.parseOrNull(
       cell('modalitaIngresso').isEmpty
           ? (fromStigliano ? 'trasferimento' : null)
           : cell('modalitaIngresso'),
@@ -129,7 +129,7 @@ Dog _dogFromRow(List<String> header, List<String> row, Audit audit) {
     box: cell('box'),
     stato: stato,
     statoDal: _parseDate(cell('statoDal')) ?? dataIngresso,
-    adottabile: _parseSiNo(cell('adottabile')) ?? false,
+    adottabile: _parseSiNo(cell('adottabile')),
     sterilizzato: sterilizzato,
     dataSterilizzazione: _parseDate(cell('dataSterilizzazione')),
     slogan: cell('slogan'),
@@ -139,7 +139,7 @@ Dog _dogFromRow(List<String> header, List<String> row, Audit audit) {
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList(),
-    conPersone: ConPersone.parse(
+    conPersone: ConPersone.parseOrNull(
       cell('conPersone').isEmpty ? null : cell('conPersone'),
     ),
     conCani: ConCani.parse(cell('conCani').isEmpty ? null : cell('conCani')),

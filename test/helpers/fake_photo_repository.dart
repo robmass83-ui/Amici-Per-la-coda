@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:amici_per_la_coda/data/models/photo.dart';
@@ -22,6 +21,8 @@ class InMemoryPhotoRepository implements PhotoRepository {
   final InMemoryDogRepository? dogs;
   final _controller = StreamController<List<Photo>>.broadcast();
   int fullLoadCount = 0;
+  int watchByDogCalls = 0;
+  int watchCoversCalls = 0;
 
   void seed(Photo photo, Uint8List full) {
     _photos.removeWhere((item) => item.id == photo.id);
@@ -32,8 +33,26 @@ class InMemoryPhotoRepository implements PhotoRepository {
 
   @override
   Stream<List<Photo>> watchByDog(String dogId) async* {
+    watchByDogCalls++;
     yield _of(dogId);
     yield* _controller.stream.map((_) => _of(dogId));
+  }
+
+  @override
+  Stream<Map<String, Photo>> watchCovers() async* {
+    watchCoversCalls++;
+    yield _covers();
+    yield* _controller.stream.map((_) => _covers());
+  }
+
+  Map<String, Photo> _covers() {
+    final map = <String, Photo>{};
+    for (final photo in _photos) {
+      if (photo.isCover && photo.dogId.isNotEmpty) {
+        map[photo.dogId] = photo;
+      }
+    }
+    return map;
   }
 
   List<Photo> _of(String dogId) {
@@ -72,13 +91,14 @@ class InMemoryPhotoRepository implements PhotoRepository {
       w: 1,
       h: 1,
       mime: 'image/jpeg',
-      thumbB64: base64Encode(bytes),
+      thumb: bytes,
       bytesFull: bytes.lengthInBytes,
       createdAt: now,
       createdBy: createdBy,
     );
     _photos.add(photo);
     _fulls[id] = bytes;
+    await _bumpCount(dogId, 1);
     if (cover) {
       await _writeCover(dogId, id);
     }
@@ -114,6 +134,19 @@ class InMemoryPhotoRepository implements PhotoRepository {
     }
   }
 
+  Future<void> _bumpCount(String dogId, int delta) async {
+    final dogsRepo = dogs;
+    if (dogsRepo == null) {
+      return;
+    }
+    final dog = await dogsRepo.getById(dogId);
+    if (dog == null) {
+      return;
+    }
+    final next = dog.fotoCount + delta;
+    await dogsRepo.save(dog.copyWith(fotoCount: next < 0 ? 0 : next));
+  }
+
   @override
   Future<void> delete(String photoId) async {
     Photo? removed;
@@ -125,6 +158,9 @@ class InMemoryPhotoRepository implements PhotoRepository {
     }
     _photos.removeWhere((item) => item.id == photoId);
     _fulls.remove(photoId);
+    if (removed != null) {
+      await _bumpCount(removed.dogId, -1);
+    }
     if (removed != null && removed.isCover) {
       final rest = _of(removed.dogId);
       if (rest.isEmpty) {

@@ -42,4 +42,27 @@ class InMemoryWeightRepository implements WeightRepository {
     }
     _controller.add(List<Weight>.unmodifiable(_items));
   }
+
+  @override
+  Future<void> delete(String id) async {
+    Weight? removed;
+    for (final item in _items) {
+      if (item.id == id) {
+        removed = item;
+        break;
+      }
+    }
+    _items.removeWhere((item) => item.id == id);
+    final dogsRepo = dogs;
+    final dogId = removed?.dogId;
+    if (dogsRepo != null && dogId != null) {
+      final remaining = _of(dogId);
+      final latest = remaining.isEmpty ? null : remaining.last;
+      final dog = await dogsRepo.getById(dogId);
+      if (dog != null) {
+        await dogsRepo.save(dog.withPesoKg(latest?.kg));
+      }
+    }
+    _controller.add(List<Weight>.unmodifiable(_items));
+  }
 }

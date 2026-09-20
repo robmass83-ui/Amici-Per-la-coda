@@ -28,6 +28,9 @@ abstract final class AppColor {
   static const pinkSoft = Color(0xFFFCE9F1);
   static const neutralSoft = Color(0xFFEFF1ED);
   static const barTrack = Color(0xFFEDF0EB);
+  static const greenDisabled = Color(0xFFCFE6D6);
+  static const dialogShadow = Color(0x400A140C);
+  static const trashBorder = Color(0xFFF3DADA);
 
   /// Ombra tenue delle card, ~8% di [ink].
   static const shadow = Color(0x1416211B);
@@ -50,6 +53,8 @@ abstract final class AppText {
   static const todo = 10.8; // voce "da fare oggi"
   static const todoTrail = 10.2; // trailing della voce
   static const statNote = 9.5; // note sotto le stat home
+  static const formCard = 12.5; // titolo FormCard
+  static const segmented = 11.0; // etichetta AppSegmented a una riga
 }
 
 /// Spaziature, raggi, misure fisse.
@@ -87,7 +92,23 @@ abstract final class AppDim {
   /// Misure della §3.2, mancanti nel blocco originale.
   static const headerBtn = 34.0;
   static const chipH = 28.0;
-  static const segmentedH = 34.0;
+  static const segmentedH = 32.0;
+  static const segmentedCompactH = 28.0;
+  static const segmentedPad = 2.0;
+  static const formFieldH = 34.0;
+  static const formRad = 9.0;
+  static const formRowGap = 8.0;
+  static const formLabelGap = 3.0;
+  static const formLabelLineH = 1.0;
+  static const compatRowH = 30.0;
+  static const compatLabelW = 92.0;
+  /// Due segmenti Sì/No: 2 × [minTouch] + pad interno.
+  static const compatYesNoW = minTouch * 2 + segmentedPad * 2;
+  static const formChipH = 26.0;
+  static const formAppBarH = 40.0;
+  static const formSavePadH = 11.0;
+  static const formSavePadV = 5.0;
+  static const formInputPad = EdgeInsets.symmetric(horizontal: 10, vertical: 8);
   static const logoLoginW = 248.0;
   static const logoLoginH = 180.0;
   static const logoHeaderH = 32.0;
@@ -121,6 +142,10 @@ abstract final class AppDim {
   static const homeAvatar = 34.0;
   static const shortcutAspect = 2.05;
 
+  /// Impostazioni · riga utente (14-ter.8).
+  static const userRowH = 44.0;
+  static const userAvatar = 30.0;
+
   /// Wizard nuovo cane (Step 11).
   static const dashW = 1.5;
   static const descFieldH = 80.0;
@@ -128,4 +153,78 @@ abstract final class AppDim {
 
   /// Campo note del cambio stato (riferimento HTML 64).
   static const statoNoteH = 64.0;
+
+  /// Statistiche (Step 17, riferimento HTML schermata 22).
+  static const statsChartH = 96.0;
+  static const statsBarMin = 0.05;
+  static const statsHot = 0.8;
+
+  /// Menu Altro / ricerca / notifiche (Step 17-bis).
+  static const menuRowH = 46.0;
+  static const notifyAccentW = 3.0;
+  static const groupTracking = 0.9;
+  static const searchDebounceMs = 300;
+
+  /// Impostazioni (Step 18, schermata 26).
+  static const switchW = 38.0;
+  static const switchH = 22.0;
+  static const switchThumb = 18.0;
+  static const switchInset = 2.0;
+  static const footerPadV = 18.0;
+
+  /// Calendario (Step 15, riferimento HTML).
+  static const calGap = 3.0;
+  static const calDot = 4.0;
+  static const calDotBottom = 5.0;
+  static const calTimeW = 42.0;
+  static const calAccentW = 2.5;
+  static const calDayR = 9.0;
+  static const calWeekdayPadV = 4.0;
+
+  /// AppDialog (Step 18-bis).
+  static const dialogRad = 14.0;
+  static const dialogHeaderH = 42.0;
+  static const dialogFooterH = 46.0;
+  static const dialogMaxHFrac = 0.82;
+  static const dialogInset = 12.0;
+  static const dialogClose = 26.0;
+  static const dialogFooterBtnH = 32.0;
+  static const dialogTrash = 32.0;
+  static const dialogSpinner = 16.0;
+  static const dialogHeaderGap = 7.0;
+  static const dialogFooterPadV = 7.0;
+  static const dialogShadowBlur = 40.0;
+  static const dialogShadowY = 14.0;
+  static const dialogBarrier = 0.45;
+  static const dialogAnimMs = 120;
+  static const dialogStroke = 1.3;
+  static const checkRowH = 30.0;
+  static const requestThumb = 28.0;
+  static const formChipPad = EdgeInsets.symmetric(horizontal: 10);
+  static const checkBox = 18.0;
+
+  /// Export scheda adozione (Step 18-ter).
+  static const exportCardW = 1080.0;
+  static const exportCardH = 1350.0;
+  static const exportPhotoFrac = 0.58;
+  static const exportLogoH = 90.0;
+  static const exportLogoPad = 12.0;
+  static const exportLogoRad = 16.0;
+  static const exportName = 110.0;
+  static const exportSlogan = 30.0;
+  static const exportFactIcon = 36.0;
+  static const exportFactValue = 26.0;
+  static const exportFactLabel = 19.0;
+  static const exportBody = 24.0;
+  static const exportBadge = 26.0;
+  static const exportChip = 22.0;
+  static const exportCta = 28.0;
+  static const exportCtaSub = 22.0;
+  static const exportCardPad = 40.0;
+  static const exportCardGap = 22.0;
+  static const exportFactRad = 22.0;
+  static const exportCtaRad = 26.0;
+  static const exportBadgePadH = 28.0;
+  static const exportBadgePadV = 14.0;
+  static const exportOverlayPad = 40.0;
 }

@@ -18,6 +18,7 @@ class DebugUiPage extends StatefulWidget {
 class _DebugUiPageState extends State<DebugUiPage> {
   String _chip = 'In rifugio';
   int _segment = 0;
+  var _notifyOn = true;
 
   static const _tabs = [
     'Scheda',
@@ -222,6 +223,28 @@ class _DebugUiPageState extends State<DebugUiPage> {
                 label: 'Grigio attivo',
                 variant: AppButtonVariant.grey,
                 onPressed: () => AppToast.show(context, 'Grigio'),
+              ),
+              const SizedBox(height: AppDim.gapS),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Switch',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: AppText.body,
+                        color: AppColor.ink,
+                        height: AppDim.lineH,
+                      ),
+                    ),
+                  ),
+                  AppSwitch(
+                    value: _notifyOn,
+                    onChanged: (on) => setState(() => _notifyOn = on),
+                  ),
+                ],
               ),
               const SizedBox(height: AppDim.gapM),
               const SectionTitle(title: 'Timeline e menu'),

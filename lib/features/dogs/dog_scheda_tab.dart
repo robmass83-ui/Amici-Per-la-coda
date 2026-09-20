@@ -12,11 +12,12 @@ import 'dog_adoption_status.dart';
 import 'dog_labels.dart';
 import 'dogs_providers.dart';
 import 'health_labels.dart';
+import 'patologie.dart';
 
 // ── CONTRATTO DI LAYOUT · Tab Scheda ───────────────────────────────────────
 // Padding  L/R=AppDim.gapL(12)  T/B=AppDim.gapM(9)
 // └ Wrap  spacing=9  runSpacing=9
-//    └ SizedBox  width=(max-9)/2  ×4
+//    └ SizedBox  width=(max-9)/2  ×6
 //       AppCard  pad=10
 //       ├ SectionTitle  IconBadge 20×20  (flex: none)
 //       │    titolo  13sp w700  maxLines=2 ellipsis
@@ -27,12 +28,14 @@ import 'health_labels.dart';
 //          attività: IconBadge 27  (flex: none) · SizedBox 6
 //                    Expanded nome 11.5sp maxLines=1
 //                    data 10sp  (flex: none) maxLines=1
+//          Patologie: Text 11.5sp maxLines=4 ellipsis  oppure «Nessuna»
 // ───────────────────────────────────────────────────────────────────────────
 
 class DogSchedaTab extends ConsumerWidget {
   const DogSchedaTab({super.key, required this.dog});
 
   static const gridKey = Key('dog-scheda-grid');
+  static const patologieKey = Key('dog-scheda-patologie');
 
   final Dog dog;
 
@@ -71,6 +74,14 @@ class DogSchedaTab extends ConsumerWidget {
             SizedBox(
               width: tileW,
               child: _SanitarieCard(records: health),
+            ),
+            SizedBox(
+              width: tileW,
+              child: _PatologieCard(patologie: dog.patologie),
+            ),
+            SizedBox(
+              width: tileW,
+              child: _AnagrafeCard(dog: dog),
             ),
             SizedBox(
               width: tileW,
@@ -141,7 +152,7 @@ class _AdozioneCard extends StatelessWidget {
           KeyValueRow(
             label: 'Adottabile',
             value: yesNo(dog.adottabile),
-            valueColor: dog.adottabile ? AppColor.green : null,
+            valueColor: dog.adottabile == true ? AppColor.green : null,
           ),
           const SizedBox(height: AppDim.gapS),
           KeyValueRow(label: 'Richieste ricevute', value: '$requestCount'),
@@ -191,6 +202,44 @@ class _SanitarieCard extends StatelessWidget {
               if (i > 0) const SizedBox(height: AppDim.gapS),
               _CompactHealthRow(record: latest[i]),
             ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PatologieCard extends StatelessWidget {
+  const _PatologieCard({required this.patologie});
+
+  final String patologie;
+
+  @override
+  Widget build(BuildContext context) {
+    final testo = patologieRiepilogo(patologie);
+    return AppCard(
+      key: DogSchedaTab.patologieKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionTitle(
+            title: 'Patologie',
+            icon: IconBadge(AppIcons.patologia, size: IconBadge.inTitle),
+          ),
+          const SizedBox(height: AppDim.gapM),
+          Text(
+            testo,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: AppText.value,
+              fontWeight: haPatologie(patologie)
+                  ? FontWeight.w600
+                  : FontWeight.w500,
+              color: haPatologie(patologie) ? AppColor.ink : AppColor.muted,
+              height: AppDim.lineH,
+            ),
+          ),
         ],
       ),
     );
@@ -249,6 +298,59 @@ class _SpeseCard extends StatelessWidget {
   }
 }
 
+class _AnagrafeCard extends StatelessWidget {
+  const _AnagrafeCard({required this.dog});
+
+  final Dog dog;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipBits = <String>[
+      if (dog.dataApplicazioneChip != null)
+        formatItalianDate(dog.dataApplicazioneChip!),
+      if (dog.zonaApplicazioneChip.trim().isNotEmpty)
+        dog.zonaApplicazioneChip.trim(),
+    ];
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionTitle(
+            title: 'Anagrafe e chip',
+            icon: IconBadge(AppIcons.anagrafe, size: IconBadge.inTitle),
+          ),
+          const SizedBox(height: AppDim.gapM),
+          KeyValueRow(label: 'Tipo pelo', value: tipoPeloLabel(dog.tipoPelo)),
+          const SizedBox(height: AppDim.gapS),
+          KeyValueRow(label: 'Purezza', value: purezzaLabel(dog.purezza)),
+          const SizedBox(height: AppDim.gapS),
+          KeyValueRow(
+            label: 'Chip applicato',
+            value: chipBits.isEmpty ? '—' : chipBits.join(' · '),
+          ),
+          const SizedBox(height: AppDim.gapS),
+          KeyValueRow(
+            label: 'Veterinario',
+            value: dashIfEmpty(dog.veterinarioApplicatore),
+          ),
+          const SizedBox(height: AppDim.gapS),
+          KeyValueRow(
+            label: 'Iscrizione',
+            value: dog.dataIscrizioneAnagrafe == null
+                ? '—'
+                : formatItalianDate(dog.dataIscrizioneAnagrafe!),
+          ),
+          const SizedBox(height: AppDim.gapS),
+          KeyValueRow(
+            label: 'Ubicazione',
+            value: dashIfEmpty(dog.ultimaUbicazione),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompactHealthRow extends StatelessWidget {
   const _CompactHealthRow({required this.record});
 
@@ -258,7 +360,10 @@ class _CompactHealthRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        IconBadge(AppIcons.perTrattamento(record.tipo.wire)),
+        IconBadge(
+          AppIcons.perTrattamento(record.tipo.wire),
+          size: IconBadge.inRow,
+        ),
         const SizedBox(width: AppDim.gapS),
         Expanded(
           child: Text(
@@ -275,16 +380,19 @@ class _CompactHealthRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppDim.gapS),
-        Text(
-          formatItalianDate(record.data),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: AppText.caption,
-            fontWeight: FontWeight.w500,
-            color: AppColor.muted,
-            height: AppDim.lineH,
+        Flexible(
+          child: Text(
+            formatItalianDate(record.data),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: AppText.caption,
+              fontWeight: FontWeight.w500,
+              color: AppColor.muted,
+              height: AppDim.lineH,
+            ),
           ),
         ),
       ],

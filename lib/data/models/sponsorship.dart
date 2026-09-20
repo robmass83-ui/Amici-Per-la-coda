@@ -87,4 +87,27 @@ class Sponsorship {
       ...audit.toMap(),
     };
   }
+
+  Sponsorship copyWith({
+    Sostenitore? sostenitore,
+    double? importoMensile,
+    bool? attiva,
+    DateTime? dal,
+    DateTime? al,
+    bool clearAl = false,
+    String? note,
+    Audit? audit,
+  }) {
+    return Sponsorship(
+      id: id,
+      dogId: dogId,
+      sostenitore: sostenitore ?? this.sostenitore,
+      importoMensile: importoMensile ?? this.importoMensile,
+      attiva: attiva ?? this.attiva,
+      dal: dal ?? this.dal,
+      al: clearAl ? null : (al ?? this.al),
+      note: note ?? this.note,
+      audit: audit ?? this.audit,
+    );
+  }
 }

@@ -1,0 +1,12 @@
+{
+  "name": "amici-per-la-coda-import",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-timeout=180000 step19bis.test.mjs migrate_photos.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "sharp": "^0.33.5"
+  }
+}

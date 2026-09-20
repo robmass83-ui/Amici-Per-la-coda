@@ -1,5 +1,6 @@
 import 'package:amici_per_la_coda/features/auth/login_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
+import 'package:amici_per_la_coda/features/settings/altro_page.dart';
 import 'package:amici_per_la_coda/ui/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,13 +60,20 @@ void main() {
   testWidgets('logout riporta al login', (tester) async {
     final auth = FakeAuthRepository();
     await auth.signIn(email: email, password: password);
-    await pumpApp(tester, auth: auth);
+    await pumpApp(tester, auth: auth, size: const Size(360, 900));
 
     expect(find.byType(HomePage), findsOneWidget);
     await tester.tap(find.text('Altro'));
     await tester.pumpAndSettle();
-    expect(find.text('Esci'), findsOneWidget);
-    await tester.tap(find.text('Esci'));
+    await tester.scrollUntilVisible(
+      find.byKey(AltroPage.esciKey),
+      80,
+      scrollable: find.descendant(
+        of: find.byKey(AltroPage.listKey),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    tester.widget<OptionRow>(find.byKey(AltroPage.esciKey)).onTap();
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginPage), findsOneWidget);

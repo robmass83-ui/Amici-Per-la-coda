@@ -25,4 +25,10 @@ class InMemoryNoteRepository implements NoteRepository {
     _items.add(note);
     _controller.add(List<Note>.unmodifiable(_items));
   }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
+    _controller.add(List<Note>.unmodifiable(_items));
+  }
 }

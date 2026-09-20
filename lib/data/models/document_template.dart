@@ -1,4 +1,5 @@
 import '../../core/firestore_codec.dart';
+import 'enums.dart';
 
 class DocumentTemplate {
   const DocumentTemplate({
@@ -11,6 +12,7 @@ class DocumentTemplate {
     required this.versione,
     required this.aggiornatoIl,
     required this.aggiornatoDa,
+    this.visibilita = TemplateVisibilita.entrambi,
   });
 
   final String id;
@@ -22,6 +24,7 @@ class DocumentTemplate {
   final int versione;
   final DateTime aggiornatoIl;
   final String aggiornatoDa;
+  final TemplateVisibilita visibilita;
 
   factory DocumentTemplate.fromMap(String id, Map<String, dynamic> map) {
     return DocumentTemplate(
@@ -34,6 +37,7 @@ class DocumentTemplate {
       versione: intFrom(map['versione'], fallback: 1),
       aggiornatoIl: dateTimeRequired(map['aggiornatoIl']),
       aggiornatoDa: map['aggiornatoDa'] as String? ?? '',
+      visibilita: TemplateVisibilita.parse(map['visibilita'] as String?),
     );
   }
 
@@ -47,26 +51,31 @@ class DocumentTemplate {
       'versione': versione,
       'aggiornatoIl': dateTimeTo(aggiornatoIl),
       'aggiornatoDa': aggiornatoDa,
+      'visibilita': visibilita.wire,
     };
   }
 
   DocumentTemplate copyWith({
+    String? nome,
+    String? descrizione,
     String? pdfB64,
     int? versione,
     DateTime? aggiornatoIl,
     String? aggiornatoDa,
     String? fileName,
+    TemplateVisibilita? visibilita,
   }) {
     return DocumentTemplate(
       id: id,
-      nome: nome,
-      descrizione: descrizione,
+      nome: nome ?? this.nome,
+      descrizione: descrizione ?? this.descrizione,
       fileName: fileName ?? this.fileName,
       mime: mime,
       pdfB64: pdfB64 ?? this.pdfB64,
       versione: versione ?? this.versione,
       aggiornatoIl: aggiornatoIl ?? this.aggiornatoIl,
       aggiornatoDa: aggiornatoDa ?? this.aggiornatoDa,
+      visibilita: visibilita ?? this.visibilita,
     );
   }
 }

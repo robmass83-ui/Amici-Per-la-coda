@@ -4,17 +4,23 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format_it.dart';
 import '../../data/models/adoption.dart';
+import '../../data/models/appointment.dart';
+import '../../data/models/document_template.dart';
 import '../../data/models/dog.dart';
 import '../../data/models/enums.dart';
-import '../../data/models/photo.dart';
 import '../../data/models/volunteer.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
+import '../affido/affido_providers.dart';
+import '../calendar/add_appointment_sheet.dart';
+import '../documents/moduli_share_card.dart';
+import '../documents/template_share.dart';
 import '../dogs/dog_labels.dart';
 import '../dogs/dogs_providers.dart';
 import '../dogs/photo_thumb.dart';
 import '../dogs/tab_labels.dart';
+import '../volunteers/volunteer_labels.dart';
 import 'home_aggregators.dart';
 import 'home_providers.dart';
 
@@ -22,6 +28,13 @@ import 'home_providers.dart';
 // SCHERMATA HOME
 // AppScaffold(bottomNav: home)  ← fornito da AppShell
 // └ AppHeader(logo centrato, nessun pulsante indietro)
+// se stale: StaleDataBanner in AppShell, sopra il body
+// se volunteerAccountMissing: Center EmptyState
+//    icona AppIcons.attenzione  32
+//    testo 12sp muted  maxLines=3
+//    «Il tuo account non è ancora abilitato: chiedi al presidente»
+//    (niente dashboard, niente scorciatoie)
+// altrimenti:
 // └ ListView  padding=12  (scroll verticale)
 //    │
 //    ├ Text  "Ciao <nome volontario> 👋"      17sp w800  letterSpacing=-0.3
@@ -40,6 +53,7 @@ import 'home_providers.dart';
 //    │   │    └ Text OccupancyDisplay.caption  9.5sp muted
 //    │   │         sotto: "<p>% dei <tot> posti"
 //    │   │         oltre: "<n> su <tot> posti · oltre capienza"
+//    │   │         boxes vuota + capienzaAutorizzata: "... capienza autorizzata"
 //    │   │         posti=0: "posti non configurati"  (niente barra)
 //    │   └ Expanded → AppCard padding=12
 //    │        ├ Text "<n>"                    26sp w800  green
@@ -75,6 +89,8 @@ import 'home_providers.dart';
 //    │   └ max 2 Row: Avatar 34 · testo · MiniBadge
 //    │      stato vuoto: EmptyState "Nessuna richiesta in sospeso"
 //    │
+//    ├ se moduli visibili in home:
+//    │    SectionTitle "Moduli" + AppCard OptionRow Invia
 //    ├ SectionTitle  "Scorciatoie"
 //    └ GridView 2 colonne  gap=9  shrinkWrap  physics=Never  aspect≈2.05
 // ───────────────────────────────────────────────────────────────────────────
@@ -94,57 +110,72 @@ class HomePage extends ConsumerWidget {
   static const todoCardKey = Key('home-todo-card');
   static const richiesteCardKey = Key('home-richieste-card');
   static const listKey = Key('home-list');
+  static const accountDisabledKey = Key('home-account-disabled');
+  static const accountDeactivatedKey = Key('home-account-deactivated');
+  static const caniInRifugioKey = Key('home-cani-rifugio');
+  static const adozioniKey = Key('home-adozioni');
+  static const moduliCardKey = Key('home-moduli');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(homeSummaryProvider);
-    final offline = ref.watch(homeOfflineProvider);
     final nome = ref.watch(homeVolunteerNameProvider);
     final now = ref.watch(dogListNowProvider);
+    final accountMissing = ref.watch(volunteerAccountMissingProvider);
 
-    return Column(
-      children: [
-        if (offline)
-          const ColoredBox(
-            key: offlineBannerKey,
-            color: AppColor.orangeSoft,
-            child: SizedBox(
-              height: AppDim.offlineBannerH,
-              width: double.infinity,
-              child: Center(
-                child: Text(
-                  'Dati non aggiornati · sei offline',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: AppText.caption,
-                    color: AppColor.ink,
-                    height: AppDim.lineH,
-                  ),
-                ),
-              ),
+    if (accountMissing) {
+      return const Center(
+        child: EmptyState(
+          key: accountDisabledKey,
+          icon: IconBadge(AppIcons.attenzione),
+          message:
+              'Il tuo account non è ancora abilitato: chiedi al presidente',
+        ),
+      );
+    }
+
+    return summaryAsync.when(
+      loading: () => const _HomeSkeleton(),
+      error: (error, stack) => const _HomeSkeleton(),
+      data: (summary) {
+        if (summary.databaseVuoto) {
+          return _EmptyDatabase(onAdd: () => context.push(AppRoutes.nuovo));
+        }
+        return _HomeDashboard(summary: summary, nome: nome, now: now);
+      },
+    );
+  }
+}
+
+/// Riga visibile su ogni tab quando i dati arrivano dalla cache o manca la rete.
+class StaleDataBanner extends ConsumerWidget {
+  const StaleDataBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offline = ref.watch(homeOfflineProvider);
+    return ColoredBox(
+      key: HomePage.offlineBannerKey,
+      color: AppColor.orangeSoft,
+      child: SizedBox(
+        height: AppDim.offlineBannerH,
+        width: double.infinity,
+        child: Center(
+          child: Text(
+            offline
+                ? 'Dati non aggiornati · sei offline'
+                : 'Dati non aggiornati',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: AppText.caption,
+              color: AppColor.ink,
+              height: AppDim.lineH,
             ),
           ),
-        Expanded(
-          child: summaryAsync.when(
-            loading: () => const _HomeSkeleton(),
-            error: (error, stack) => const _HomeSkeleton(),
-            data: (summary) {
-              if (summary.databaseVuoto) {
-                return _EmptyDatabase(
-                  onAdd: () => context.push(AppRoutes.nuovo),
-                );
-              }
-              return _HomeDashboard(
-                summary: summary,
-                nome: nome,
-                now: now,
-              );
-            },
-          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -182,8 +213,9 @@ class _HomeDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nTodo = summary.daFareOggi.length;
-    final cose =
-        nTodo == 1 ? '1 cosa da fare oggi' : '$nTodo cose da fare oggi';
+    final cose = nTodo == 1
+        ? '1 cosa da fare oggi'
+        : '$nTodo cose da fare oggi';
     final delta = summary.deltaAdozioni;
     final deltaText = delta < 0
         ? '▼ −${delta.abs()} rispetto al ${now.year - 1}'
@@ -196,7 +228,7 @@ class _HomeDashboard extends ConsumerWidget {
       padding: AppDim.pagePad,
       children: [
         Text(
-          'Ciao $nome 👋',
+          homeGreeting(nome),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -226,7 +258,10 @@ class _HomeDashboard extends ConsumerWidget {
           children: [
             Expanded(
               child: AppCard(
+                key: HomePage.caniInRifugioKey,
                 padding: const EdgeInsets.all(AppDim.gapL),
+                onTap: () =>
+                    context.go('${AppRoutes.animali}?filtro=in_rifugio'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -266,7 +301,7 @@ class _HomeDashboard extends ConsumerWidget {
                     ],
                     Text(
                       occupancy.caption,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: 'Roboto',
@@ -282,7 +317,10 @@ class _HomeDashboard extends ConsumerWidget {
             const SizedBox(width: AppDim.gapM),
             Expanded(
               child: AppCard(
+                key: HomePage.adozioniKey,
                 padding: const EdgeInsets.all(AppDim.gapL),
+                onTap: () =>
+                    context.push('${AppRoutes.richieste}?filtro=concluse'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -341,10 +379,7 @@ class _HomeDashboard extends ConsumerWidget {
                   height: AppDim.emptyTodoH,
                   child: EmptyState(
                     compact: true,
-                    icon: IconBadge(
-                      AppIcons.scadenza,
-                      size: IconBadge.inTitle,
-                    ),
+                    icon: IconBadge(AppIcons.scadenza, size: IconBadge.inTitle),
                     message: 'Nessuna scadenza per oggi 🎉',
                   ),
                 )
@@ -381,24 +416,20 @@ class _HomeDashboard extends ConsumerWidget {
           child: summary.richiesteAperte.isEmpty
               ? const EmptyState(
                   compact: true,
-                  icon: IconBadge(
-                    AppIcons.richieste,
-                    size: IconBadge.inTitle,
-                  ),
+                  icon: IconBadge(AppIcons.richieste, size: IconBadge.inTitle),
                   message: 'Nessuna richiesta in sospeso',
                 )
-              : _RichiesteList(
-                  richieste: summary.richiesteAperte,
-                  now: now,
-                ),
+              : _RichiesteList(richieste: summary.richiesteAperte, now: now),
         ),
         const SizedBox(height: AppDim.gapL),
+        const _HomeModuli(),
         const SectionTitle(title: 'Scorciatoie'),
         const SizedBox(height: AppDim.gapM),
         LayoutBuilder(
           builder: (context, constraints) {
             final cellW = (constraints.maxWidth - AppDim.gapM) / 2;
-            const minH = IconBadge.inStat +
+            const minH =
+                IconBadge.inStat +
                 AppDim.gapS +
                 AppText.value * AppDim.lineH +
                 AppText.statNote * AppDim.lineH +
@@ -453,6 +484,32 @@ class _HomeDashboard extends ConsumerWidget {
   }
 }
 
+class _HomeModuli extends ConsumerWidget {
+  const _HomeModuli();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final templates = templatesInHome(
+      ref
+          .watch(templatesStreamProvider)
+          .maybeWhen(
+            data: (items) => items,
+            orElse: () => const <DocumentTemplate>[],
+          ),
+    );
+    if (templates.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ModuliShareCard(key: HomePage.moduliCardKey, templates: templates),
+        const SizedBox(height: AppDim.gapL),
+      ],
+    );
+  }
+}
+
 class _OccupancyBar extends StatelessWidget {
   const _OccupancyBar({required this.factor, required this.fill});
 
@@ -486,59 +543,89 @@ class _OccupancyBar extends StatelessWidget {
   }
 }
 
-class _TodoRow extends StatelessWidget {
+class _TodoRow extends ConsumerWidget {
   const _TodoRow({required this.item});
 
   final TodoItem item;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppDim.todoPadV),
-      child: Row(
-        children: [
-          IconBadge(item.icon, size: IconBadge.inRow),
-          const SizedBox(width: AppDim.todoGap),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  if (item.nomeCane.isNotEmpty)
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      onTap: () => _open(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppDim.todoPadV),
+        child: Row(
+          children: [
+            IconBadge(item.icon, size: IconBadge.inRow),
+            const SizedBox(width: AppDim.todoGap),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    if (item.nomeCane.isNotEmpty)
+                      TextSpan(
+                        text: item.nomeCane,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     TextSpan(
-                      text: item.nomeCane,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      text: item.resto,
+                      style: const TextStyle(fontWeight: FontWeight.w400),
                     ),
-                  TextSpan(
-                    text: item.resto,
-                    style: const TextStyle(fontWeight: FontWeight.w400),
-                  ),
-                ],
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: AppText.todo,
+                  color: AppColor.ink,
+                  height: AppDim.lineH,
+                ),
               ),
+            ),
+            const SizedBox(width: AppDim.gapS),
+            Text(
+              item.trailing,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontFamily: 'Roboto',
-                fontSize: AppText.todo,
-                color: AppColor.ink,
+                fontSize: AppText.todoTrail,
+                color: AppColor.muted,
                 height: AppDim.lineH,
               ),
             ),
-          ),
-          const SizedBox(width: AppDim.gapS),
-          Text(
-            item.trailing,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: AppText.todoTrail,
-              color: AppColor.muted,
-              height: AppDim.lineH,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _open(BuildContext context, WidgetRef ref) {
+    final appointmentId = item.appointmentId;
+    if (appointmentId != null) {
+      final list = ref
+          .read(appointmentsStreamProvider)
+          .maybeWhen(
+            data: (items) => items,
+            orElse: () => const <Appointment>[],
+          );
+      for (final appointment in list) {
+        if (appointment.id == appointmentId) {
+          AddAppointmentSheet.open(context, existing: appointment);
+          return;
+        }
+      }
+    }
+    final adoptionId = item.adoptionId;
+    if (adoptionId != null) {
+      context.push(AppRoutes.richiesta(adoptionId));
+      return;
+    }
+    final dogId = item.dogId;
+    if (dogId != null) {
+      context.push(AppRoutes.dog(dogId));
+    }
   }
 }
 
@@ -588,7 +675,9 @@ class _UltimiArriviRow extends ConsumerWidget {
         for (var i = 0; i < 3; i++) ...[
           if (i > 0) const SizedBox(width: AppDim.gapM),
           if (i < dogs.length)
-            Expanded(child: _ArrivoCard(dog: dogs[i], now: now))
+            Expanded(
+              child: _ArrivoCard(dog: dogs[i], now: now),
+            )
           else
             const Spacer(),
         ],
@@ -605,16 +694,7 @@ class _ArrivoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photos = ref
-        .watch(photosByDogProvider(dog.id))
-        .maybeWhen(data: (items) => items, orElse: () => const <Photo>[]);
-    Photo? cover;
-    for (final photo in photos) {
-      if (photo.id == dog.fotoCopertinaId || photo.isCover) {
-        cover = photo;
-        break;
-      }
-    }
+    final cover = ref.watch(coverPhotoProvider(dog.id));
     final eta = dogAgeShortLabel(dog, now) ?? '—';
     return AppCard(
       padding: const EdgeInsets.all(AppDim.arriviPad),

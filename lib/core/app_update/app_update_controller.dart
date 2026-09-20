@@ -7,7 +7,12 @@ import 'app_update_state.dart';
 import 'github_release.dart';
 import 'github_release_feed.dart';
 
-final appUpdateEnabledProvider = Provider<bool>((ref) => true);
+/// GitHub aggiorna solo gli APK di rilascio. In debug `flutter run`
+/// ha un versionCode più basso della release e il foglio coprirebbe la home.
+/// Consegna di test: `tool/publish_test_release.ps1` (stesso versionCode su
+/// GitHub e ADB). Si confronta solo versionCode: se il telefono ha già quella
+/// build, `isNewerThan` è falso e il foglio non compare.
+final appUpdateEnabledProvider = Provider<bool>((ref) => !kDebugMode);
 
 final githubReleaseFeedProvider = Provider<GithubReleaseFeed>((ref) {
   return GithubReleaseFeed();
@@ -30,6 +35,14 @@ class AppUpdateController extends Notifier<AppUpdateState> {
 
   Future<void> check({bool userInitiated = false}) async {
     if (!ref.read(appUpdateEnabledProvider)) {
+      if (userInitiated) {
+        state = const AppUpdateState(
+          phase: AppUpdatePhase.failed,
+          error:
+              'Questa è una versione di sviluppo: gli aggiornamenti GitHub sono disattivati.',
+          userInitiated: true,
+        );
+      }
       return;
     }
     if (_busy) {

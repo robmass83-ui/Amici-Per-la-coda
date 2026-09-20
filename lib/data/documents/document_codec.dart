@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import '../models/app_document.dart';
+
 const documentChunkBytes = 600 * 1024;
 const documentMaxBytes = 10 * 1024 * 1024;
 const documentInlineMaxBytes = 700 * 1024;
@@ -24,6 +26,22 @@ int documentChunkCount(int byteLength) {
 void ensureDocumentSizeAllowed(int byteLength) {
   if (byteLength > documentMaxBytes) {
     throw const DocumentTooLarge();
+  }
+}
+
+bool documentHasContent(AppDocument document) {
+  if (document.chunkCount > 0) {
+    return true;
+  }
+  final b64 = document.contenutoB64;
+  return b64 != null && b64.isNotEmpty;
+}
+
+void ensureDocumentHasContent(AppDocument document) {
+  if (!documentHasContent(document)) {
+    throw ArgumentError(
+      'Un documento deve avere un file: contenutoB64 e chunkCount non possono essere entrambi vuoti.',
+    );
   }
 }
 

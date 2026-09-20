@@ -107,27 +107,29 @@ class IterTappaView {
   final bool current;
 }
 
+const iterTappaTitles = [
+  'Richiesta ricevuta',
+  'Colloquio conoscitivo',
+  'Visita pre-affido',
+  'Preaffido 30 giorni',
+  'Adozione definitiva',
+];
+
+const iterTappaSubtitles = [
+  'Modulo online o in sede',
+  'Con il volontario referente',
+  'Controllo casa e recinzione',
+  'Modulo firmato + documento identità',
+  'Passaggio microchip in anagrafe canina',
+];
+
 List<IterTappaView> iterTappeDi(Adoption adoption) {
   final currentIndex = iterTappe.indexOf(adoption.stato);
-  const titles = [
-    'Richiesta ricevuta',
-    'Colloquio conoscitivo',
-    'Visita pre-affido',
-    'Preaffido 30 giorni',
-    'Adozione definitiva',
-  ];
-  const subtitles = [
-    'Modulo online o in sede',
-    'Con il volontario referente',
-    'Controllo casa e recinzione',
-    'Modulo firmato + documento identità',
-    'Passaggio microchip in anagrafe canina',
-  ];
   return [
     for (var i = 0; i < iterTappe.length; i++)
       IterTappaView(
-        title: titles[i],
-        subtitle: _iterSubtitle(adoption, i, currentIndex, subtitles[i]),
+        title: iterTappaTitles[i],
+        subtitle: _iterSubtitle(adoption, i, currentIndex, iterTappaSubtitles[i]),
         done: currentIndex > i ||
             (adoption.stato == AdoptionStato.adottato && i == currentIndex),
         current: currentIndex == i &&
@@ -175,6 +177,29 @@ List<TimelineItem> iterTimelineItems(Adoption adoption) {
             : tappa.current
             ? AppColor.orange
             : AppColor.faint,
+      ),
+  ];
+}
+
+/// Tappe raggiunte (inclusa la corrente) in verde; future in grigio.
+List<TimelineItem> iterTimelineItemsRaggiunte(Adoption adoption) {
+  return [
+    for (final tappa in iterTappeDi(adoption))
+      TimelineItem(
+        title: tappa.title,
+        subtitle: tappa.subtitle,
+        color: tappa.done || tappa.current ? AppColor.green : AppColor.faint,
+      ),
+  ];
+}
+
+List<TimelineItem> iterTimelineItemsIdle() {
+  return [
+    for (var i = 0; i < iterTappaTitles.length; i++)
+      TimelineItem(
+        title: iterTappaTitles[i],
+        subtitle: iterTappaSubtitles[i],
+        color: AppColor.faint,
       ),
   ];
 }

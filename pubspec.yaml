@@ -1,7 +1,7 @@
 name: amici_per_la_coda
 description: Gestionale interno del rifugio cani Amici per la Coda ODV.
 publish_to: 'none'
-version: 1.0.5+7
+version: 1.0.5+45
 
 environment:
   sdk: ^3.13.2
@@ -23,6 +23,12 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   share_plus: ^10.0.0
+  url_launcher: ^6.3.1
+  package_info_plus: ^9.0.1
+  connectivity_plus: ^7.3.1
+  gal: ^2.3.2
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
 
 dev_dependencies:
   flutter_test:
@@ -34,8 +40,20 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/logo.png
     - assets/branding/logo_login.png
     - assets/branding/logo_header.png
     - assets/moduli/modulo-preaffido.pdf
     - assets/moduli/modulo-adozione.pdf
     - assets/moduli/modulo-affido.pdf
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Italic.ttf
+    - assets/fonts/Roboto-Bold.ttf
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

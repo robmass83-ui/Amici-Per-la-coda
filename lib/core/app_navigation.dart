@@ -55,22 +55,55 @@ String currentLocation(GoRouter router) {
   return canonicalUri(matches.uri);
 }
 
+const overlayLocations = {
+  '/nuovo',
+  '/affido',
+  '/documenti',
+  '/impostazioni',
+  '/box',
+  '/statistiche',
+  '/cerca',
+  '/notifiche',
+  '/archiviati',
+  '/adottanti',
+  '/fornitori',
+  '/richieste',
+  '/debug/ui',
+};
+
+bool isOverlayLocation(String location) {
+  final path = Uri.tryParse(location)?.path ?? location;
+  if (overlayLocations.contains(path)) {
+    return true;
+  }
+  return path.startsWith('/richieste/') ||
+      path.startsWith('/impostazioni/');
+}
+
+/// Overlay da cui si è aperta una scheda (es. /archiviati → /animali/id).
+String? overlayOrigin(AppNavigationHistory history) {
+  final stack = history.stack;
+  for (var i = stack.length - 2; i >= 0; i--) {
+    if (isOverlayLocation(stack[i])) {
+      return stack[i];
+    }
+  }
+  return null;
+}
+
+bool isDogProfileLocation(String location) {
+  final path = Uri.tryParse(location)?.path ?? location;
+  final parts = path.split('/').where((part) => part.isNotEmpty).toList();
+  return parts.length == 2 && parts.first == 'animali';
+}
+
 /// Pagina padre del path corrente (deeplink o tab senza cronologia).
 String? parentLocation(String location) {
   final path = Uri.tryParse(location)?.path ?? location;
   if (path.isEmpty || path == '/' || path == '/login') {
     return null;
   }
-  const overlays = {
-    '/nuovo',
-    '/affido',
-    '/impostazioni',
-    '/box',
-    '/statistiche',
-    '/richieste',
-    '/debug/ui',
-  };
-  if (overlays.contains(path)) {
+  if (overlayLocations.contains(path)) {
     return '/';
   }
   final parts = path.split('/').where((part) => part.isNotEmpty).toList();
@@ -91,13 +124,19 @@ Future<bool> handleSystemBack({
   required GoRouter router,
   required AppNavigationHistory history,
 }) async {
+  final current = currentLocation(router);
+  final fromOverlay = overlayOrigin(history);
+  if (fromOverlay != null && isDogProfileLocation(current)) {
+    router.go(fromOverlay);
+    return true;
+  }
+
   final root = router.routerDelegate.navigatorKey.currentState;
   if (root != null && root.canPop()) {
     root.pop();
     return true;
   }
 
-  final current = currentLocation(router);
   final previous = history.previous;
   final parent = parentLocation(current);
 

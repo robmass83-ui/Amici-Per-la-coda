@@ -134,4 +134,78 @@ void main() {
     expect(items[2].resto, contains('preaffido in scadenza'));
     expect(items[3].nomeCane, 'Marta Neri');
   });
+
+  test('un trasferito non occupa il box come un adottato', () {
+    final box = testBox(settore: 'B', numero: '7', capienza: 4);
+    final present = testDog(id: 'a', settore: 'B', box: '7');
+    final transferred = testDog(
+      id: 'b',
+      settore: 'B',
+      box: '7',
+      stato: DogStato.trasferito,
+    );
+    final adopted = testDog(
+      id: 'c',
+      settore: 'B',
+      box: '7',
+      stato: DogStato.adottato,
+    );
+    expect(occupantiDelBox(box, [present, transferred, adopted]), 1);
+    expect(caniInRifugioDi([present, transferred, adopted]), 1);
+  });
+
+  test('un box di degenza non entra nei posti della home', () {
+    final boxes = [
+      testBox(id: 'n', settore: 'B', numero: '7', capienza: 4),
+      testBox(
+        id: 'd',
+        settore: 'Inf',
+        numero: '1',
+        capienza: 2,
+        tipo: BoxTipo.degenza,
+      ),
+      testBox(
+        id: 'i',
+        settore: 'Inf',
+        numero: '2',
+        capienza: 1,
+        tipo: BoxTipo.isolamento,
+      ),
+      testBox(
+        id: 'q',
+        settore: 'Inf',
+        numero: '3',
+        capienza: 3,
+        tipo: BoxTipo.quarantena,
+      ),
+    ];
+    expect(postiTotaliDi(boxes), 4);
+    expect(boxContaNeiPosti(boxes[1]), isFalse);
+  });
+
+  test('con boxes vuota i posti totali vengono da capienzaAutorizzata', () {
+    final summary = buildHomeSummary(
+      dogs: [testDog(stato: DogStato.inRifugio)],
+      boxes: const [],
+      adoptions: const [],
+      health: const [],
+      appointments: const [],
+      now: now,
+      capienzaAutorizzata: 54,
+    );
+    expect(summary.postiTotali, 54);
+    expect(summary.occupancy.caption, contains('capienza autorizzata'));
+
+    final withBoxes = buildHomeSummary(
+      dogs: [testDog(stato: DogStato.inRifugio)],
+      boxes: [testBox(capienza: 10)],
+      adoptions: const [],
+      health: const [],
+      appointments: const [],
+      now: now,
+      capienzaAutorizzata: 54,
+    );
+    expect(withBoxes.postiTotali, 10);
+    expect(withBoxes.occupancy.caption.contains('capienza autorizzata'), isFalse);
+  });
 }

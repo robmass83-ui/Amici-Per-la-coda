@@ -18,17 +18,21 @@ class InMemoryExpenseRepository implements ExpenseRepository {
 
   List<Expense> _of(String? dogId) {
     if (dogId == null) {
-      return List<Expense>.unmodifiable(_items);
+      return List<Expense>.from(_items);
     }
-    return _items
-        .where((item) => item.dogId == dogId)
-        .toList(growable: false);
+    return _items.where((item) => item.dogId == dogId).toList(growable: false);
   }
 
   @override
   Future<void> save(Expense expense) async {
     _items.removeWhere((item) => item.id == expense.id);
     _items.add(expense);
-    _controller.add(List<Expense>.unmodifiable(_items));
+    _controller.add(List<Expense>.from(_items));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
+    _controller.add(List<Expense>.from(_items));
   }
 }

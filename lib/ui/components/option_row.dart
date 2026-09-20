@@ -11,6 +11,9 @@ class OptionRow extends StatelessWidget {
     this.subtitle = '',
     required this.onTap,
     this.titleColor,
+    this.minHeight = AppDim.minTouch,
+    this.titleSize = AppText.body,
+    this.trailing,
   });
 
   final Widget icon;
@@ -18,13 +21,16 @@ class OptionRow extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final Color? titleColor;
+  final double minHeight;
+  final double titleSize;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppDim.minTouch),
+        constraints: BoxConstraints(minHeight: minHeight),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppDim.gapS),
           child: Row(
@@ -41,7 +47,7 @@ class OptionRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Roboto',
-                        fontSize: AppText.body,
+                        fontSize: titleSize,
                         fontWeight: FontWeight.w600,
                         color: titleColor ?? AppColor.ink,
                         height: AppDim.lineH,
@@ -62,11 +68,12 @@ class OptionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: AppDim.iconNav,
-                color: AppColor.faint,
-              ),
+              trailing ??
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: AppDim.iconNav,
+                    color: AppColor.faint,
+                  ),
             ],
           ),
         ),

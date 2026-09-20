@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Popup centrali</title>
+<style>
+:root{--green:#157A3C;--greenS:#E7F4EB;--ink:#16211B;--muted:#6E7B72;--faint:#9AA69E;--bg:#F5F7F3;--line:#E9EBE4;--line2:#F1F3EC;--seg:#EDF0EB;--red:#E04552;--blueS:#E7F1FC;--orangeS:#FDF1DF;--neutral:#EFF1ED}
+*{box-sizing:border-box}
+body{margin:0;background:#EDEFE9;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#20291F;padding:20px 12px 50px}
+h1{font-size:17px;margin:0 0 4px;text-align:center}
+.sub{font-size:12px;color:#5E6A5C;text-align:center;margin:0 0 20px;max-width:720px;margin-left:auto;margin-right:auto}
+.row{display:flex;gap:16px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.col{width:300px;flex:0 0 300px}
+.cap{font-size:12px;font-weight:700;margin:0 0 3px;display:flex;align-items:center;gap:6px}
+.tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px}
+.bad{background:#FDECEE;color:#b0303b}.ok{background:#E7F4EB;color:#136135}
+.note{font-size:11px;color:#5E6A5C;margin:0 0 8px;min-height:44px}
+.ph{background:var(--bg);border-radius:14px;overflow:hidden;border:1px solid #DDE2DA;box-shadow:0 6px 20px rgba(20,35,25,.09);color:var(--ink);height:600px;position:relative}
+.st{height:20px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 11px;font-size:9px;color:#3a463f}
+.dim{position:absolute;inset:20px 0 0 0;background:rgba(15,25,18,.45)}
+/* page behind */
+.beh{padding:10px 12px;opacity:.9}
+.beh .c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;font-size:11px}
+.beh .c b{display:block;font-size:12px;margin-bottom:3px}
+/* old sheet */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:8px 12px 12px}
+.grab{width:36px;height:4px;border-radius:4px;background:#DDE2DA;margin:2px auto 10px}
+.sheet h3{margin:0 0 10px;text-align:center;font-size:14px}
+.oc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.oc span{height:32px;border-radius:20px;border:1px solid var(--line);padding:0 12px;display:inline-flex;align-items:center;font-size:12px}
+.oc span.on{background:var(--green);color:#fff;border-color:var(--green)}
+.ol{font-size:12px;color:#4a574f;margin:6px 0 4px}
+.oi{height:40px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;padding:0 11px;font-size:12px;color:var(--faint)}
+.ob{height:44px;border-radius:12px;background:var(--green);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:12px;font-size:13px}
+/* dialog */
+.dlg{position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);background:#fff;border-radius:14px;border:1px solid var(--line);box-shadow:0 14px 40px rgba(10,20,12,.25);display:flex;flex-direction:column;max-height:82%}
+.dh{height:42px;display:flex;align-items:center;gap:7px;padding:0 10px 0 12px;border-bottom:1px solid var(--line2);flex:none}
+.dh .ic{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px}
+.dh .t{flex:1;font-size:13px;font-weight:700}
+.dh .x{width:26px;height:26px;border-radius:50%;background:#EEF1EC;display:grid;place-items:center;font-size:12px;color:#5f6c64}
+.db{padding:10px 12px;overflow:auto}
+.df{height:46px;flex:none;border-top:1px solid var(--line2);display:flex;gap:8px;padding:7px 12px}
+.df div{flex:1;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.df .g{border:1.3px solid var(--line);color:#4a574f}
+.df .p{background:var(--green);color:#fff}
+.df .p.off{background:#CFE6D6;color:#fff}
+.df .del{flex:0 0 32px;border:1.3px solid #F3DADA;color:var(--red);font-size:13px}
+.f{margin-bottom:8px}.f:last-child{margin-bottom:0}
+.lb{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;letter-spacing:.2px}
+.in{border:1px solid var(--line);border-radius:9px;height:34px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--faint)}
+.in.v{color:var(--ink)}
+.in .r{margin-left:auto;color:var(--faint);font-size:11px}
+.in.ml{height:auto;min-height:34px;align-items:flex-start;padding:8px 10px;line-height:1.35}
+.two{display:flex;gap:8px}.two>.f{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.cp{height:26px;border-radius:20px;border:1px solid var(--line);display:inline-flex;align-items:center;padding:0 10px;font-size:11px;font-weight:600;color:#2c3a32}
+.cp.on{background:var(--green);border-color:var(--green);color:#fff}
+.sg{display:flex;background:var(--seg);border-radius:9px;padding:2px;gap:2px;height:32px}
+.sg div{flex:1;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#5f6c64;border-radius:7px;font-weight:600;white-space:nowrap}
+.sg div.on{background:#fff;color:var(--green);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.foot{font-size:10.5px;text-align:center;margin-top:7px;font-weight:700}
+.foot.b{color:#b0303b}.foot.g{color:#136135}
+</style></head><body>
+
+<h1>I form di inserimento — da foglio in basso a popup centrale</h1>
+<p class="sub">Un solo componente, <b>AppDialog</b>, per tutti i form brevi: intestazione fissa con titolo e ×, corpo che scorre, piè di pagina fisso con Annulla e Salva. Sale con la tastiera. Stessi campi compatti di Modifica cane. Lo stesso popup serve per creare e per modificare.</p>
+
+<div class="row">
+  <div class="col">
+    <div class="cap">Com'è adesso <span class="tag bad">foglio in basso</span></div>
+    <p class="note">Campi da 40 dp, etichette a 12 sp, un campo per riga, nessuna card. Con la tastiera aperta "Salva" sparisce sotto.</p>
+    <div class="ph">
+      <div class="st"><span>17:54</span><span>▮▮ 44</span></div>
+      <div class="dim"></div>
+      <div class="beh"><div class="c"><b>Prossime scadenze</b>Nessuna scadenza in programma.</div><div class="c"><b>Libretto sanitario</b>Nessuna voce nel libretto.</div></div>
+      <div class="sheet">
+        <div class="grab"></div><h3>Aggiungi trattamento</h3>
+        <div class="oc"><span class="on">Vaccino</span><span>Sterilizzazione</span><span>Sverminazione</span><span>Antiparassitario</span><span>Visita</span><span>Esame</span><span>Terapia</span><span>Altro</span></div>
+        <div class="ol">Descrizione</div><div class="oi">Es. richiamo polivalente</div>
+        <div class="ol">Data</div><div class="oi" style="color:var(--ink)">10/09/2026</div>
+        <div class="ol">Veterinario</div><div class="oi">Opzionale</div>
+        <div class="ol">Lotto</div><div class="oi">Opzionale</div>
+        <div class="ob">Salva</div>
+      </div>
+    </div>
+    <div class="foot b">≈ 620 dp di foglio · 3 campi sotto il bordo</div>
+  </div>
+
+  <div class="col">
+    <div class="cap">Popup · Aggiungi trattamento <span class="tag ok">≈ 380 dp</span></div>
+    <p class="note">Tipo come chip; data e scadenza affiancate; veterinario e lotto affiancati; costo a mezza riga. Tutto visibile, niente scroll.</p>
+    <div class="ph">
+      <div class="st"><span>17:54</span><span>▮▮ 44</span></div>
+      <div class="dim"></div>
+      <div class="beh"><div class="c"><b>Prossime scadenze</b>Nessuna scadenza in programma.</div><div class="c"><b>Libretto sanitario</b>Nessuna voce nel libretto.</div></div>
+      <div class="dlg">
+        <div class="dh"><span class="ic" style="background:var(--blueS)">💉</span><span class="t">Aggiungi trattamento</span><span class="x">✕</span></div>
+        <div class="db">
+          <div class="f"><div class="lb">TIPO</div><div class="chips"><span class="cp on">Vaccino</span><span class="cp">Sterilizzazione</span><span class="cp">Sverminazione</span><span class="cp">Antiparassitario</span><span class="cp">Visita</span><span class="cp">Esame</span><span class="cp">Terapia</span><span class="cp">Altro</span></div></div>
+          <div class="f"><div class="lb">DESCRIZIONE</div><div class="in">Es. richiamo polivalente</div></div>
+          <div class="two"><div class="f"><div class="lb">DATA</div><div class="in v">10/09/2026<span class="r">📅</span></div></div><div class="f"><div class="lb">PROSSIMA SCADENZA</div><div class="in">gg/mm/aaaa<span class="r">📅</span></div></div></div>
+          <div class="two"><div class="f"><div class="lb">VETERINARIO</div><div class="in">Opzionale<span class="r">▾</span></div></div><div class="f"><div class="lb">LOTTO</div><div class="in">Opzionale</div></div></div>
+          <div class="two"><div class="f"><div class="lb">COSTO (€)</div><div class="in">0,00</div></div><div class="f"><div class="lb">&nbsp;</div><div style="font-size:9.5px;color:var(--muted);padding-top:9px">Se inserito, crea anche la spesa</div></div></div>
+        </div>
+        <div class="df"><div class="g">Annulla</div><div class="p off">Salva</div></div>
+      </div>
+    </div>
+    <div class="foot g">tutti gli 8 campi in vista</div>
+  </div>
+
+  <div class="col">
+    <div class="cap">Popup · Modifica nota <span class="tag ok">≈ 250 dp</span></div>
+    <p class="note">Lo stesso popup in modalità modifica: titolo diverso, campi precompilati, cestino a sinistra nel piè di pagina. Nessun secondo componente.</p>
+    <div class="ph">
+      <div class="st"><span>17:55</span><span>▮▮ 44</span></div>
+      <div class="dim"></div>
+      <div class="beh"><div class="c"><b>Note</b>Ha paura dei motorini…</div></div>
+      <div class="dlg">
+        <div class="dh"><span class="ic" style="background:var(--neutral)">📝</span><span class="t">Modifica nota</span><span class="x">✕</span></div>
+        <div class="db">
+          <div class="f"><div class="lb">TIPO</div><div class="sg"><div>Generale</div><div class="on">Comportam.</div><div>Aliment.</div><div>Attenzione</div></div></div>
+          <div class="f"><div class="lb">TESTO</div><div class="in ml v">Passeggiata di 40 minuti. Al guinzaglio tira poco, si siede al comando. Ha paura dei motorini: consigliata desensibilizzazione graduale.</div></div>
+          <div style="font-size:9.5px;color:var(--muted)">Marco · 21/08/2026</div>
+        </div>
+        <div class="df"><div class="del">🗑</div><div class="g">Annulla</div><div class="p">Salva</div></div>
+      </div>
+    </div>
+    <div class="foot g">creare e modificare: un solo popup</div>
+  </div>
+</div>
+</body></html>

@@ -7,6 +7,13 @@ abstract interface class FileShare {
     required String mime,
     required String text,
   });
+
+  Future<void> shareExistingFile({
+    required String path,
+    required String fileName,
+    required String mime,
+    required String text,
+  });
 }
 
 abstract interface class FileOpener {

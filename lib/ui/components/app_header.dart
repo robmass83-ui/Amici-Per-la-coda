@@ -14,6 +14,7 @@ class AppHeader extends StatelessWidget {
     this.onShare,
     this.onMore,
     this.actions,
+    this.compact = false,
   });
 
   final String? title;
@@ -23,6 +24,7 @@ class AppHeader extends StatelessWidget {
   final VoidCallback? onShare;
   final VoidCallback? onMore;
   final List<Widget>? actions;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,9 @@ class AppHeader extends StatelessWidget {
           ),
         ),
         child: SizedBox(
-          height: showLogo ? AppDim.logoBarH : AppDim.appBarH,
+          height: showLogo
+              ? AppDim.logoBarH
+              : (compact ? AppDim.formAppBarH : AppDim.appBarH),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppDim.gapL),
             child: Stack(
@@ -46,7 +50,13 @@ class AppHeader extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDim.headerBtn + AppDim.gapS,
                     ),
-                    child: _Title(title: title, showLogo: showLogo),
+                    child: IgnorePointer(
+                      child: _Title(
+                        title: title,
+                        showLogo: showLogo,
+                        compact: compact,
+                      ),
+                    ),
                   ),
                 ),
                 Row(
@@ -95,10 +105,15 @@ class AppHeader extends StatelessWidget {
 }
 
 class _Title extends StatelessWidget {
-  const _Title({required this.title, required this.showLogo});
+  const _Title({
+    required this.title,
+    required this.showLogo,
+    required this.compact,
+  });
 
   final String? title;
   final bool showLogo;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +126,9 @@ class _Title extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Roboto',
-        fontSize: AppText.title,
+        fontSize: compact ? AppText.h2 : AppText.title,
         fontWeight: FontWeight.w700,
         color: AppColor.ink,
         height: AppDim.lineH,

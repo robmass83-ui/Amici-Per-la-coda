@@ -30,6 +30,7 @@ etichetta 10.5, caption 10, micro 9.
 
 ## Metodo di lavoro
 
+- Dopo una modifica da testare sul telefono: `tool/publish_test_release.ps1` (non `flutter run`). Dettaglio in `.cursor/rules/run-on-device.mdc`.
 - Si procede uno step alla volta secondo la sezione 8 della specifica.
 - Ogni step include i suoi test. Non si passa al successivo con test rossi
   o con `flutter analyze` non pulito.

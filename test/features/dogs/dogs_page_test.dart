@@ -1,4 +1,5 @@
 import 'package:amici_per_la_coda/data/models/dog.dart';
+import 'package:amici_per_la_coda/data/models/enums.dart';
 import 'package:amici_per_la_coda/features/dogs/dogs_page.dart';
 import 'package:amici_per_la_coda/router.dart';
 import 'package:amici_per_la_coda/ui/components.dart';
@@ -42,9 +43,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('1 risultato'), findsOneWidget);
-    expect(find.text('[PROVA] Fenice'), findsOneWidget);
-    expect(find.text('[PROVA] Brando'), findsNothing);
-    expect(find.text('[PROVA] Nina'), findsNothing);
+    expect(find.text('Fenice'), findsOneWidget);
+    expect(find.text('Brando'), findsNothing);
+    expect(find.text('Nina'), findsNothing);
   });
 
   testWidgets('cercando il microchip completo resta 1 risultato', (
@@ -56,20 +57,46 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('1 risultato'), findsOneWidget);
-    expect(find.text('[PROVA] Fenice'), findsOneWidget);
-    expect(find.text('[PROVA] Zeus'), findsNothing);
+    expect(find.text('Fenice'), findsOneWidget);
+    expect(find.text('Zeus'), findsNothing);
   });
 
   testWidgets('il filtro In stallo mostra solo Nina', (tester) async {
     await pumpDogs(tester);
 
+    expect(find.text('Nina'), findsNothing);
+
     await tester.tap(find.text('Stallo'));
     await tester.pumpAndSettle();
 
     expect(find.text('1 risultato'), findsOneWidget);
-    expect(find.text('[PROVA] Nina'), findsOneWidget);
-    expect(find.text('[PROVA] Fenice'), findsNothing);
-    expect(find.text('[PROVA] Brando'), findsNothing);
+    expect(find.text('Nina'), findsOneWidget);
+    expect(find.text('Fenice'), findsNothing);
+    expect(find.text('Brando'), findsNothing);
+  });
+
+  testWidgets('il filtro Adottati mostra il cane adottato', (tester) async {
+    await pumpDogs(
+      tester,
+      dogs: [
+        ...testListDogs(),
+        testDog(
+          id: 'luna',
+          nome: 'Luna',
+          stato: DogStato.adottato,
+          archiviato: true,
+        ),
+      ],
+    );
+
+    expect(find.text('Luna'), findsNothing);
+
+    await tester.tap(find.text('Adottati'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 risultato'), findsOneWidget);
+    expect(find.text('Luna'), findsOneWidget);
+    expect(find.text('Fenice'), findsNothing);
   });
 
   testWidgets('lista vuota mostra EmptyState', (tester) async {
@@ -87,18 +114,19 @@ void main() {
 
     expect(find.byKey(DogsPage.filtersKey), findsOneWidget);
     expect(find.byType(AppSegmented), findsOneWidget);
-    expect(find.text('Tutti'), findsOneWidget);
     expect(find.text('Rifugio'), findsOneWidget);
     expect(find.text('Stallo'), findsOneWidget);
     expect(find.text('Adottab.'), findsOneWidget);
     expect(find.text('Cuccioli'), findsOneWidget);
+    expect(find.text('Adottati'), findsOneWidget);
+    expect(find.text('Tutti'), findsNothing);
 
     final bar = tester.getRect(find.byKey(DogsPage.filtersKey));
-    final tutti = tester.getRect(find.text('Tutti'));
-    final cuccioli = tester.getRect(find.text('Cuccioli'));
+    final rifugio = tester.getRect(find.text('Rifugio'));
+    final adottati = tester.getRect(find.text('Adottati'));
     expect(bar.height, AppDim.minTouch);
-    expect(tutti.center.dy, closeTo(cuccioli.center.dy, 1));
-    expect(cuccioli.left, greaterThan(tutti.right));
+    expect(rifugio.center.dy, closeTo(adottati.center.dy, 1));
+    expect(adottati.left, greaterThan(rifugio.right));
     expect(tester.takeException(), isNull);
   });
 

@@ -8,20 +8,22 @@ class AppBottomNav extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.onSelect,
-    required this.onFab,
+    this.onFab,
   });
 
   /// 0 Home, 1 Animali, 2 Calendario, 3 Altro.
   final int currentIndex;
   final ValueChanged<int> onSelect;
-  final VoidCallback onFab;
+  final VoidCallback? onFab;
 
   @override
   Widget build(BuildContext context) {
+    final showFab = onFab != null;
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: AppDim.bottomNavH + AppDim.gapXl + AppDim.gapS,
+        height: AppDim.bottomNavH +
+            (showFab ? AppDim.gapXl + AppDim.gapS : 0),
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
@@ -74,10 +76,11 @@ class AppBottomNav extends StatelessWidget {
                 ],
               ),
             ),
-            Positioned(
-              top: 0,
-              child: _FabButton(onTap: onFab),
-            ),
+            if (showFab)
+              Positioned(
+                top: 0,
+                child: _FabButton(onTap: onFab!),
+              ),
           ],
         ),
       ),

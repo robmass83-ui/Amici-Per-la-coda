@@ -58,4 +58,34 @@ class Appointment {
       ...audit.toMap(),
     };
   }
+
+  Appointment copyWith({
+    AppointmentTipo? tipo,
+    String? titolo,
+    String? dogId,
+    bool clearDogId = false,
+    String? adoptionId,
+    bool clearAdoptionId = false,
+    DateTime? inizio,
+    DateTime? fine,
+    bool clearFine = false,
+    bool? tuttoIlGiorno,
+    String? luogo,
+    AppointmentStato? stato,
+    Audit? audit,
+  }) {
+    return Appointment(
+      id: id,
+      tipo: tipo ?? this.tipo,
+      titolo: titolo ?? this.titolo,
+      dogId: clearDogId ? null : (dogId ?? this.dogId),
+      adoptionId: clearAdoptionId ? null : (adoptionId ?? this.adoptionId),
+      inizio: inizio ?? this.inizio,
+      fine: clearFine ? null : (fine ?? this.fine),
+      tuttoIlGiorno: tuttoIlGiorno ?? this.tuttoIlGiorno,
+      luogo: luogo ?? this.luogo,
+      stato: stato ?? this.stato,
+      audit: audit ?? this.audit,
+    );
+  }
 }

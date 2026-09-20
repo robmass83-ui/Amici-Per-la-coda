@@ -15,3 +15,7 @@ Photo? coverPhotoOf(List<Photo> photos, String? coverId) {
   }
   return photos.isEmpty ? null : photos.first;
 }
+
+Photo? coverFromMap(Map<String, Photo> covers, String dogId) {
+  return covers[dogId];
+}

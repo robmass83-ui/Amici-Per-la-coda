@@ -145,9 +145,9 @@ void main() {
     await tester.tap(find.text('Stallo'));
     await tester.pumpAndSettle();
 
-    expect(find.text('[PROVA] Fenice'), findsOneWidget);
-    expect(find.text('[PROVA] Nina'), findsOneWidget);
-    expect(find.text('[PROVA] Brando'), findsNothing);
+    expect(find.text('Fenice'), findsOneWidget);
+    expect(find.text('Nina'), findsOneWidget);
+    expect(find.text('Brando'), findsNothing);
   });
 
   testWidgets('adottato chiede conferma e Annulla non salva', (tester) async {

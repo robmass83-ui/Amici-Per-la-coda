@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +9,7 @@ import '../../core/new_id.dart';
 import '../../data/data_providers.dart';
 import '../../data/documents/document_codec.dart';
 import '../../data/documents/document_file_picker.dart';
+import '../../data/documents/document_upload.dart';
 import '../../data/documents/template_assets.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/app_document.dart';
@@ -21,13 +20,13 @@ import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import '../adoptions/adoption_flow.dart';
 import '../auth/auth_providers.dart';
-import '../dashboard/home_aggregators.dart';
-import '../dogs/dog_labels.dart';
+import '../documents/document_actions.dart';
+import '../documents/template_share.dart';
 import '../dogs/dogs_providers.dart';
+import '../dogs/edit_permissions.dart';
 import '../dogs/tab_labels.dart';
 import 'affido_copy.dart';
 import 'affido_providers.dart';
-import 'affido_upload.dart';
 
 // ── CONTRATTO DI LAYOUT · Documenti di affido ────────────────────────────
 // AppScaffold  titolo «Documenti di affido»  back
@@ -78,6 +77,7 @@ class AffidoPage extends ConsumerWidget {
     final received = List<AppDocument>.of(docs)
       ..sort((a, b) => b.caricatoIl.compareTo(a.caricatoIl));
     final volunteer = ref.watch(currentVolunteerProvider);
+    final canWrite = canWriteRecords(volunteer);
     final banner = adoption == null
         ? null
         : _bannerText(adoption, volunteer?.nome ?? '');
@@ -134,7 +134,7 @@ class AffidoPage extends ConsumerWidget {
                     subtitle:
                         'Versione ${sortedTemplates[i].versione} · Invia',
                     onTap: () => unawaited(
-                      inviaModulo(
+                      shareDocumentTemplate(
                         context: context,
                         ref: ref,
                         template: sortedTemplates[i],
@@ -182,7 +182,12 @@ class AffidoPage extends ConsumerWidget {
                           subtitle:
                               '${documentTipoLabel(received[i].tipo)} · ${formatItalianDate(received[i].caricatoIl)}',
                           onTap: () => unawaited(
-                            _openDocActions(context, ref, received[i]),
+                            showDocumentActions(
+                              context,
+                              ref,
+                              received[i],
+                              canWrite: canWrite,
+                            ),
                           ),
                         ),
                       ],
@@ -287,173 +292,6 @@ String? _bannerText(Adoption adoption, String volunteerNome) {
   );
 }
 
-Future<void> inviaModulo({
-  required BuildContext context,
-  required WidgetRef ref,
-  required DocumentTemplate template,
-  required Adoption? adoption,
-  required Dog? dog,
-}) async {
-  if (adoption == null || dog == null) {
-    AppToast.show(
-      context,
-      'Apri una richiesta di adozione per inviare il modulo.',
-    );
-    return;
-  }
-  final bytes = base64Decode(template.pdfB64);
-  final share = ref.read(fileShareProvider);
-  final text = moduloShareText(
-    templateId: template.id,
-    adopterNome: richiedenteNome(adoption),
-    dogNome: dogDisplayName(dog.nome),
-  );
-  await share.shareFile(
-    bytes: Uint8List.fromList(bytes),
-    fileName: template.fileName,
-    mime: template.mime,
-    text: text,
-  );
-  final repo = ref.read(adoptionRepositoryProvider);
-  final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
-  final now = ref.read(dogListNowProvider);
-  if (repo != null) {
-    await repo.save(
-      recordModuloInviato(
-        adoption: adoption,
-        moduloId: template.id,
-        now: now,
-        autoreId: uid,
-      ),
-    );
-  }
-  if (context.mounted) {
-    AppToast.show(context, 'Modulo pronto da condividere.');
-  }
-}
-
-Future<void> _openDocActions(
-  BuildContext context,
-  WidgetRef ref,
-  AppDocument document,
-) {
-  return AppSheet.show<void>(
-    context: context,
-    title: document.nome.isEmpty
-        ? documentTipoLabel(document.tipo)
-        : document.nome,
-    children: [
-      OptionRow(
-        icon: const IconBadge(AppIcons.apri, size: IconBadge.inMenu),
-        title: 'Apri',
-        onTap: () async {
-          Navigator.of(context).pop();
-          await _openDocument(context, ref, document);
-        },
-      ),
-      OptionRow(
-        icon: const IconBadge(AppIcons.condividi, size: IconBadge.inMenu),
-        title: 'Condividi',
-        onTap: () async {
-          Navigator.of(context).pop();
-          await _shareDocument(context, ref, document);
-        },
-      ),
-      OptionRow(
-        icon: const IconBadge(AppIcons.elimina, size: IconBadge.inMenu),
-        title: 'Elimina',
-        titleColor: AppColor.red,
-        onTap: () async {
-          Navigator.of(context).pop();
-          await _deleteDocument(context, ref, document);
-        },
-      ),
-    ],
-  );
-}
-
-Future<void> _openDocument(
-  BuildContext context,
-  WidgetRef ref,
-  AppDocument document,
-) async {
-  try {
-    final bytes = await _loadOrEmpty(ref, document);
-    await ref.read(fileOpenerProvider).openFile(
-      bytes: bytes,
-      fileName: document.nome.isEmpty ? 'documento' : document.nome,
-      mime: document.mime.isEmpty ? 'application/pdf' : document.mime,
-    );
-  } catch (_) {
-    if (context.mounted) {
-      AppToast.show(context, 'Impossibile aprire il documento.');
-    }
-  }
-}
-
-Future<void> _shareDocument(
-  BuildContext context,
-  WidgetRef ref,
-  AppDocument document,
-) async {
-  try {
-    final bytes = await _loadOrEmpty(ref, document);
-    await ref.read(fileShareProvider).shareFile(
-      bytes: bytes,
-      fileName: document.nome.isEmpty ? 'documento' : document.nome,
-      mime: document.mime.isEmpty ? 'application/octet-stream' : document.mime,
-      text: document.nome,
-    );
-  } catch (_) {
-    if (context.mounted) {
-      AppToast.show(context, 'Impossibile condividere il documento.');
-    }
-  }
-}
-
-Future<void> _deleteDocument(
-  BuildContext context,
-  WidgetRef ref,
-  AppDocument document,
-) async {
-  final ok = await AppSheet.present<bool>(
-    context: context,
-    builder: (context) => AppSheet(
-      title: 'Elimina documento',
-      children: [
-        const Text(
-          'Vuoi eliminare questo file? L\'azione non si può annullare.',
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: AppText.body,
-            color: AppColor.ink,
-            height: AppDim.lineH,
-          ),
-        ),
-        const SizedBox(height: AppDim.gapL),
-        AppButton(
-          label: 'Elimina',
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    ),
-  );
-  if (ok != true) {
-    return;
-  }
-  await ref.read(documentRepositoryProvider)?.delete(document.id);
-}
-
-Future<Uint8List> _loadOrEmpty(WidgetRef ref, AppDocument document) async {
-  final repo = ref.read(documentRepositoryProvider);
-  if (repo == null) {
-    return Uint8List(0);
-  }
-  return repo.loadBytes(document.id);
-}
-
 class UploadSignedSheet extends ConsumerStatefulWidget {
   const UploadSignedSheet({super.key, this.adoption, this.dog});
 
@@ -522,8 +360,6 @@ class _UploadSignedSheetState extends ConsumerState<UploadSignedSheet> {
       );
       return;
     }
-    final prepared = await prepareSignedUpload(files);
-    ensureDocumentSizeAllowed(prepared.bytes.lengthInBytes);
     final repo = ref.read(documentRepositoryProvider);
     if (repo == null) {
       setState(() => _error = 'Archivio documenti non disponibile.');
@@ -531,21 +367,22 @@ class _UploadSignedSheetState extends ConsumerState<UploadSignedSheet> {
     }
     final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
     final now = ref.read(dogListNowProvider);
-    final saved = await repo.saveBytes(
-      AppDocument(
+    final saved = await savePickedDocument(
+      repository: repo,
+      files: files,
+      meta: AppDocument(
         id: newEntityId('doc', now),
         dogId: dog.id,
         adoptionId: adoption.id,
         adopterId: adoption.adopterId,
         tipo: _tipo,
-        nome: prepared.name,
-        mime: prepared.mime,
+        nome: '',
+        mime: '',
         chunkCount: 0,
         contenutoB64: null,
         caricatoIl: now,
         caricatoDa: uid,
       ),
-      prepared.bytes,
     );
     if (!mounted) {
       return;

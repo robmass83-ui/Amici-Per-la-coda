@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_version.dart';
 import '../../core/auth_errors.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
+import '../dogs/dogs_providers.dart';
+import '../dogs/record_actions.dart';
+import '../volunteers/volunteer_providers.dart';
 import 'auth_providers.dart';
 
-/// Schermata 1 del riferimento: logo, email, password, resta collegato.
+/// Schermata 1 del riferimento: logo, email, password, accesso.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
+
+  static const forgotPasswordKey = Key('login-password-dimenticata');
+  static const versionKey = Key('login-versione');
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -18,7 +25,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
-  bool _staySignedIn = true;
   bool _busy = false;
   String? _emailError;
   String? _passwordError;
@@ -104,59 +110,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: AppDim.gapS),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () =>
-                            setState(() => _staySignedIn = !_staySignedIn),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: AppDim.minTouch,
-                              height: AppDim.minTouch,
-                              child: Checkbox(
-                                value: _staySignedIn,
-                                onChanged: (value) {
-                                  setState(() => _staySignedIn = value ?? true);
-                                },
-                                activeColor: AppColor.green,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                            const Text(
-                              'Resta collegato',
-                              style: TextStyle(
-                                fontFamily: 'Roboto',
-                                fontSize: AppText.caption,
-                                color: AppColor.muted,
-                                height: AppDim.lineH,
-                              ),
-                            ),
-                          ],
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      key: LoginPage.forgotPasswordKey,
+                      onPressed: _busy ? null : _forgotPassword,
+                      child: const Text(
+                        'Password dimenticata?',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: AppText.caption,
+                          fontWeight: FontWeight.w600,
+                          color: AppColor.green,
+                          height: AppDim.lineH,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => AppToast.show(
-                          context,
-                          'Chiedi al presidente di reimpostare la password.',
-                        ),
-                        child: const Text(
-                          'Password dimenticata?',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: AppText.caption,
-                            fontWeight: FontWeight.w600,
-                            color: AppColor.green,
-                            height: AppDim.lineH,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   if (_formError != null) ...[
                     const SizedBox(height: AppDim.gapS),
@@ -177,10 +146,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onPressed: _busy ? null : _submit,
                   ),
                   const SizedBox(height: AppDim.gapL),
-                  const Text(
-                    'Versione 1.0',
+                  Text(
+                    key: LoginPage.versionKey,
+                    'Versione ${ref.watch(appVersionProvider).maybeWhen(data: (v) => v, orElse: () => '…')}',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Roboto',
                       fontSize: AppText.caption,
                       color: AppColor.faint,
@@ -194,6 +164,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _email.text.trim();
+    var emailError = email.isEmpty ? 'Inserisci l\'email.' : null;
+    if (emailError == null && !_looksLikeEmail(email)) {
+      emailError = italianAuthMessage('invalid-email');
+    }
+    setState(() {
+      _emailError = emailError;
+      _formError = null;
+    });
+    if (emailError != null) {
+      return;
+    }
+    final ok = await confirmAction(
+      context: context,
+      title: 'Password dimenticata',
+      message: 'Inviare l\'email di reimpostazione a $email?',
+      confirmLabel: 'Invia',
+    );
+    if (!ok) {
+      return;
+    }
+    try {
+      await ref.read(authRepositoryProvider).sendPasswordResetEmail(email: email);
+      if (mounted) {
+        AppToast.show(context, 'Email di reimpostazione inviata.');
+      }
+    } on AuthFailure catch (error) {
+      if (mounted) {
+        setState(() => _formError = error.message);
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -219,6 +223,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await ref
           .read(authRepositoryProvider)
           .signIn(email: email, password: password);
+      ref.read(sessionSecretsProvider).loginPassword = password;
+      ref.read(sessionSecretsProvider).passwordChangeCompleted = false;
+      refreshAuthSession(ref);
+      final user = ref.read(authRepositoryProvider).currentUser;
+      final service = ref.read(volunteerAccountServiceProvider);
+      if (user != null && service != null) {
+        await service.recordLogin(
+          uid: user.uid,
+          email: user.email,
+          now: ref.read(dogListNowProvider),
+          password: password,
+        );
+      }
     } on AuthFailure catch (error) {
       if (mounted) {
         setState(() => _formError = error.message);

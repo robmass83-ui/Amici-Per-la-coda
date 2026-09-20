@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scheda di adozione — PDF e card social</title>
+<style>
+:root{--green:#157A3C;--greenD:#0F5C2C;--greenS:#E7F4EB;--ink:#16211B;--muted:#6E7B72;--line:#E9EBE4;--bg:#F5F7F3;--red:#E04552;--redS:#FDECEE;--blueS:#E7F1FC;--blue:#1d5f9e;--orangeS:#FDF1DF;--orange:#9d6212}
+*{box-sizing:border-box}
+body{margin:0;background:#E4E7E0;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#20291F;padding:20px 12px 50px}
+h1{font-size:17px;margin:0 0 4px;text-align:center}
+.sub{font-size:12px;color:#5E6A5C;text-align:center;margin:0 0 20px;max-width:720px;margin-left:auto;margin-right:auto}
+.row{display:flex;gap:26px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.cap{font-size:12px;font-weight:700;margin:0 0 6px;text-align:center}
+.cap span{font-weight:400;color:#5E6A5C}
+.wm{font-family:"Snell Roundhand","Apple Chancery","Brush Script MT",cursive;color:#1a1a1a}
+
+/* ---------- A4 ---------- */
+.a4{width:446px;height:631px;background:#fff;box-shadow:0 10px 30px rgba(10,20,12,.18);padding:22px 24px;display:flex;flex-direction:column;gap:9px;position:relative;font-size:8.2px;color:var(--ink)}
+.top{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--green);padding-bottom:6px}
+.top .wm{font-size:15px}
+.top .lab{font-size:7px;letter-spacing:1.4px;text-transform:uppercase;color:var(--green);font-weight:700}
+.hero{display:flex;gap:12px}
+.hero .ph{width:150px;height:190px;border-radius:9px;background:linear-gradient(150deg,#c8ab7d,#8a7550);flex:none;overflow:hidden}
+.hero .ph img{width:100%;height:100%;object-fit:cover}
+.hero .r{flex:1;display:flex;flex-direction:column}
+.nm{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;margin:2px 0 3px}
+.sl{font-style:italic;color:#4d5b52;font-size:9px;margin-bottom:7px}
+.pill{display:inline-block;background:var(--green);color:#fff;font-size:7px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase;align-self:flex-start;margin-bottom:8px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+.fact{display:flex;gap:5px;align-items:flex-start}
+.fact .ic{width:14px;height:14px;border-radius:4px;display:grid;place-items:center;font-size:7px;flex:none}
+.fact .k{font-size:6.5px;color:var(--muted);line-height:1.1}
+.fact .v{font-size:8.5px;font-weight:700;line-height:1.15}
+.tiles{display:flex;gap:6px}
+.tile{flex:1;border:1px solid var(--line);border-radius:7px;padding:5px 6px;display:flex;gap:5px;align-items:center}
+.tile .ic{width:16px;height:16px;border-radius:5px;display:grid;place-items:center;font-size:8px;flex:none}
+.tile .t{font-size:7.5px;font-weight:700;line-height:1.1}
+.tile .s{font-size:6.5px;color:var(--muted)}
+.cols{display:flex;gap:10px;flex:1}
+.col{flex:1}
+h4{margin:0 0 5px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--green)}
+.chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px}
+.chip{font-size:7px;font-weight:600;padding:2px 6px;border-radius:20px;background:var(--greenS);color:var(--greenD)}
+.compat{display:flex;flex-direction:column;gap:3px}
+.cr{display:flex;justify-content:space-between;font-size:7.5px;border-bottom:1px dashed var(--line);padding-bottom:2px}
+.cr b{font-weight:700}
+.ok{color:var(--green)}.mid{color:var(--orange)}.no{color:var(--red)}
+.story{font-size:7.8px;line-height:1.5;color:#2c3a32}
+.gal{display:flex;gap:5px}
+.gal div{flex:1;height:52px;border-radius:6px;background:linear-gradient(150deg,#8fa07d,#4e5a41)}
+.foot{border-top:1px solid var(--line);padding-top:6px;display:flex;justify-content:space-between;align-items:flex-end}
+.foot .h{font-size:8px;font-weight:800}
+.foot .c{font-size:7px;color:var(--muted);line-height:1.4}
+.foot .d{font-size:6px;color:#9AA69E;text-align:right}
+
+/* ---------- social card 1080x1350 ---------- */
+.card{width:324px;height:405px;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(10,20,12,.18);position:relative;display:flex;flex-direction:column;color:var(--ink)}
+.card .photo{height:58%;position:relative;background:linear-gradient(150deg,#c8ab7d,#8a7550)}
+.card .photo img{width:100%;height:100%;object-fit:cover;display:block}
+.card .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,transparent 35%,transparent 55%,rgba(0,0,0,.72) 100%)}
+.card .badge{position:absolute;left:12px;top:12px;background:var(--green);color:#fff;font-size:8px;font-weight:800;letter-spacing:1px;padding:5px 9px;border-radius:20px;z-index:2}
+.card .logo{position:absolute;right:12px;top:10px;color:#fff;font-size:12px;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.card .name{position:absolute;left:14px;bottom:10px;z-index:2;color:#fff}
+.card .name b{display:block;font-size:34px;font-weight:800;letter-spacing:-1.2px;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.card .name span{font-size:9.5px;font-style:italic;opacity:.95}
+.card .body{flex:1;padding:10px 12px 9px;display:flex;flex-direction:column;gap:7px}
+.card .f4{display:flex;gap:5px}
+.card .f4 div{flex:1;background:var(--bg);border-radius:7px;padding:5px 4px;text-align:center}
+.card .f4 .i{font-size:11px}
+.card .f4 .v{font-size:8px;font-weight:800;line-height:1.1;margin-top:1px}
+.card .f4 .k{font-size:6px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.card .ch{display:flex;flex-wrap:wrap;gap:3px}
+.card .ch span{font-size:7px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--greenS);color:var(--greenD)}
+.card .tx{font-size:7.5px;line-height:1.45;color:#2c3a32;flex:1}
+.card .cta{background:var(--green);color:#fff;border-radius:8px;padding:6px 9px;display:flex;justify-content:space-between;align-items:center}
+.card .cta b{font-size:8.5px}
+.card .cta span{font-size:7px;opacity:.9}
+</style></head><body>
+
+<h1>Scheda di adozione — PDF e card per i social</h1>
+<p class="sub">Stessi dati, due impaginazioni: un documento A4 per la famiglia che vuole adottare, e un'immagine 4:5 per Facebook e Instagram. Niente microchip, box, spese, richieste, note interne: solo ciò che serve a far conoscere il cane.</p>
+
+<div class="row">
+  <div>
+    <div class="cap">Scheda di adozione · PDF A4 <span>· 1 pagina, 2 se ci sono più foto</span></div>
+    <div class="a4">
+      <div class="top"><span class="wm">Amici per la Coda</span><span class="lab">Scheda di adozione</span></div>
+      <div class="hero">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&q=70" alt=""></div>
+        <div class="r">
+          <div class="nm">Fenice</div>
+          <div class="sl">Dolce, forte, speciale. In attesa della sua famiglia.</div>
+          <span class="pill">Cerca famiglia</span>
+          <div class="facts">
+            <div class="fact"><span class="ic" style="background:#FCE9F1">♀</span><div><div class="k">Sesso</div><div class="v">Femmina</div></div></div>
+            <div class="fact"><span class="ic" style="background:var(--blueS)">🎂</span><div><div class="k">Età</div><div class="v">Circa 1 anno e mezzo</div></div></div>
+            <div class="fact"><span class="ic" style="background:#EFF1ED">🐕</span><div><div class="k">Razza · taglia</div><div class="v">Meticcia · Media</div></div></div>
+            <div class="fact"><span class="ic" style="background:#EFF1ED">⚖</span><div><div class="k">Peso</div><div class="v">Circa 22 kg</div></div></div>
+            <div class="fact"><span class="ic" style="background:var(--redS)">📍</span><div><div class="k">Arrivata da</div><div class="v">Corleto Perticara (PZ)</div></div></div>
+            <div class="fact"><span class="ic" style="background:var(--blueS)">🏠</span><div><div class="k">In rifugio da</div><div class="v">Giugno 2024</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tiles">
+        <div class="tile"><span class="ic" style="background:var(--blueS)">💉</span><div><div class="t">Sterilizzata</div><div class="s">15/03/2025</div></div></div>
+        <div class="tile"><span class="ic" style="background:var(--blueS)">✓</span><div><div class="t">Vaccinata</div><div class="s">richiamo 02/2026</div></div></div>
+        <div class="tile"><span class="ic" style="background:var(--greenS)">🛡</span><div><div class="t">Antiparassitario</div><div class="s">in regola</div></div></div>
+        <div class="tile"><span class="ic" style="background:var(--greenS)">🔬</span><div><div class="t">Leishmania</div><div class="s">negativa</div></div></div>
+      </div>
+      <div class="cols">
+        <div class="col">
+          <h4>Carattere</h4>
+          <div class="chips"><span class="chip">Dolce</span><span class="chip">Socievole</span><span class="chip">Equilibrata</span></div>
+          <div class="compat">
+            <div class="cr"><span>Con le persone</span><b class="ok">Molto socievole</b></div>
+            <div class="cr"><span>Con altri cani</span><b class="ok">Sì</b></div>
+            <div class="cr"><span>Con i gatti</span><b class="ok">Sì</b></div>
+            <div class="cr"><span>Con i bambini</span><b class="ok">Sì</b></div>
+          </div>
+          <div style="font-size:7px;color:var(--muted);margin-top:5px">Adatta a famiglia, ama le coccole e il contatto umano.</div>
+        </div>
+        <div class="col">
+          <h4>La sua storia</h4>
+          <div class="story">Fenice è una cagnolina meravigliosa, dolce, socievole e piena di vita. Dopo tutto quello che ha passato sta rinascendo e ora aspetta solo una famiglia che le dia l'amore che merita.<br><br>Recuperata a Corleto Perticara nel giugno 2024, era magra e spaventata: oggi pesa 22 chili, corre in area sgambamento e cerca il contatto con chiunque entri nel box. Ha paura dei motorini, che stiamo affrontando con pazienza.</div>
+        </div>
+      </div>
+      <div class="gal"><div></div><div style="background:linear-gradient(150deg,#b9a68d,#7b6a52)"></div><div style="background:linear-gradient(150deg,#6e7a68,#3b4238)"></div><div style="background:linear-gradient(150deg,#c8ab7d,#8a7550)"></div></div>
+      <div class="foot">
+        <div><div class="h">Vuoi conoscere Fenice?</div><div class="c">Amici per la Coda ODV · Sassari<br>📞 333 000 0000 · ✉ info@amiciperlacoda.it</div></div>
+        <div class="d">Scheda generata il 10/09/2026<br>i dati sanitari sono aggiornati a questa data</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="cap">Card per i social · JPEG 1080×1350 <span>· 4:5, il formato di Facebook e Instagram</span></div>
+    <div class="card">
+      <div class="photo">
+        <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&q=70" alt="">
+        <span class="badge">CERCA FAMIGLIA</span>
+        <span class="logo wm">Amici per la Coda</span>
+        <div class="name"><b>Fenice</b><span>Dolce, forte, speciale. In attesa della sua famiglia.</span></div>
+      </div>
+      <div class="body">
+        <div class="f4">
+          <div><div class="i">♀</div><div class="v">1 anno ½</div><div class="k">Femmina</div></div>
+          <div><div class="i">🐕</div><div class="v">Media</div><div class="k">22 kg</div></div>
+          <div><div class="i">💉</div><div class="v">Sì</div><div class="k">Sterilizzata</div></div>
+          <div><div class="i">✓</div><div class="v">In regola</div><div class="k">Vaccini</div></div>
+        </div>
+        <div class="ch"><span>Dolce</span><span>Socievole</span><span>Ok cani</span><span>Ok gatti</span><span>Ok bambini</span></div>
+        <div class="tx">Recuperata nel giugno 2024, oggi è una cagnolina piena di vita che cerca il contatto con chiunque. Aspetta solo una famiglia che le dia l'amore che merita.</div>
+        <div class="cta"><b>Vuoi conoscerla? Scrivici</b><span>📞 333 000 0000 · Sassari</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

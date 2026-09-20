@@ -25,6 +25,16 @@ AdoptionStato? nextAdoptionStato(AdoptionStato stato) {
 
 bool canAdvanceAdoption(AdoptionStato stato) => nextAdoptionStato(stato) != null;
 
+/// Richiesta ancora in corso per il cane (non chiusa, respinta o ritirata).
+Adoption? richiestaApertaDi(List<Adoption> requests) {
+  final open = requests.where((item) => canAdvanceAdoption(item.stato)).toList();
+  if (open.isEmpty) {
+    return null;
+  }
+  open.sort((a, b) => b.dataRichiesta.compareTo(a.dataRichiesta));
+  return open.first;
+}
+
 bool canRejectAdoption(AdoptionStato stato) {
   return stato != AdoptionStato.adottato &&
       stato != AdoptionStato.respinta &&

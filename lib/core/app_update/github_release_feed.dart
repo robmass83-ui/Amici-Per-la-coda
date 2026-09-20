@@ -4,6 +4,8 @@ import 'dart:io';
 import 'github_release.dart';
 import 'github_update_config.dart';
 
+/// Legge `/repos/{owner}/{repo}/releases/latest` e scarica l'APK ABI.
+/// L'app chiama questo all'avvio, in ripresa e da Altro → Aggiornamenti.
 class GithubReleaseFeed {
   GithubReleaseFeed({
     this._httpClient,

@@ -94,10 +94,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
+      expect(find.byKey(DogGalleryPage.heroKey), findsNothing);
+      expect(find.byKey(DogGalleryPage.addKey), findsNothing);
+      expect(find.text('Carica nuove foto'), findsOneWidget);
+      expect(find.byKey(DogGalleryPage.uploadKey), findsOneWidget);
+      expect(find.text('Imposta copertina'), findsNothing);
+
       await pickAPhoto(tester);
 
       expect(find.byKey(DogGalleryPage.limitKey), findsNothing);
+      expect(find.byKey(DogGalleryPage.heroKey), findsOneWidget);
+      expect(find.byKey(DogGalleryPage.addKey), findsOneWidget);
+      expect(find.text('Imposta copertina'), findsOneWidget);
       expect((await dogs.getById('fenice'))?.fotoCopertinaId, isNotNull);
+      expect((await dogs.getById('fenice'))?.fotoCount, 1);
 
       await tester.tap(find.byTooltip('Indietro'));
       await tester.pump();
@@ -108,10 +118,37 @@ void main() {
     },
   );
 
+  testWidgets(
+    'galleria vuota: niente hero con iniziale, solo Carica nuove foto',
+    (tester) async {
+      final dogs = InMemoryDogRepository(testListDogs());
+      final photos = InMemoryPhotoRepository(dogs: dogs);
+      await signInAndPump(
+        tester,
+        location: AppRoutes.dogFoto('fenice'),
+        dogs: dogs,
+        photos: photos,
+        settle: false,
+      );
+
+      expect(find.byType(DogGalleryPage), findsOneWidget);
+      expect(find.byKey(DogGalleryPage.heroKey), findsNothing);
+      expect(find.byKey(DogGalleryPage.addKey), findsNothing);
+      expect(find.text('Carica nuove foto'), findsOneWidget);
+      expect(find.byKey(DogGalleryPage.uploadKey), findsOneWidget);
+      expect(
+        find.text('Tocca per scattare o scegliere dalla galleria'),
+        findsOneWidget,
+      );
+      expect(find.text('Imposta copertina'), findsNothing);
+      expect(find.text('Usa per annuncio'), findsNothing);
+      expect(find.text('F'), findsNothing);
+    },
+  );
+
   testWidgets('alla 21ª foto compare il messaggio di limite', (tester) async {
     final dogs = InMemoryDogRepository(testListDogs());
     final photos = InMemoryPhotoRepository(dogs: dogs);
-    const thumb = tinyPngB64;
     final full = tinyPngBytes();
     for (var i = 0; i < photoMaxPerDog; i++) {
       photos.seed(
@@ -122,7 +159,7 @@ void main() {
           w: 1,
           h: 1,
           mime: 'image/png',
-          thumbB64: thumb,
+          thumb: tinyPngBytes(),
           bytesFull: full.lengthInBytes,
           createdAt: DateTime.utc(2026, 9, 8).subtract(Duration(minutes: i)),
           createdBy: 'uid-1',
@@ -156,7 +193,7 @@ void main() {
         w: 1,
         h: 1,
         mime: 'image/png',
-        thumbB64: tinyPngB64,
+        thumb: tinyPngBytes(),
         bytesFull: tinyPngBytes().lengthInBytes,
         createdAt: now,
         createdBy: 'uid-1',
@@ -171,8 +208,10 @@ void main() {
       photos: photos,
     );
 
-    expect(find.text('[PROVA] Fenice'), findsOneWidget);
+    expect(find.text('Fenice'), findsOneWidget);
     expect(photos.fullLoadCount, 0);
+    expect(photos.watchByDogCalls, 0);
+    expect(photos.watchCoversCalls, 1);
   });
 
   test('upload oltre 20 foto sul repository solleva PhotoLimitReached', () async {
@@ -188,7 +227,7 @@ void main() {
           w: 1,
           h: 1,
           mime: 'image/png',
-          thumbB64: tinyPngB64,
+          thumb: tinyPngBytes(),
           bytesFull: full.lengthInBytes,
           createdAt: now.subtract(Duration(minutes: i)),
           createdBy: 'uid-1',
@@ -247,7 +286,7 @@ void main() {
           w: 1,
           h: 1,
           mime: 'image/png',
-          thumbB64: tinyPngB64,
+          thumb: tinyPngBytes(),
           bytesFull: tinyPngBytes().lengthInBytes,
           createdAt: now,
           createdBy: 'uid-1',

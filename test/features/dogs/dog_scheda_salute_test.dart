@@ -70,6 +70,8 @@ void main() {
         find.byKey(AddTreatmentSheet.scadenzaKey),
         '11/09/2026',
       );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(AddTreatmentSheet.saveKey));
       await tester.tap(find.byKey(AddTreatmentSheet.saveKey));
       await tester.pumpAndSettle();
 
@@ -106,6 +108,8 @@ void main() {
     expect(find.text('Carattere e compatibilità'), findsOneWidget);
     expect(find.text('Stato adozione'), findsOneWidget);
     expect(find.text('Ultime attività sanitarie'), findsOneWidget);
+    expect(find.text('Patologie'), findsOneWidget);
+    expect(find.text('Nessuna'), findsOneWidget);
     expect(find.text('Spese sostenute'), findsOneWidget);
 
     await tester.fling(
@@ -131,6 +135,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Aggiungi trattamento'), findsOneWidget);
+    expect(find.text('Patologie'), findsOneWidget);
+    expect(find.text('Nessuna patologia.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

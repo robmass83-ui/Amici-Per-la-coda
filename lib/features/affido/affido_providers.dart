@@ -6,6 +6,7 @@ import '../../data/models/document_template.dart';
 import '../../data/models/volunteer.dart';
 import '../auth/auth_providers.dart';
 import '../dogs/dogs_providers.dart';
+import '../dogs/edit_permissions.dart';
 
 final templatesStreamProvider = StreamProvider<List<DocumentTemplate>>((
   ref,
@@ -24,25 +25,21 @@ final templatesStreamProvider = StreamProvider<List<DocumentTemplate>>((
 });
 
 final currentVolunteerProvider = Provider<Volunteer?>((ref) {
-  final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
-  if (uid == null) {
+  final user = ref.watch(signedInUserProvider);
+  if (user == null) {
     return null;
   }
-  return ref.watch(volunteersStreamProvider).maybeWhen(
-    data: (items) {
-      for (final item in items) {
-        if (item.id == uid) {
-          return item;
-        }
-      }
-      return null;
-    },
-    orElse: () => null,
-  );
+  return ref
+      .watch(volunteersStreamProvider)
+      .maybeWhen(
+        data: (items) =>
+            volunteerForAuth(items, uid: user.uid, email: user.email),
+        orElse: () => null,
+      );
 });
 
-final documentsByAdopterProvider =
-    StreamProvider.family<List<AppDocument>, String>((ref, adopterId) {
+final documentsByAdopterProvider = StreamProvider.autoDispose
+    .family<List<AppDocument>, String>((ref, adopterId) {
       final repo = ref.watch(documentRepositoryProvider);
       if (repo == null) {
         return Stream.value(const <AppDocument>[]);
@@ -50,8 +47,8 @@ final documentsByAdopterProvider =
       return repo.watchByAdopter(adopterId);
     });
 
-final documentsByAdoptionProvider =
-    StreamProvider.family<List<AppDocument>, String>((ref, adoptionId) {
+final documentsByAdoptionProvider = StreamProvider.autoDispose
+    .family<List<AppDocument>, String>((ref, adoptionId) {
       final repo = ref.watch(documentRepositoryProvider);
       if (repo == null) {
         return Stream.value(const <AppDocument>[]);

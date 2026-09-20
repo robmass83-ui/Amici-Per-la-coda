@@ -18,7 +18,7 @@ class InMemoryHealthRepository implements HealthRepository {
 
   @override
   Stream<List<HealthRecord>> watchAll() async* {
-    yield List<HealthRecord>.unmodifiable(_items);
+    yield List<HealthRecord>.from(_items);
     yield* _controller.stream;
   }
 
@@ -32,6 +32,12 @@ class InMemoryHealthRepository implements HealthRepository {
   Future<void> save(HealthRecord record) async {
     _items.removeWhere((item) => item.id == record.id);
     _items.add(record);
-    _controller.add(List<HealthRecord>.unmodifiable(_items));
+    _controller.add(List<HealthRecord>.from(_items));
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    _items.removeWhere((item) => item.id == id);
+    _controller.add(List<HealthRecord>.from(_items));
   }
 }

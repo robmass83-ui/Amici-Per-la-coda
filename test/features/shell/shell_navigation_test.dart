@@ -1,6 +1,6 @@
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/features/affido/affido_page.dart';
-import 'package:amici_per_la_coda/features/calendar/calendar_placeholder_page.dart';
+import 'package:amici_per_la_coda/features/calendar/calendar_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dog_detail_page.dart';
@@ -47,11 +47,8 @@ void main() {
 
     await tester.tap(find.text('Calendario'));
     await tester.pumpAndSettle();
-    expect(find.byType(CalendarPlaceholderPage), findsOneWidget);
-    expect(
-      find.text('Il calendario arriva negli step successivi.'),
-      findsOneWidget,
-    );
+    expect(find.byType(CalendarPage), findsOneWidget);
+    expect(find.text('Prossimi giorni'), findsOneWidget);
 
     await tester.tap(find.text('Altro'));
     await tester.pumpAndSettle();
@@ -183,7 +180,7 @@ void main() {
 
     await tester.tap(find.text('Calendario'));
     await tester.pumpAndSettle();
-    expect(find.byType(CalendarPlaceholderPage), findsOneWidget);
+    expect(find.byType(CalendarPage), findsOneWidget);
 
     expect(await tapSystemBack(tester), isTrue);
     expect(find.byType(DogsPage), findsOneWidget);
@@ -205,7 +202,7 @@ void main() {
 
     await tester.tap(find.text('Animali'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('[PROVA] Fenice'));
+    await tester.tap(find.text('Fenice'));
     await tester.pumpAndSettle();
     expect(find.byType(DogDetailPage), findsOneWidget);
 

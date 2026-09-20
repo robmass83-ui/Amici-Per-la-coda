@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/firestore_codec.dart';
 import '../../data/data_providers.dart';
 import '../../data/models/adoption.dart';
 import '../../data/models/app_document.dart';
@@ -17,6 +16,7 @@ import '../auth/auth_providers.dart';
 import '../dashboard/home_aggregators.dart';
 import '../dogs/dog_labels.dart';
 import '../dogs/dogs_providers.dart';
+import '../dogs/edit_permissions.dart';
 import '../dogs/tab_labels.dart';
 import 'adoption_flow.dart';
 import 'adoption_labels.dart';
@@ -61,6 +61,8 @@ class AdoptionDetailPage extends ConsumerStatefulWidget {
   static const noteKey = Key('richiesta-q-note');
   static const bannerKey = Key('richiesta-modulo-inviato');
   static const inviaModuloKey = Key('richiesta-invia-modulo');
+  static const chiamaKey = Key('richiesta-chiama');
+  static const emailKey = Key('richiesta-email');
 
   @override
   ConsumerState<AdoptionDetailPage> createState() =>
@@ -98,6 +100,41 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
       return;
     }
     AppToast.show(context, '$label copiato.');
+  }
+
+  Future<void> _openTel(String value) async {
+    final phone = value.trim();
+    if (phone.isEmpty) {
+      AppToast.show(context, 'Telefono non disponibile.');
+      return;
+    }
+    final ok = await ref.read(appLinkOpenerProvider).open(
+      Uri(scheme: 'tel', path: phone),
+    );
+    if (!ok && mounted) {
+      AppToast.show(context, 'Impossibile aprire il telefono.');
+    }
+  }
+
+  Future<void> _openMail(String value, String? dogName) async {
+    final email = value.trim();
+    if (email.isEmpty) {
+      AppToast.show(context, 'Email non disponibile.');
+      return;
+    }
+    final subject = dogName == null || dogName.isEmpty
+        ? 'Adozione'
+        : 'Adozione di $dogName';
+    final ok = await ref.read(appLinkOpenerProvider).open(
+      Uri(
+        scheme: 'mailto',
+        path: email,
+        queryParameters: {'subject': subject},
+      ),
+    );
+    if (!ok && mounted) {
+      AppToast.show(context, 'Impossibile aprire l\'email.');
+    }
   }
 
   Future<bool> _confirm(String title, String message) async {
@@ -231,21 +268,7 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
   }
 
   Future<void> _editQuestionario(Adoption adoption) async {
-    await AppSheet.present<void>(
-      context: context,
-      builder: (sheetContext) {
-        return SingleChildScrollView(
-          child: _QuestionarioSheet(
-            adoption: adoption,
-            onSaved: () {
-              if (mounted) {
-                AppToast.show(context, 'Questionario salvato.');
-              }
-            },
-          ),
-        );
-      },
-    );
+    await context.push(AppRoutes.modificaRichiesta(adoption.id));
   }
 
   @override
@@ -280,6 +303,7 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
       ),
       data: (items) {
         final adoption = _adoptionOf(items);
+        final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
         if (adoption == null) {
           return AppScaffold(
             title: 'Richiesta',
@@ -312,22 +336,35 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
               Row(
                 children: [
                   Expanded(
-                    child: AppButton(
-                      label: 'Chiama',
-                      variant: AppButtonVariant.ghost,
-                      onPressed: () => _copy(
+                    child: GestureDetector(
+                      onLongPress: () => _copy(
                         'Telefono',
                         adoption.richiedente.telefono,
+                      ),
+                      child: AppButton(
+                        key: AdoptionDetailPage.chiamaKey,
+                        label: 'Chiama',
+                        variant: AppButtonVariant.ghost,
+                        onPressed: () => _openTel(
+                          adoption.richiedente.telefono,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: AppDim.gapM),
                   Expanded(
-                    child: AppButton(
-                      label: 'Email',
-                      variant: AppButtonVariant.grey,
-                      onPressed: () =>
+                    child: GestureDetector(
+                      onLongPress: () =>
                           _copy('Email', adoption.richiedente.email),
+                      child: AppButton(
+                        key: AdoptionDetailPage.emailKey,
+                        label: 'Email',
+                        variant: AppButtonVariant.grey,
+                        onPressed: () => _openMail(
+                          adoption.richiedente.email,
+                          dog == null ? null : dogDisplayName(dog.nome),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -354,7 +391,9 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
                   size: IconBadge.inTitle,
                 ),
                 seeAllLabel: 'Modifica ›',
-                onSeeAll: _busy ? null : () => _editQuestionario(adoption),
+                onSeeAll: !canWrite || _busy
+                    ? null
+                    : () => _editQuestionario(adoption),
               ),
               const SizedBox(height: AppDim.gapM),
               _QuestionarioCard(questionario: adoption.questionario),
@@ -382,10 +421,15 @@ class _AdoptionDetailPageState extends ConsumerState<AdoptionDetailPage> {
                 icon: IconBadge(AppIcons.documenti, size: IconBadge.inTitle),
               ),
               const SizedBox(height: AppDim.gapM),
-              _DocumentiCard(adoption: adoption, documents: docs),
+              _DocumentiCard(
+                adoption: adoption,
+                documents: docs,
+                canWrite: canWrite,
+              ),
               const SizedBox(height: AppDim.gapL),
-              if (canRejectAdoption(adoption.stato) ||
-                  canAdvanceAdoption(adoption.stato))
+              if (canWrite &&
+                  (canRejectAdoption(adoption.stato) ||
+                      canAdvanceAdoption(adoption.stato)))
                 Row(
                   children: [
                     if (canRejectAdoption(adoption.stato))
@@ -508,7 +552,11 @@ class _DogCard extends StatelessWidget {
       );
     }
     return AppCard(
-      onTap: () => context.push(AppRoutes.dog(dog!.id)),
+      onTap: () => AppRoutes.openDog(
+        context,
+        dog!.id,
+        from: GoRouterState.of(context).uri.path,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -547,7 +595,7 @@ class _DogCard extends StatelessWidget {
                       label: dogStatoLabel(dog!.stato),
                       variant: dogStatoBadge(dog!.stato),
                     ),
-                    if (dog!.adottabile)
+                    if (dog!.adottabile == true)
                       const MiniBadge(
                         label: 'Adottabile',
                         variant: MiniBadgeVariant.red,
@@ -623,10 +671,12 @@ class _DocumentiCard extends StatelessWidget {
   const _DocumentiCard({
     required this.adoption,
     required this.documents,
+    required this.canWrite,
   });
 
   final Adoption adoption;
   final List<AppDocument> documents;
+  final bool canWrite;
 
   @override
   Widget build(BuildContext context) {
@@ -643,18 +693,19 @@ class _DocumentiCard extends StatelessWidget {
     return AppCard(
       child: Column(
         children: [
-          OptionRow(
-            key: AdoptionDetailPage.inviaModuloKey,
-            icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
-            title: 'Invia modulo',
-            subtitle: 'Preaffido o adozione in bianco',
-            onTap: () => context.push(
-              AppRoutes.affidoPer(
-                adoptionId: adoption.id,
-                dogId: adoption.dogId,
+          if (canWrite)
+            OptionRow(
+              key: AdoptionDetailPage.inviaModuloKey,
+              icon: const IconBadge(AppIcons.modulo, size: IconBadge.inMenu),
+              title: 'Invia modulo',
+              subtitle: 'Preaffido o adozione in bianco',
+              onTap: () => context.push(
+                AppRoutes.affidoPer(
+                  adoptionId: adoption.id,
+                  dogId: adoption.dogId,
+                ),
               ),
             ),
-          ),
           if (received.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: AppDim.gapS),
@@ -684,178 +735,6 @@ class _DocumentiCard extends StatelessWidget {
               ),
         ],
       ),
-    );
-  }
-}
-
-class _QuestionarioSheet extends ConsumerStatefulWidget {
-  const _QuestionarioSheet({
-    required this.adoption,
-    required this.onSaved,
-  });
-
-  final Adoption adoption;
-  final VoidCallback onSaved;
-
-  @override
-  ConsumerState<_QuestionarioSheet> createState() => _QuestionarioSheetState();
-}
-
-class _QuestionarioSheetState extends ConsumerState<_QuestionarioSheet> {
-  late final TextEditingController _abitazione;
-  late final TextEditingController _recinzione;
-  late final TextEditingController _animali;
-  late final TextEditingController _bambini;
-  late final TextEditingController _ore;
-  late final TextEditingController _esperienza;
-  late final TextEditingController _dorme;
-  late final TextEditingController _note;
-  late bool _giardino;
-
-  @override
-  void initState() {
-    super.initState();
-    final q = widget.adoption.questionario;
-    _abitazione = TextEditingController(text: q.abitazione);
-    _recinzione = TextEditingController(text: q.altezzaRecinzione);
-    _animali = TextEditingController(text: q.altriAnimali);
-    _bambini = TextEditingController(text: q.bambini);
-    _ore = TextEditingController(text: q.oreDaSolo);
-    _esperienza = TextEditingController(text: q.esperienzaCani);
-    _dorme = TextEditingController(text: q.doveDormira);
-    _note = TextEditingController(text: q.note);
-    _giardino = q.giardinoRecintato;
-  }
-
-  @override
-  void dispose() {
-    _abitazione.dispose();
-    _recinzione.dispose();
-    _animali.dispose();
-    _bambini.dispose();
-    _ore.dispose();
-    _esperienza.dispose();
-    _dorme.dispose();
-    _note.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final repo = ref.read(adoptionRepositoryProvider);
-    if (repo == null) {
-      return;
-    }
-    final now = ref.read(dogListNowProvider);
-    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
-    final adoption = widget.adoption;
-    await repo.save(
-      adoption.withQuestionario(
-        Questionario(
-          abitazione: _abitazione.text.trim(),
-          giardinoRecintato: _giardino,
-          altezzaRecinzione: _recinzione.text.trim(),
-          altriAnimali: _animali.text.trim(),
-          bambini: _bambini.text.trim(),
-          oreDaSolo: _ore.text.trim(),
-          esperienzaCani: _esperienza.text.trim(),
-          doveDormira: _dorme.text.trim(),
-          note: _note.text.trim(),
-        ),
-        audit: Audit(
-          createdAt: adoption.audit.createdAt,
-          createdBy: adoption.audit.createdBy,
-          updatedAt: now,
-          updatedBy: uid,
-        ),
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
-    widget.onSaved();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSheet(
-      title: 'Questionario',
-      children: [
-        AppTextField(
-          key: AdoptionDetailPage.abitazioneKey,
-          label: 'Abitazione',
-          controller: _abitazione,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        const Text(
-          'Giardino recintato',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: AppText.label,
-            color: AppColor.muted,
-            height: AppDim.lineH,
-          ),
-        ),
-        const SizedBox(height: AppDim.gapXs),
-        AppSegmented(
-          key: AdoptionDetailPage.giardinoKey,
-          values: const ['No', 'Sì'],
-          selectedIndex: _giardino ? 1 : 0,
-          onChanged: (index) => setState(() => _giardino = index == 1),
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.recinzioneKey,
-          label: 'Altezza recinzione',
-          controller: _recinzione,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.animaliKey,
-          label: 'Altri animali',
-          controller: _animali,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.bambiniKey,
-          label: 'Bambini in casa',
-          controller: _bambini,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.oreKey,
-          label: 'Ore da solo',
-          controller: _ore,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.esperienzaKey,
-          label: 'Esperienza cani',
-          controller: _esperienza,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.dormeKey,
-          label: 'Dove dormirà',
-          controller: _dorme,
-        ),
-        const SizedBox(height: AppDim.gapM),
-        AppTextField(
-          key: AdoptionDetailPage.noteKey,
-          label: 'Note',
-          controller: _note,
-          fieldHeight: AppDim.statoNoteH,
-          maxLines: 3,
-        ),
-        const SizedBox(height: AppDim.gapL),
-        AppButton(
-          key: AdoptionDetailPage.saveQuestionarioKey,
-          label: 'Salva questionario',
-          onPressed: _save,
-        ),
-      ],
     );
   }
 }

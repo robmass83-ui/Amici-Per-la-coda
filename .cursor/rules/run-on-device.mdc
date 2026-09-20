@@ -1,14 +1,25 @@
 ---
-description: Reinstall and show the Android app after every UI/code change
+description: After app changes that need testing, publish one signed release APK to GitHub and ADB-install the same build if a phone is connected
 alwaysApply: true
 ---
 
-# Mostrare l'app dopo ogni modifica
+# Consegna delle build di test
 
-Dopo ogni modifica all'app (UI, risorse, icone, codice), **reinstalla e avvia** su un dispositivo/emulatore Android collegato, così l'utente vede il risultato.
+Quando una modifica all'app (UI, risorse, icone, codice Dart/Android) è pronta da testare sul telefono, **non** usare `flutter run` né una build debug.
 
-- Usa `C:\Users\masal\flutter\bin\flutter.bat` e l'SDK in `C:\Users\masal\AppData\Local\Android\sdk`.
-- Se serve l'icona launcher o un'installazione pulita: `adb uninstall it.amiciperlacoda.amici_per_la_coda` poi `flutter run`.
-- Altrimenti `flutter run` (hot restart se è già in esecuzione e il cambio è solo Dart).
-- Non chiedere conferma: lancia l'app e lascia il processo in esecuzione.
-- **Eccezione:** se l'utente chiede solo git/GitHub (commit, push, PR), non reinstallare e non avviare l'app.
+Esegui, senza chiedere conferma:
+
+```
+powershell -File tool/publish_test_release.ps1
+```
+
+PC e GitHub devono avere **lo stesso file** (stesso `versionCode` e stesso SHA-256), non due APK con lo stesso numero.
+
+- Se `pubspec` è già uguale alla GitHub Release Latest: **non incrementare**. ADB installa gli APK di quella release (hash verificato). Collegare il telefono non crea una versione nuova.
+- Se pubspec o GitHub è più indietro: un solo `versionCode` nuovo = `max(pubspec, Latest) + 1`, un solo build, upload, poi ADB di **quei** file dopo che GitHub ha lo stesso SHA-256.
+
+Non lanciare `.github/workflows/release-apk.yml` (né `flutter run`) per la stessa modifica: CI su `main` ricostruirebbe un altro binario. Non disinstallare prima: `adb install -r` tiene i dati.
+
+**Perché non `flutter run`:** il debug ha un `versionCode` più basso; Android rifiuta un APK uguale/più vecchio e l'in-app updater (GitHub Releases API all'avvio/ripresa) mostrerebbe "Nuova versione". A parità di `versionCode` il foglio non compare: il telefono ADB è già allineato; gli altri volontari vedono la notifica e installano dall'app.
+
+**Eccezioni (non pubblicare):** richiesta solo git/GitHub (commit, push, PR); solo docs/regole/test che non cambiano il binario; modifica ancora a metà.

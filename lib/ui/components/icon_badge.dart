@@ -10,8 +10,9 @@ class IconBadge extends StatelessWidget {
   final AppIconSpec spec;
   final double size;
 
-  /// Misure ammesse: 20 (dentro i titoli), 27 (righe informative),
+  /// Misure ammesse: 16 (notifiche), 20 (dentro i titoli), 27 (righe informative),
   /// 30 (stat card), 32 (righe di menu), 34 (avatar dei volontari).
+  static const inNotice = 16.0;
   static const inTitle = 20.0;
   static const inRow   = 27.0;
   static const inStat  = 30.0;

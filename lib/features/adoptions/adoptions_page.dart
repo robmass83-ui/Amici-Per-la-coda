@@ -8,6 +8,8 @@ import '../../router.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import '../dashboard/home_aggregators.dart';
+import '../affido/affido_providers.dart';
+import '../dogs/edit_permissions.dart';
 import '../dogs/dogs_providers.dart';
 import 'adoption_filters.dart';
 import 'adoption_labels.dart';
@@ -50,6 +52,20 @@ class AdoptionsPage extends ConsumerStatefulWidget {
 
 class _AdoptionsPageState extends ConsumerState<AdoptionsPage> {
   var _filter = AdoptionQuickFilter.tutte;
+  String? _appliedQuery;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final raw = GoRouterState.of(context).uri.queryParameters['filtro'];
+    if (raw == _appliedQuery) {
+      return;
+    }
+    _appliedQuery = raw;
+    if (raw == 'concluse' && _filter != AdoptionQuickFilter.concluse) {
+      setState(() => _filter = AdoptionQuickFilter.concluse);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +104,7 @@ class _AdoptionsPageState extends ConsumerState<AdoptionsPage> {
         .watch(dogsStreamProvider)
         .maybeWhen(data: (items) => items, orElse: () => const <Dog>[]);
     final filtered = filterAdoptions(adoptions, _filter);
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -137,24 +154,26 @@ class _AdoptionsPageState extends ConsumerState<AdoptionsPage> {
                     ),
                     Padding(
                       padding: AppDim.pagePad,
-                      child: AppButton(
-                        key: AdoptionsPage.nuovaKey,
-                        label: 'Registra richiesta',
-                        variant: AppButtonVariant.ghost,
-                        onPressed: () =>
-                            context.push(AppRoutes.nuovaRichiesta),
-                      ),
+                      child: canWrite
+                          ? AppButton(
+                              key: AdoptionsPage.nuovaKey,
+                              label: 'Registra richiesta',
+                              variant: AppButtonVariant.ghost,
+                              onPressed: () =>
+                                  context.push(AppRoutes.nuovaRichiesta),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                   ],
                 )
               : ListView.separated(
                   key: AdoptionsPage.listKey,
                   padding: AppDim.pagePad,
-                  itemCount: filtered.length + 1,
+                  itemCount: filtered.length + (canWrite ? 1 : 0),
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: AppDim.gapM),
                   itemBuilder: (context, index) {
-                    if (index == filtered.length) {
+                    if (canWrite && index == filtered.length) {
                       return AppButton(
                         key: AdoptionsPage.nuovaKey,
                         label: 'Registra richiesta',

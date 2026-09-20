@@ -17,6 +17,12 @@ class InMemoryDocumentRepository implements DocumentRepository {
   List<AppDocument> get items => List.unmodifiable(_items);
 
   @override
+  Stream<List<AppDocument>> watchAll() async* {
+    yield List<AppDocument>.unmodifiable(_items);
+    yield* _controller.stream;
+  }
+
+  @override
   Stream<List<AppDocument>> watchByDog(String dogId) async* {
     yield _ofDog(dogId);
     yield* _controller.stream.map((_) => _ofDog(dogId));
@@ -54,6 +60,7 @@ class InMemoryDocumentRepository implements DocumentRepository {
 
   @override
   Future<void> save(AppDocument document) async {
+    ensureDocumentHasContent(document);
     _items.removeWhere((item) => item.id == document.id);
     _items.add(document);
     _emit();
@@ -61,6 +68,11 @@ class InMemoryDocumentRepository implements DocumentRepository {
 
   @override
   Future<AppDocument> saveBytes(AppDocument document, Uint8List bytes) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError(
+        'Un documento deve avere un file: contenutoB64 e chunkCount non possono essere entrambi vuoti.',
+      );
+    }
     ensureDocumentSizeAllowed(bytes.lengthInBytes);
     final count = documentChunkCount(bytes.lengthInBytes);
     final saved = document.copyWith(

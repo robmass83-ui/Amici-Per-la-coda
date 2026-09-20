@@ -46,4 +46,24 @@ class Expense {
       ...audit.toMap(),
     };
   }
+
+  Expense copyWith({
+    ExpenseCategoria? categoria,
+    double? importo,
+    DateTime? data,
+    String? descrizione,
+    String? fornitore,
+    Audit? audit,
+  }) {
+    return Expense(
+      id: id,
+      dogId: dogId,
+      categoria: categoria ?? this.categoria,
+      importo: importo ?? this.importo,
+      data: data ?? this.data,
+      descrizione: descrizione ?? this.descrizione,
+      fornitore: fornitore ?? this.fornitore,
+      audit: audit ?? this.audit,
+    );
+  }
 }

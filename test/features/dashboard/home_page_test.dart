@@ -3,9 +3,11 @@ import 'package:amici_per_la_coda/data/models/appointment.dart';
 import 'package:amici_per_la_coda/data/models/dog.dart';
 import 'package:amici_per_la_coda/data/models/health_record.dart';
 import 'package:amici_per_la_coda/data/models/shelter_box.dart';
+import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/features/affido/affido_page.dart';
+import 'package:amici_per_la_coda/features/boxes/boxes_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
-import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
+import 'package:amici_per_la_coda/features/stats/stats_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dogs_page.dart';
 import 'package:amici_per_la_coda/features/dogs/new_dog/new_dog_wizard_page.dart';
 import 'package:amici_per_la_coda/ui/components.dart';
@@ -20,6 +22,8 @@ import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_box_repository.dart';
 import '../../helpers/fake_dog_repository.dart';
 import '../../helpers/fake_health_repository.dart';
+import '../../helpers/fake_settings_repository.dart';
+import '../../helpers/fake_volunteer_repository.dart';
 import '../../helpers/pump_app.dart';
 
 void main() {
@@ -42,6 +46,7 @@ void main() {
     List<Adoption>? adoptions,
     List<HealthRecord>? health,
     List<Appointment>? appointments,
+    SettingsRepository? settings,
     bool offline = false,
   }) async {
     final auth = FakeAuthRepository();
@@ -58,6 +63,7 @@ void main() {
       adoptions: InMemoryAdoptionRepository(adoptions ?? const []),
       health: InMemoryHealthRepository(health ?? const []),
       appointments: InMemoryAppointmentRepository(appointments ?? const []),
+      settings: settings,
       dogListNow: now,
       offline: offline,
     );
@@ -125,6 +131,109 @@ void main() {
     expect(find.text('0 nuove ›'), findsOneWidget);
   });
 
+  testWidgets('login Giovanna mostra Ciao Giovanna', (tester) async {
+    final auth = FakeAuthRepository();
+    await auth.signIn(
+      email: 'giovanna@amiciperlacoda.it',
+      password: 'corretta',
+    );
+    await pumpApp(
+      tester,
+      auth: auth,
+      volunteers: InMemoryVolunteerRepository([
+        testVolunteer(id: 'seed_giovanna'),
+        testVolunteer(
+          id: 'seed_roberto',
+          nome: 'Roberto',
+          email: 'roberto@amiciperlacoda.it',
+        ),
+      ]),
+      dogs: InMemoryDogRepository(testListDogs()),
+      boxes: InMemoryBoxRepository([testBox(id: 'cap', capienza: 54)]),
+      adoptions: InMemoryAdoptionRepository(const []),
+      health: InMemoryHealthRepository(const []),
+      appointments: InMemoryAppointmentRepository(const []),
+      dogListNow: now,
+    );
+    expect(find.byKey(HomePage.accountDisabledKey), findsNothing);
+    expect(find.text('Ciao Giovanna 👋'), findsOneWidget);
+  });
+
+  testWidgets('login Roberto mostra Ciao Roberto, non Giovanna', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository(
+      validEmail: 'robmass83@gmail.com',
+      uid: 'uid-roberto',
+    );
+    await auth.signIn(
+      email: 'robmass83@gmail.com',
+      password: 'corretta',
+    );
+    await pumpApp(
+      tester,
+      auth: auth,
+      volunteers: InMemoryVolunteerRepository([
+        testVolunteer(
+          id: 'uid-giovanna',
+          email: 'giovannacacciuto@hotmail.it',
+        ),
+        testVolunteer(
+          id: 'uid-roberto',
+          nome: 'Roberto',
+          email: 'robmass83@gmail.com',
+        ),
+      ]),
+      dogs: InMemoryDogRepository(testListDogs()),
+      boxes: InMemoryBoxRepository([testBox(id: 'cap', capienza: 54)]),
+      adoptions: InMemoryAdoptionRepository(const []),
+      health: InMemoryHealthRepository(const []),
+      appointments: InMemoryAppointmentRepository(const []),
+      dogListNow: now,
+    );
+    expect(find.byKey(HomePage.accountDisabledKey), findsNothing);
+    expect(find.text('Ciao Roberto 👋'), findsOneWidget);
+    expect(find.text('Ciao Giovanna 👋'), findsNothing);
+  });
+
+  testWidgets('UID incrociati: login Roberto non saluta Giovanna', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository(
+      validEmail: 'robmass83@gmail.com',
+      uid: 'uid-roberto',
+    );
+    await auth.signIn(
+      email: 'robmass83@gmail.com',
+      password: 'corretta',
+    );
+    await pumpApp(
+      tester,
+      auth: auth,
+      volunteers: InMemoryVolunteerRepository([
+        testVolunteer(
+          id: 'uid-roberto',
+          nome: 'Giovanna',
+          email: 'giovannacacciuto@hotmail.it',
+        ),
+        testVolunteer(
+          id: 'uid-giovanna',
+          nome: 'Roberto',
+          email: 'robmass83@gmail.com',
+        ),
+      ]),
+      dogs: InMemoryDogRepository(testListDogs()),
+      boxes: InMemoryBoxRepository([testBox(id: 'cap', capienza: 54)]),
+      adoptions: InMemoryAdoptionRepository(const []),
+      health: InMemoryHealthRepository(const []),
+      appointments: InMemoryAppointmentRepository(const []),
+      dogListNow: now,
+    );
+    expect(find.byKey(HomePage.accountDisabledKey), findsNothing);
+    expect(find.text('Ciao Roberto 👋'), findsOneWidget);
+    expect(find.text('Ciao Giovanna 👋'), findsNothing);
+  });
+
   testWidgets('un solo cane in Ultimi arrivi non deforma la card', (
     tester,
   ) async {
@@ -154,17 +263,6 @@ void main() {
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
 
-    Future<void> tapShortcut(Key key, String title) async {
-      await revealShortcuts(tester);
-      await tester.tap(find.byKey(key));
-      await tester.pumpAndSettle();
-      expect(find.byType(PlaceholderFeaturePage), findsOneWidget);
-      expect(find.text(title), findsWidgets);
-      await tester.tap(find.byTooltip('Indietro'));
-      await tester.pumpAndSettle();
-      expect(find.byType(HomePage), findsOneWidget);
-    }
-
     await revealShortcuts(tester);
     await tester.tap(find.byKey(HomePage.shortcutNuovoKey));
     await tester.pumpAndSettle();
@@ -183,8 +281,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
 
-    await tapShortcut(HomePage.shortcutBoxKey, 'Box e settori');
-    await tapShortcut(HomePage.shortcutStatsKey, 'Statistiche');
+    await revealShortcuts(tester);
+    await tester.tap(find.byKey(HomePage.shortcutBoxKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(BoxesPage), findsOneWidget);
+    expect(find.text('Box e settori'), findsWidgets);
+    await tester.tap(find.byTooltip('Indietro'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomePage), findsOneWidget);
+
+    await revealShortcuts(tester);
+    await tester.tap(find.byKey(HomePage.shortcutStatsKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(StatsPage), findsOneWidget);
+    expect(find.text('Statistiche'), findsWidgets);
+    await tester.tap(find.byTooltip('Indietro'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomePage), findsOneWidget);
   });
 
   testWidgets('database vuoto mostra EmptyState e il pulsante del primo cane', (
@@ -216,5 +329,20 @@ void main() {
 
     expect(find.text('posti non configurati'), findsOneWidget);
     expect(find.textContaining('% dei'), findsNothing);
+  });
+
+  testWidgets('con boxes vuota i posti totali usano la capienza autorizzata', (
+    tester,
+  ) async {
+    await pumpHome(
+      tester,
+      boxes: const [],
+      settings: InMemorySettingsRepository(
+        testAssociationSettings(capienzaAutorizzata: 54),
+      ),
+    );
+
+    expect(find.textContaining('capienza autorizzata'), findsOneWidget);
+    expect(find.text('posti non configurati'), findsNothing);
   });
 }

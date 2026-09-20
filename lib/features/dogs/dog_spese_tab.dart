@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format_it.dart';
+import '../../data/data_providers.dart';
 import '../../data/models/dog.dart';
 import '../../data/models/expense.dart';
 import '../../data/models/sponsorship.dart';
+import '../affido/affido_providers.dart';
+import '../auth/auth_providers.dart';
 import '../../ui/components.dart';
 import '../../ui/tokens.dart';
 import 'add_expense_sheet.dart';
+import 'add_sponsorship_sheet.dart';
 import 'dogs_providers.dart';
+import 'edit_permissions.dart';
 import 'health_labels.dart';
+import 'record_actions.dart';
 
 // ── CONTRATTO DI LAYOUT · Tab Spese ────────────────────────────────────────
 // Padding 12/9  Column stretch
@@ -28,13 +34,15 @@ import 'health_labels.dart';
 // │  altrimenti:
 // │    Text 10.5sp  «Attiva un'adozione a distanza»  maxLines=2
 // ├ SizedBox 9
-// └ AppButton ghost  Registra spesa  h=40
+// └ se canWrite: AppButton ghost  Registra spesa  h=40
+//                 AppButton ghost  Adozione a distanza  h=40
 // ───────────────────────────────────────────────────────────────────────────
 
 class DogSpeseTab extends ConsumerWidget {
   const DogSpeseTab({super.key, required this.dog});
 
   static const addKey = Key('dog-add-expense');
+  static const addSponsorshipKey = Key('dog-add-sponsorship');
   static const totaleKey = Key('dog-spese-totale');
   static const sponsorshipKey = Key('dog-adozione-distanza');
   static const sponsorshipEmptyKey = Key('dog-adozione-distanza-vuoto');
@@ -43,6 +51,7 @@ class DogSpeseTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canWrite = canWriteRecords(ref.watch(currentVolunteerProvider));
     final now = ref.watch(dogListNowProvider);
     final expenses = ref
         .watch(expensesByDogProvider(dog.id))
@@ -172,7 +181,16 @@ class DogSpeseTab extends ConsumerWidget {
               else
                 for (var i = 0; i < sorted.length; i++) ...[
                   if (i > 0) const SizedBox(height: AppDim.gapS),
-                  _MovimentoRow(expense: sorted[i]),
+                  _MovimentoRow(
+                    expense: sorted[i],
+                    canWrite: canWrite,
+                    onEdit: () => AddExpenseSheet.open(
+                      context,
+                      dogId: dog.id,
+                      existing: sorted[i],
+                    ),
+                    onDelete: () => _deleteExpense(context, ref, sorted[i]),
+                  ),
                 ],
             ],
           ),
@@ -218,16 +236,41 @@ class DogSpeseTab extends ConsumerWidget {
                   valueColor: AppColor.green,
                 ),
               ],
+              if (sponsorships.isNotEmpty) ...[
+                const SizedBox(height: AppDim.gapM),
+                for (final item in sponsorships)
+                  _SponsorshipRow(
+                    sponsorship: item,
+                    canWrite: canWrite,
+                    onEdit: () => AddSponsorshipSheet.open(
+                      context,
+                      dogId: dog.id,
+                      existing: item,
+                    ),
+                    onClose: item.attiva
+                        ? () => _closeSponsorship(context, ref, item)
+                        : null,
+                  ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: AppDim.gapM),
-        AppButton(
-          key: addKey,
-          label: 'Registra spesa',
-          variant: AppButtonVariant.ghost,
-          onPressed: () => AddExpenseSheet.open(context, dogId: dog.id),
-        ),
+        if (canWrite) ...[
+          const SizedBox(height: AppDim.gapM),
+          AppButton(
+            key: addKey,
+            label: 'Registra spesa',
+            variant: AppButtonVariant.ghost,
+            onPressed: () => AddExpenseSheet.open(context, dogId: dog.id),
+          ),
+          const SizedBox(height: AppDim.gapM),
+          AppButton(
+            key: addSponsorshipKey,
+            label: 'Adozione a distanza',
+            variant: AppButtonVariant.ghost,
+            onPressed: () => AddSponsorshipSheet.open(context, dogId: dog.id),
+          ),
+        ],
       ],
     );
   }
@@ -287,9 +330,17 @@ class _PercentBar extends StatelessWidget {
 }
 
 class _MovimentoRow extends StatelessWidget {
-  const _MovimentoRow({required this.expense});
+  const _MovimentoRow({
+    required this.expense,
+    required this.canWrite,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Expense expense;
+  final bool canWrite;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -297,38 +348,163 @@ class _MovimentoRow extends StatelessWidget {
         ? expenseCategoriaLabel(expense.categoria)
         : expense.descrizione;
     final extra = expense.fornitore.isEmpty ? '' : ' · ${expense.fornitore}';
-    return Row(
-      children: [
-        IconBadge(AppIcons.perSpesa(expense.categoria.wire)),
-        const SizedBox(width: AppDim.gapS),
-        Expanded(
-          child: Text(
-            '$label$extra',
+    return GestureDetector(
+      onLongPress: canWrite
+          ? () => openRecordActions(
+              context,
+              onEdit: onEdit,
+              onDelete: onDelete,
+            )
+          : null,
+      child: Row(
+        children: [
+          IconBadge(AppIcons.perSpesa(expense.categoria.wire)),
+          const SizedBox(width: AppDim.gapS),
+          Expanded(
+            child: Text(
+              '$label$extra',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: AppText.value,
+                fontWeight: FontWeight.w600,
+                color: AppColor.ink,
+                height: AppDim.lineH,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDim.gapS),
+          Text(
+            formatEuro(expense.importo),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Roboto',
-              fontSize: AppText.value,
-              fontWeight: FontWeight.w600,
+              fontSize: AppText.caption,
+              fontWeight: FontWeight.w700,
               color: AppColor.ink,
               height: AppDim.lineH,
             ),
           ),
-        ),
-        const SizedBox(width: AppDim.gapS),
-        Text(
-          formatEuro(expense.importo),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: AppText.caption,
-            fontWeight: FontWeight.w700,
-            color: AppColor.ink,
-            height: AppDim.lineH,
+          RecordMenuButton(
+            id: expense.id,
+            canEdit: canWrite,
+            onEdit: onEdit,
+            onDelete: onDelete,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+class _SponsorshipRow extends StatelessWidget {
+  const _SponsorshipRow({
+    required this.sponsorship,
+    required this.canWrite,
+    required this.onEdit,
+    this.onClose,
+  });
+
+  final Sponsorship sponsorship;
+  final bool canWrite;
+  final VoidCallback onEdit;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final nome =
+        '${sponsorship.sostenitore.nome} ${sponsorship.sostenitore.cognome}'
+            .trim();
+    return GestureDetector(
+      onLongPress: canWrite
+          ? () => openRecordActions(
+              context,
+              onEdit: onEdit,
+              onDelete: onClose,
+              deleteLabel: 'Chiudi',
+            )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$nome · ${formatEuro(sponsorship.importoMensile)}/mese'
+              '${sponsorship.attiva ? '' : ' · chiusa'}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: AppText.value,
+                fontWeight: FontWeight.w600,
+                color: AppColor.ink,
+                height: AppDim.lineH,
+              ),
+            ),
+          ),
+          RecordMenuButton(
+            id: sponsorship.id,
+            canEdit: canWrite,
+            onEdit: onEdit,
+            onDelete: onClose,
+            deleteLabel: 'Chiudi',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _deleteExpense(
+  BuildContext context,
+  WidgetRef ref,
+  Expense expense,
+) async {
+  final nome = expense.descrizione.isEmpty
+      ? expenseCategoriaLabel(expense.categoria)
+      : expense.descrizione;
+  final expenses = ref.read(expenseRepositoryProvider);
+  final dogs = ref.read(dogRepositoryProvider);
+  final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+  final ok = await confirmDeleteNamed(
+    context,
+    'la spesa «$nome» del ${formatItalianDate(expense.data)}',
+  );
+  if (!ok) {
+    return;
+  }
+  await expenses?.delete(expense.id);
+  if (expense.dogId != null) {
+    await touchDogAudit(dogs: dogs, dogId: expense.dogId!, uid: uid);
+  }
+}
+
+Future<void> _closeSponsorship(
+  BuildContext context,
+  WidgetRef ref,
+  Sponsorship sponsorship,
+) async {
+  final nome =
+      '${sponsorship.sostenitore.nome} ${sponsorship.sostenitore.cognome}'
+          .trim();
+  final sponsorships = ref.read(sponsorshipRepositoryProvider);
+  final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+  final ok = await confirmAction(
+    context: context,
+    title: 'Chiudi adozione a distanza',
+    message: 'Chiudere l\'adozione a distanza di $nome?',
+    confirmLabel: 'Chiudi',
+  );
+  if (!ok) {
+    return;
+  }
+  final now = DateTime.now();
+  await sponsorships?.save(
+    sponsorship.copyWith(
+      attiva: false,
+      al: now,
+      audit: sponsorship.audit.touched(uid, now),
+    ),
+  );
 }
