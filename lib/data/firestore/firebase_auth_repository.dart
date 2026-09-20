@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import '../../core/auth_errors.dart';
+import '../../core/firebase_emulators.dart';
 import '../../firebase_options.dart';
 import '../repositories/auth_repository.dart';
 import 'firestore_repositories.dart';
@@ -272,6 +273,10 @@ Future<void> bootstrapFirebase() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    await connectFirebaseEmulators(
+      auth: FirebaseAuth.instance,
+      db: FirebaseFirestore.instance,
+    );
     enableFirestoreOffline(FirebaseFirestore.instance);
   } on FirebaseException {
     // Senza google-services.json / flutterfire configure l'app parte lo stesso.

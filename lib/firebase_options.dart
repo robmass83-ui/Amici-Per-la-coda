@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -57,6 +54,15 @@ class DefaultFirebaseOptions {
     appId: '1:309937317784:android:8630a388b69551f897aded',
     messagingSenderId: '309937317784',
     projectId: 'amici-per-la-coda',
+    storageBucket: 'amici-per-la-coda.firebasestorage.app',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDpcGmErqFv2_UUDXpq3SA1NsJxwLa0ftc',
+    appId: '1:309937317784:web:86f050033b5f548597aded',
+    messagingSenderId: '309937317784',
+    projectId: 'amici-per-la-coda',
+    authDomain: 'amici-per-la-coda.firebaseapp.com',
     storageBucket: 'amici-per-la-coda.firebasestorage.app',
   );
 }
