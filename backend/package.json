@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:rules": "node --test --test-concurrency=1 tests/*.rules.test.mjs"
+    "test:rules": "node --test --test-concurrency=1 tests/*.rules.test.mjs",
+    "test:auth-session": "node --test --test-concurrency=1 tests/create_user_session.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

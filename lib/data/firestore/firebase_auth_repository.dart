@@ -10,6 +10,7 @@ import '../../firebase_options.dart';
 import '../repositories/auth_repository.dart';
 import 'firestore_repositories.dart';
 import 'identity_toolkit_api.dart';
+import 'session_safe_auth.dart';
 
 /// Implementazione Firebase Auth (email + password).
 /// Su Android la sessione è persistente di default (resta loggati).
@@ -27,10 +28,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     try {
       await _auth.signInWithEmailAndPassword(
         email: email.trim(),
@@ -61,10 +59,16 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<CreatedAuthUser> createUserAccount({
     required String email,
     required String password,
-  }) {
-    return _toolkit.signUp(
+  }) async {
+    final before = currentUser;
+    final created = await _toolkit.signUp(
       email: email.trim(),
       password: password,
+    );
+    return ensureSameSession(
+      before: before,
+      after: currentUser,
+      created: created,
     );
   }
 
@@ -73,6 +77,7 @@ class FirebaseAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    final before = currentUser;
     final trimmed = email.trim();
     CreatedAuthUser existing;
     try {
@@ -85,7 +90,12 @@ class FirebaseAuthRepository implements AuthRepository {
       throw AuthFailure(italianAuthMessage('email-already-in-use'));
     }
     await _toolkit.deleteAccount(refreshToken: token);
-    return _toolkit.signUp(email: trimmed, password: password);
+    final created = await _toolkit.signUp(email: trimmed, password: password);
+    return ensureSameSession(
+      before: before,
+      after: currentUser,
+      created: created,
+    );
   }
 
   @override
@@ -151,19 +161,18 @@ class FirebaseAuthRepository implements AuthRepository {
           email != null &&
           email.isNotEmpty) {
         await user.reauthenticateWithCredential(
-          EmailAuthProvider.credential(
-            email: email,
-            password: currentPassword,
-          ),
+          EmailAuthProvider.credential(email: email, password: currentPassword),
         );
         user = _auth.currentUser ?? user;
       }
-      await user.updatePassword(newPassword).timeout(
-        const Duration(seconds: 20),
-        onTimeout: () => throw const AuthFailure(
-          'Il salvataggio sta impiegando troppo. Riprova.',
-        ),
-      );
+      await user
+          .updatePassword(newPassword)
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => throw const AuthFailure(
+              'Il salvataggio sta impiegando troppo. Riprova.',
+            ),
+          );
       await user.reload();
       await _auth.currentUser?.getIdToken(true);
     } on AuthFailure {
@@ -245,20 +254,14 @@ class UnconfiguredAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> deleteUserAccount({
-    required String uid,
-    String? refreshToken,
-  }) {
+  Future<void> deleteUserAccount({required String uid, String? refreshToken}) {
     throw const AuthFailure(
       'Firebase non è ancora configurato. Esegui flutterfire configure.',
     );
   }
 
   @override
-  Future<void> updatePassword(
-    String newPassword, {
-    String? currentPassword,
-  }) {
+  Future<void> updatePassword(String newPassword, {String? currentPassword}) {
     throw const AuthFailure(
       'Firebase non è ancora configurato. Esegui flutterfire configure.',
     );
