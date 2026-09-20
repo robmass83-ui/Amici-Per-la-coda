@@ -13,14 +13,15 @@ class IdentityToolkitApi {
     required this.apiKey,
     IdentityToolkitHttp? http,
     String? emulatorOrigin,
-  })  : _http = http ?? createIdentityToolkitHttp(),
-        _ownedHttp = http == null,
+  })  : _injectedHttp = http,
         emulatorOrigin = emulatorOrigin ?? identityToolkitEmulatorOrigin();
 
   final String apiKey;
-  final IdentityToolkitHttp _http;
-  final bool _ownedHttp;
+  final IdentityToolkitHttp? _injectedHttp;
+  IdentityToolkitHttp? _ownedHttp;
   final String? emulatorOrigin;
+
+  IdentityToolkitHttp get _http => _injectedHttp ?? _ownedHttp!;
 
   Future<CreatedAuthUser> signUp({
     required String email,
@@ -72,12 +73,16 @@ class IdentityToolkitApi {
   }
 
   Future<T> _runOwned<T>(Future<T> Function() action) async {
+    if (_injectedHttp != null) {
+      return action();
+    }
+    final http = createIdentityToolkitHttp();
+    _ownedHttp = http;
     try {
       return await action();
     } finally {
-      if (_ownedHttp) {
-        _http.close();
-      }
+      http.close();
+      _ownedHttp = null;
     }
   }
 
@@ -163,6 +168,8 @@ class IdentityToolkitApi {
       rethrow;
     } on TimeoutException {
       throw const AuthFailure('Il salvataggio sta impiegando troppo. Riprova.');
+    } on IdentityToolkitNetworkException {
+      throw AuthFailure(italianAuthMessage('network-request-failed'));
     } catch (_) {
       throw const AuthFailure('Accesso non riuscito. Riprova.');
     }

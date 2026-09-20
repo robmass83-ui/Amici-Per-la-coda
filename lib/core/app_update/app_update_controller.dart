@@ -6,7 +6,9 @@ import '../web_surface.dart';
 import 'app_install_channel.dart';
 import 'app_update_state.dart';
 import 'github_release.dart';
-import 'github_release_feed.dart';
+import 'github_release_feed_stub.dart'
+    if (dart.library.html) 'github_release_feed_stub.dart'
+    if (dart.library.io) 'github_release_feed.dart';
 
 /// GitHub aggiorna solo gli APK di rilascio. In debug `flutter run`
 /// ha un versionCode più basso della release e il foglio coprirebbe la home.

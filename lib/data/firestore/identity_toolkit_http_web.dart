@@ -17,7 +17,12 @@ class PlatformIdentityToolkitHttp implements IdentityToolkitHttp {
       ..setProperty('method'.toJS, 'POST'.toJS)
       ..setProperty('headers'.toJS, headers)
       ..setProperty('body'.toJS, utf8.decode(bytes).toJS);
-    final response = await _fetch(uri.toString().toJS, init).toDart;
+    final JSObject response;
+    try {
+      response = await _fetch(uri.toString().toJS, init).toDart;
+    } catch (_) {
+      throw const IdentityToolkitNetworkException();
+    }
     final status = (response.getProperty('status'.toJS) as JSNumber).toDartInt;
     final textPromise = response.callMethod('text'.toJS) as JSPromise<JSString>;
     final text = (await textPromise.toDart).toDart;

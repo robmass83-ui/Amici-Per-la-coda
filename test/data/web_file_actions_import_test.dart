@@ -16,11 +16,23 @@ void main() {
         'lib/data/firestore/identity_toolkit_http_web.dart',
         'lib/features/dogs/dog_share_web.dart',
         'lib/features/dogs/export/web_gallery_saver.dart',
+        'lib/core/app_update/app_update_controller.dart',
+        'lib/core/app_update/github_release_feed_stub.dart',
       ];
       for (final path in paths) {
         final src = File(path).readAsStringSync();
         expect(src.contains("import 'dart:io'"), isFalse, reason: path);
       }
     });
+
+    test(
+      'app_update_controller non importa staticamente github_release_feed',
+      () {
+        final src = File(
+          'lib/core/app_update/app_update_controller.dart',
+        ).readAsStringSync();
+        expect(src.contains("import 'github_release_feed.dart';"), isFalse);
+      },
+    );
   });
 }

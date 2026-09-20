@@ -14,15 +14,21 @@ class PlatformIdentityToolkitHttp implements IdentityToolkitHttp {
     required List<int> bytes,
     required String contentType,
   }) async {
-    final request = await _client.postUrl(uri);
-    request.headers.contentType = ContentType.parse(contentType);
-    request.add(bytes);
-    final response = await request.close();
-    final text = await utf8.decodeStream(response);
-    return IdentityToolkitHttpResponse(
-      statusCode: response.statusCode,
-      body: text,
-    );
+    try {
+      final request = await _client.postUrl(uri);
+      request.headers.contentType = ContentType.parse(contentType);
+      request.add(bytes);
+      final response = await request.close();
+      final text = await utf8.decodeStream(response);
+      return IdentityToolkitHttpResponse(
+        statusCode: response.statusCode,
+        body: text,
+      );
+    } on IdentityToolkitNetworkException {
+      rethrow;
+    } on IOException {
+      throw const IdentityToolkitNetworkException();
+    }
   }
 
   @override
