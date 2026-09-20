@@ -15,6 +15,9 @@ import {
   parseItalianNoonUtc,
   slugDogId,
 } from './anagrafe.mjs';
+import { assertProductionWriteAllowed } from '../../backend/scripts/production_write_guard.mjs';
+
+assertProductionWriteAllowed('import_anagrafe.mjs');
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ID = 'amici-per-la-coda';

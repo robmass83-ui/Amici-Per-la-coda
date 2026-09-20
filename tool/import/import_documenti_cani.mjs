@@ -13,6 +13,9 @@ import {
   splitDocumentBytes,
   withExtractedZipAsync,
 } from './documenti_cani.mjs';
+import { assertProductionWriteAllowed } from '../../backend/scripts/production_write_guard.mjs';
+
+assertProductionWriteAllowed('import_documenti_cani.mjs');
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ID = 'amici-per-la-coda';

@@ -4,6 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { assertProductionWriteAllowed } from './production_write_guard.mjs';
+
+assertProductionWriteAllowed('replace_dogs_from_csv.mjs');
 
 const PROJECT_ID = 'amici-per-la-coda';
 const CLIENT_ID =

@@ -20,6 +20,9 @@ import {
   verifyImport,
   writeReportFile,
 } from './lib.mjs';
+import { assertProductionWriteAllowed } from '../../backend/scripts/production_write_guard.mjs';
+
+assertProductionWriteAllowed('import.mjs');
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(SCRIPT_DIR, '..', '..');
