@@ -13,29 +13,23 @@ class IdentityToolkitApi {
     required this.apiKey,
     IdentityToolkitHttp? http,
     String? emulatorOrigin,
-  })  : _injectedHttp = http,
-        emulatorOrigin = emulatorOrigin ?? identityToolkitEmulatorOrigin();
+  }) : _injectedHttp = http,
+       emulatorOrigin = emulatorOrigin ?? identityToolkitEmulatorOrigin();
 
   final String apiKey;
   final IdentityToolkitHttp? _injectedHttp;
-  IdentityToolkitHttp? _ownedHttp;
   final String? emulatorOrigin;
-
-  IdentityToolkitHttp get _http => _injectedHttp ?? _ownedHttp!;
 
   Future<CreatedAuthUser> signUp({
     required String email,
     required String password,
   }) {
     return _runOwned(
-      () => _credentialPost(
-        'accounts:signUp',
-        {
-          'email': email,
-          'password': password,
-          'returnSecureToken': true,
-        },
-      ),
+      (http) => _credentialPost(http, 'accounts:signUp', {
+        'email': email,
+        'password': password,
+        'returnSecureToken': true,
+      }),
     );
   }
 
@@ -44,25 +38,21 @@ class IdentityToolkitApi {
     required String password,
   }) {
     return _runOwned(
-      () => _credentialPost(
-        'accounts:signInWithPassword',
-        {
-          'email': email,
-          'password': password,
-          'returnSecureToken': true,
-        },
-      ),
+      (http) => _credentialPost(http, 'accounts:signInWithPassword', {
+        'email': email,
+        'password': password,
+        'returnSecureToken': true,
+      }),
     );
   }
 
   Future<void> deleteAccount({required String refreshToken}) {
-    return _runOwned(() async {
-      final idToken = await _idTokenFromRefresh(refreshToken);
+    return _runOwned((http) async {
+      final idToken = await _idTokenFromRefresh(http, refreshToken);
       try {
-        await _postJson(
-          _authUri('accounts:delete'),
-          {'idToken': idToken},
-        );
+        await _postJson(http, _authUri('accounts:delete'), {
+          'idToken': idToken,
+        });
       } on AuthFailure catch (error) {
         if (isAuthUserMissing(error)) {
           return;
@@ -72,25 +62,27 @@ class IdentityToolkitApi {
     });
   }
 
-  Future<T> _runOwned<T>(Future<T> Function() action) async {
-    if (_injectedHttp != null) {
-      return action();
+  Future<T> _runOwned<T>(
+    Future<T> Function(IdentityToolkitHttp http) action,
+  ) async {
+    final injected = _injectedHttp;
+    if (injected != null) {
+      return action(injected);
     }
     final http = createIdentityToolkitHttp();
-    _ownedHttp = http;
     try {
-      return await action();
+      return await action(http);
     } finally {
       http.close();
-      _ownedHttp = null;
     }
   }
 
   Future<CreatedAuthUser> _credentialPost(
+    IdentityToolkitHttp http,
     String path,
     Map<String, dynamic> body,
   ) async {
-    final data = await _postJson(_authUri(path), body);
+    final data = await _postJson(http, _authUri(path), body);
     final uid = data['localId'] as String? ?? '';
     if (uid.isEmpty) {
       throw const AuthFailure('Creazione account non riuscita. Riprova.');
@@ -102,8 +94,12 @@ class IdentityToolkitApi {
     );
   }
 
-  Future<String> _idTokenFromRefresh(String refreshToken) async {
+  Future<String> _idTokenFromRefresh(
+    IdentityToolkitHttp http,
+    String refreshToken,
+  ) async {
     final data = await _postForm(
+      http,
       Uri.https('securetoken.googleapis.com', '/v1/token', {'key': apiKey}),
       'grant_type=refresh_token&refresh_token=${Uri.encodeQueryComponent(refreshToken)}',
     );
@@ -119,25 +115,30 @@ class IdentityToolkitApi {
   Uri _authUri(String path) {
     final origin = emulatorOrigin;
     if (origin != null && origin.isNotEmpty) {
-      return Uri.parse('$origin/identitytoolkit.googleapis.com/v1/$path?key=$apiKey');
+      return Uri.parse(
+        '$origin/identitytoolkit.googleapis.com/v1/$path?key=$apiKey',
+      );
     }
-    return Uri.https(
-      'identitytoolkit.googleapis.com',
-      '/v1/$path',
-      {'key': apiKey},
-    );
+    return Uri.https('identitytoolkit.googleapis.com', '/v1/$path', {
+      'key': apiKey,
+    });
   }
 
-  Future<Map<String, dynamic>> _postJson(Uri uri, Map<String, dynamic> body) {
-    return _send(
-      uri,
-      utf8.encode(jsonEncode(body)),
-      'application/json',
-    );
+  Future<Map<String, dynamic>> _postJson(
+    IdentityToolkitHttp http,
+    Uri uri,
+    Map<String, dynamic> body,
+  ) {
+    return _send(http, uri, utf8.encode(jsonEncode(body)), 'application/json');
   }
 
-  Future<Map<String, dynamic>> _postForm(Uri uri, String body) {
+  Future<Map<String, dynamic>> _postForm(
+    IdentityToolkitHttp http,
+    Uri uri,
+    String body,
+  ) {
     return _send(
+      http,
       uri,
       utf8.encode(body),
       'application/x-www-form-urlencoded; charset=utf-8',
@@ -145,12 +146,13 @@ class IdentityToolkitApi {
   }
 
   Future<Map<String, dynamic>> _send(
+    IdentityToolkitHttp http,
     Uri uri,
     List<int> bytes,
     String contentType,
   ) async {
     try {
-      final response = await _http
+      final response = await http
           .post(uri: uri, bytes: bytes, contentType: contentType)
           .timeout(_timeout);
       final decoded = jsonDecode(response.body);
