@@ -54,4 +54,73 @@ void main() {
     final db = FakeFirebaseFirestore();
     expect(() => enableFirestoreOffline(db), returnsNormally);
   });
+
+  test('snapshot solo cache: se il server risponde i dati sono aggiornati', () async {
+    final seen = await freshnessFromCacheFlags(
+      Stream<bool>.fromIterable([true]),
+      () async {},
+    ).toList();
+    expect(seen, [false]);
+  });
+
+  test('snapshot solo cache: se il server non risponde restano non aggiornati',
+      () async {
+    final seen = await freshnessFromCacheFlags(
+      Stream<bool>.fromIterable([true]),
+      () async {
+        throw StateError('server');
+      },
+    ).toList();
+    expect(seen, [true]);
+  });
+
+  test('snapshot dal server non chiede un get extra', () async {
+    var confirms = 0;
+    final seen = await freshnessFromCacheFlags(
+      Stream<bool>.fromIterable([false]),
+      () async {
+        confirms++;
+      },
+    ).toList();
+    expect(seen, [false]);
+    expect(confirms, 0);
+  });
+
+  test('senza login la cache non conta come non aggiornato', () async {
+    var confirms = 0;
+    final seen = await sessionCacheFreshness(
+      signedIn: false,
+      snapshots: () => Stream<bool>.fromIterable([true]),
+      confirmServer: () async {
+        confirms++;
+      },
+    ).toList();
+    expect(seen, [false]);
+    expect(confirms, 0);
+  });
+
+  test('al login la cache viene ricontrollata sul server', () async {
+    final seen = await sessionCacheFreshness(
+      signedIn: true,
+      snapshots: () => Stream<bool>.fromIterable([true]),
+      confirmServer: () async {},
+    ).toList();
+    expect(seen, [false]);
+  });
+
+  test('al login se il primo get server fallisce si ritenta', () async {
+    var confirms = 0;
+    final seen = await sessionCacheFreshness(
+      signedIn: true,
+      snapshots: () => Stream<bool>.fromIterable([true]),
+      confirmServer: () async {
+        confirms++;
+        if (confirms == 1) {
+          throw StateError('auth non pronto');
+        }
+      },
+    ).toList();
+    expect(seen, [false]);
+    expect(confirms, 2);
+  });
 }

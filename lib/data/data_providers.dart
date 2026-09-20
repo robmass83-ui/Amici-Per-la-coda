@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_links.dart';
+import '../core/firestore_codec.dart';
+import '../features/auth/auth_providers.dart';
 import '../features/dogs/export/gallery_saver.dart';
 import 'documents/device_document_file_picker.dart';
 import 'documents/document_file_picker.dart';
@@ -22,18 +24,28 @@ final firestoreProvider = Provider<FirebaseFirestore?>((ref) {
 
 /// `snapshot.metadata.isFromCache` del listener `dogs` (stesso stream).
 final dogsFromCacheProvider = StreamProvider<bool>((ref) {
+  final signedIn = ref.watch(signedInUserProvider) != null;
   final repo = ref.watch(dogRepositoryProvider);
   if (repo is FirestoreDogRepository) {
-    return repo.watchAllFromCache();
+    return sessionCacheFreshness(
+      signedIn: signedIn,
+      snapshots: repo.watchAllFromCacheFlags,
+      confirmServer: repo.confirmDogsServer,
+    );
   }
   return Stream.value(false);
 });
 
 /// `snapshot.metadata.isFromCache` del listener copertine (stesso stream).
 final coversFromCacheProvider = StreamProvider<bool>((ref) {
+  final signedIn = ref.watch(signedInUserProvider) != null;
   final repo = ref.watch(photoRepositoryProvider);
   if (repo is FirestorePhotoRepository) {
-    return repo.watchCoversFromCache();
+    return sessionCacheFreshness(
+      signedIn: signedIn,
+      snapshots: repo.watchCoversFromCacheFlags,
+      confirmServer: repo.confirmCoversServer,
+    );
   }
   return Stream.value(false);
 });

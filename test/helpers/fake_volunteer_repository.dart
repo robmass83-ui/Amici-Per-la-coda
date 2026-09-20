@@ -5,7 +5,12 @@ import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 
 class InMemoryVolunteerRepository implements VolunteerRepository {
   InMemoryVolunteerRepository([List<Volunteer> items = const []])
-    : _items = List.of(items);
+    : _items = List.of(items),
+      emitInitial = true;
+
+  InMemoryVolunteerRepository.silent() : _items = [], emitInitial = false;
+
+  final bool emitInitial;
 
   final List<Volunteer> _items;
   final _controller = StreamController<List<Volunteer>>.broadcast();
@@ -20,7 +25,9 @@ class InMemoryVolunteerRepository implements VolunteerRepository {
 
   @override
   Stream<List<Volunteer>> watchAll() async* {
-    yield List<Volunteer>.unmodifiable(_items);
+    if (emitInitial) {
+      yield List<Volunteer>.unmodifiable(_items);
+    }
     yield* _controller.stream;
   }
 

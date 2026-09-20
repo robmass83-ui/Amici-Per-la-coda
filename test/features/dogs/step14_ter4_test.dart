@@ -10,7 +10,6 @@ import 'package:amici_per_la_coda/features/dogs/record_actions.dart';
 import 'package:amici_per_la_coda/features/settings/settings_page.dart';
 import 'package:amici_per_la_coda/features/shell/new_item_sheet.dart';
 import 'package:amici_per_la_coda/router.dart';
-import 'package:amici_per_la_coda/ui/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

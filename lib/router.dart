@@ -149,7 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final volunteerRepo = ref.read(volunteerRepositoryProvider);
   final refresh = _AuthVolunteersRefresh(
     auth: auth.watchUser(),
-    volunteers: volunteerRepo?.watchAll(),
+    volunteersOf: () => volunteerRepo?.watchAll(),
   );
   final history = ref.read(appNavigationHistoryProvider);
   ref.onDispose(refresh.dispose);
@@ -169,6 +169,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return onLogin ? null : AppRoutes.login;
       }
       final user = auth.currentUser!;
+      if (!refresh.volunteersReady) {
+        return null;
+      }
       Volunteer? byUid;
       for (final item in refresh.volunteers) {
         if (item.id == user.uid) {
@@ -448,25 +451,49 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _AuthVolunteersRefresh extends ChangeNotifier {
   _AuthVolunteersRefresh({
     required Stream<dynamic> auth,
-    Stream<List<Volunteer>>? volunteers,
+    required this.volunteersOf,
   }) {
-    notifyListeners();
-    _subs.add(auth.listen((_) => notifyListeners()));
-    if (volunteers != null) {
-      _subs.add(
-        volunteers.listen((items) {
-          this.volunteers = items;
-          notifyListeners();
-        }),
-      );
-    }
+    _subs.add(
+      auth.listen((_) {
+        _listenVolunteers();
+        notifyListeners();
+      }),
+    );
+    _listenVolunteers();
   }
 
+  final Stream<List<Volunteer>>? Function() volunteersOf;
+  StreamSubscription<List<Volunteer>>? _volSub;
   List<Volunteer> volunteers = const [];
+  bool volunteersReady = false;
   final _subs = <StreamSubscription<dynamic>>[];
+
+  void _listenVolunteers() {
+    unawaited(_volSub?.cancel());
+    _volSub = null;
+    volunteers = const [];
+    volunteersReady = false;
+    final stream = volunteersOf();
+    if (stream == null) {
+      volunteersReady = true;
+      return;
+    }
+    _volSub = stream.listen(
+      (items) {
+        volunteers = items;
+        volunteersReady = true;
+        notifyListeners();
+      },
+      onError: (_) {
+        volunteersReady = false;
+        notifyListeners();
+      },
+    );
+  }
 
   @override
   void dispose() {
+    unawaited(_volSub?.cancel());
     for (final sub in _subs) {
       unawaited(sub.cancel());
     }

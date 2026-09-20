@@ -1,3 +1,4 @@
+import 'package:amici_per_la_coda/features/auth/change_password_page.dart';
 import 'package:amici_per_la_coda/features/auth/login_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
 import 'package:amici_per_la_coda/features/settings/altro_page.dart';
@@ -5,7 +6,9 @@ import 'package:amici_per_la_coda/ui/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/dog_fixtures.dart';
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_volunteer_repository.dart';
 import '../../helpers/pump_app.dart';
 
 void main() {
@@ -93,4 +96,27 @@ void main() {
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(LoginPage), findsNothing);
   });
+
+  testWidgets(
+    'primo login non va in home prima del cambio password obbligatorio',
+    (tester) async {
+      final volunteers = InMemoryVolunteerRepository.silent();
+      await pumpApp(tester, volunteers: volunteers);
+
+      await tester.enterText(find.byType(TextField).at(0), email);
+      await tester.enterText(find.byType(TextField).at(1), password);
+      await tester.tap(find.text('Accedi'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(HomePage), findsNothing);
+      expect(find.byType(ChangePasswordPage), findsNothing);
+
+      await volunteers.save(testVolunteer(mustChangePassword: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ChangePasswordPage), findsOneWidget);
+      expect(find.byType(HomePage), findsNothing);
+    },
+  );
 }

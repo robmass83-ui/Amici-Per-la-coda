@@ -2,29 +2,37 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+int? _javaMajor(String home) {
+  final exe = File(
+    '$home${Platform.pathSeparator}bin${Platform.pathSeparator}java.exe',
+  );
+  if (!exe.existsSync()) {
+    return null;
+  }
+  final result = Process.runSync(exe.path, const ['-version']);
+  final text = '${result.stderr}${result.stdout}';
+  final match = RegExp(r'version "(\d+)').firstMatch(text);
+  return match == null ? null : int.tryParse(match.group(1)!);
+}
+
 String? _javaHome() {
-  final fromEnv = Platform.environment['JAVA_HOME'];
-  if (fromEnv != null &&
-      fromEnv.isNotEmpty &&
-      File('$fromEnv${Platform.pathSeparator}bin${Platform.pathSeparator}java.exe')
-          .existsSync()) {
-    return fromEnv;
-  }
-  const known = <String>[
+  final candidates = <String>[
     r'C:\Program Files\Android\Android Studio\jbr',
+    if ((Platform.environment['JAVA_HOME'] ?? '').isNotEmpty)
+      Platform.environment['JAVA_HOME']!,
   ];
-  for (final path in known) {
-    if (File('$path\\bin\\java.exe').existsSync()) {
-      return path;
-    }
-  }
   final microsoft = Directory(r'C:\Program Files\Microsoft');
   if (microsoft.existsSync()) {
     for (final entity in microsoft.listSync()) {
-      if (entity is Directory &&
-          File('${entity.path}\\bin\\java.exe').existsSync()) {
-        return entity.path;
+      if (entity is Directory) {
+        candidates.add(entity.path);
       }
+    }
+  }
+  for (final path in candidates) {
+    final major = _javaMajor(path);
+    if (major != null && major >= 21) {
+      return path;
     }
   }
   return null;
@@ -41,6 +49,12 @@ Map<String, String> _envWithJava() {
 }
 
 void main() {
+  test('sceglie un JDK 21 o superiore per l\'emulatore', () {
+    final home = _javaHome();
+    expect(home, isNotNull, reason: 'Serve un JDK 21+ per l\'emulatore');
+    expect(_javaMajor(home!), greaterThanOrEqualTo(21));
+  });
+
   test(
     'le regole Firestore passano con l\'emulatore',
     () async {

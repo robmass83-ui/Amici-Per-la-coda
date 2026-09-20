@@ -132,7 +132,7 @@ void main() {
       expect(find.text(content), findsWidgets);
     }
 
-    await expectTab('Adozione', 'Iter di adozione');
+    await expectTab('Adozione', 'Annuncio pubblico');
     await expectTab('Spese', 'Ripartizione');
     await expectTab('Documenti', 'Documenti del cane');
     await expectTab('Note', 'Aggiungi nota');

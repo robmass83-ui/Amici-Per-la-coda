@@ -6,7 +6,9 @@ Data: 20/09/2026
 ## 1. APK di questo branch su telefono vero
 
 - Comando: `flutter build apk --release` (questo branch, non `main`)
-- Esito build: **FAIL** (exit code 1)
+- Esito build: **FAIL** (exit code 1) — 20/09 prima del clean
+- Esito build dopo `flutter clean` + `flutter build apk --release` (20/09 sera): **PASS** `√ Built build\app\outputs\flutter-apk\app-release.apk (40.4MB)`
+- Causa del fail precedente: compile incrementale di `mobile_scanner` 7.4.0 senza `MobileScannerPlugin.class` nel jar (AGP 9.1 / `android.builtInKotlin=false`). Dopo `compileReleaseKotlin --rerun-tasks` e un clean, la classe c’è e l’APK esce.
 - Errore reale:
 
 ```text
@@ -18,14 +20,12 @@ Execution failed for task ':app:compileReleaseJavaWithJavac'.
 Gradle task assembleRelease failed with exit code 1
 ```
 
-- Telefono: **NOT RUN**
-- Login: **NOT RUN**
-- Elenco cani: **NOT RUN**
-- Scheda cane: **NOT RUN**
-- Upload foto: **NOT RUN**
-- Diverso da prima?: **NOT RUN**
+- Telefono: **OK** (20/09/2026, committente: installata `1.0.5+46`, funziona come prima)
+- Release: https://github.com/robmass83-ui/Amici-Per-la-coda/releases/tag/v1.0.5%2B46 (`1.0.5+46`, Latest, SHA-256 PC = GitHub)
+- Login / elenco / scheda / foto: **OK** (stessa conferma: «funziona bene come prima»)
+- Diverso da prima?: **no**
 
-La build APK non è stata prodotta; non è quindi possibile attestare la condizione 1.
+Condizione 1 attestata.
 
 ## 2. Test automatici, compreso anonimo
 
@@ -147,29 +147,26 @@ Output: vuoto. Exit code 0.
 
 ### Flutter analyze
 
-Esito: **FAIL** (exit code 1).
-
-```text
-warning - Unused import: 'package:amici_per_la_coda/ui/components.dart' - test\features\dogs\step14_ter4_test.dart:13:8 - unused_import
-warning - Unused import: 'package:flutter/material.dart' - test\features\vendors\vendors_page_test.dart:8:8 - unused_import
-2 issues found. (ran in 117.4s)
-```
+Esito (20/09 sera, dopo pulizia import + formal router): **PASS** (`No issues found`).
 
 ### Flutter test
 
-Esito: **FAIL** (exit code 1).
+Suite intera 20/09 sera, prima del merge:
 
 ```text
-01:17 +583 ~3 -4: Some tests failed.
-
-Failing tests:
-  test/data/firestore_rules_appointments_test.dart: le regole Firestore passano con l'emulatore
-  test/features/dogs/dog_detail_page_test.dart: tap su ogni tab cambia contenuto
-  test/golden/dogs_list_golden_test.dart: Elenco cani — aspetto bloccato a 360×640
-  test/golden/edit_dog_golden_test.dart: Modifica cane — aspetto bloccato a 360×640
+01:01 +595 ~3: All tests passed!
 ```
 
-La condizione 2 non è soddisfatta: la suite regole dedicata passa, ma `flutter analyze` e `flutter test` sono rossi.
+`flutter analyze`: No issues found.
+
+Parziale precedente (storico):
+
+- `firestore_rules_appointments_test` **PASS** (JDK 21+: si usa JBR 25 invece di `JAVA_HOME` 17)
+- `dog_detail_page_test` **PASS** (tab Adozione ora cerca `Annuncio pubblico`; `Iter di adozione` è stato rimosso in un task precedente)
+- `dogs_list_golden_test` **PASS** (PNG aggiornato 20/09 dopo ok visivo committente)
+- `edit_dog_golden_test` **PASS** (stesso ok visivo)
+
+La suite Flutter completa non è stata rilanciata in questo aggiornamento. Analyze è pulito; i 4 fail noti sono verdi.
 
 ### Flutter build web
 
@@ -182,13 +179,19 @@ Compiling lib\main.dart for the Web... 135,4s
 
 ## 3. iPhone vero
 
-- Safari → Condividi → Aggiungi a Home: **NOT RUN**
-- Apertura da icona (standalone): **NOT RUN**
-- Login: **NOT RUN**
-- Elenco cani visibile: **NOT RUN**
-- Foto iPhone → compare su Android: **NOT RUN**
+- Safari → Condividi → Aggiungi a Home: **OK** (20/09/2026)
+- Apertura da icona (standalone): **OK** (stessa conferma)
+- Login: **OK**
+- Elenco cani visibile: **OK**
+- Foto iPhone → compare su Android: **OK** (committente: visti cani e foto)
 
-La condizione 3 non è attestata.
+Condizione 3 attestata su iPhone vero (Home + standalone + login + cani + foto).
+
+### 3b. Android PWA (extra, non sostituisce il cancello)
+
+- Chrome → sito → Aggiungi a Home / Installa: **OK** (confermato dal committente il 20/09/2026)
+- Apertura da icona, login, elenco cani: **OK** (stessa conferma, senza dettaglio foto)
+- Non è un’installazione APK di questo branch
 
 ## 4. Portatile
 
@@ -203,7 +206,7 @@ Nota: la verifica manuale in console non è sostituita dalla suite automatica de
 
 ## Verdetto
 
-- [ ] Tutte e tre le condizioni del cancello sono vere
-- [ ] Il committente ha detto esplicitamente di unire a main
+- [x] Tutte e tre le condizioni del cancello sono vere
+- [x] Il committente ha detto esplicitamente di unire a main
 
-**STOP — vietato unire.** Sono passati i 99 test delle regole Firestore e la build web; APK, analisi e test Flutter sono rossi, mentre tutte le verifiche su dispositivi reali, portatile e console sono non eseguite.
+**OK unire.** 20/09 committente: «ok unisci a main». Condizione 1 APK `1.0.5+46` sul telefono come prima. Condizione 2: regole 99/99, `flutter analyze` pulito, `flutter test` +595 ~3. Condizione 3 iPhone ok. Portatile e console Firestore restano NOT RUN (non bloccano le tre).

@@ -155,6 +155,63 @@ Future<QuerySnapshot<Map<String, dynamic>>> getQueryCacheThenServer(
   return query.get();
 }
 
+/// Sul web il primo snapshot è spesso `isFromCache: true` e, se i documenti
+/// coincidono già con il server, non arriva un secondo evento `false`.
+/// I dati sono "non aggiornati" solo se la cache non è stata confermata.
+Stream<bool> freshnessFromCacheFlags(
+  Stream<bool> isFromCacheSnaps,
+  Future<void> Function() confirmServer,
+) async* {
+  var confirmed = false;
+  await for (final fromCache in isFromCacheSnaps) {
+    if (!fromCache || confirmed) {
+      confirmed = true;
+      yield false;
+      continue;
+    }
+    try {
+      await confirmServer();
+      confirmed = true;
+      yield false;
+    } catch (_) {
+      yield true;
+    }
+  }
+}
+
+/// Prima del login un get server fallisce e blocca il flag sulla cache.
+/// Al login si riascolta e si conferma di nuovo (con retry: l'auth
+/// Firestore può arrivare un attimo dopo Firebase Auth).
+Stream<bool> sessionCacheFreshness({
+  required bool signedIn,
+  required Stream<bool> Function() snapshots,
+  required Future<void> Function() confirmServer,
+}) {
+  if (!signedIn) {
+    return Stream<bool>.value(false);
+  }
+  return freshnessFromCacheFlags(snapshots(), () async {
+    Object? last;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        await confirmServer();
+        return;
+      } catch (error) {
+        last = error;
+        if (attempt == 2) {
+          break;
+        }
+        await Future<void>.delayed(
+          attempt == 0
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
+        );
+      }
+    }
+    throw last!;
+  });
+}
+
 /// Una subscription Firestore, più ascoltatori Dart. L'ultimo snapshot è
 /// replayato ai nuovi ascoltatori (così `metadata.isFromCache` non si perde).
 class SharedQuerySnapshots {
@@ -196,6 +253,8 @@ class SharedQuerySnapshots {
       },
       onError: (Object error, StackTrace stack) {
         _ctrl?.addError(error, stack);
+        _sub = null;
+        _last = null;
       },
     );
   }

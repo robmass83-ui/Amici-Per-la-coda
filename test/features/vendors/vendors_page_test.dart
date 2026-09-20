@@ -5,7 +5,6 @@ import 'package:amici_per_la_coda/features/vendors/vendor_detail_page.dart';
 import 'package:amici_per_la_coda/features/vendors/vendor_form_page.dart';
 import 'package:amici_per_la_coda/features/vendors/vendors_page.dart';
 import 'package:amici_per_la_coda/router.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/fake_auth_repository.dart';

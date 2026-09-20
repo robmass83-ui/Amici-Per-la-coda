@@ -49,8 +49,19 @@ class FirestoreDogRepository implements DogRepository {
     );
   }
 
-  Stream<bool> watchAllFromCache() {
+  Stream<bool> watchAllFromCacheFlags() {
     return _allSnaps.snapshots().map((snap) => snap.metadata.isFromCache);
+  }
+
+  Future<void> confirmDogsServer() {
+    return _col.limit(1).get(const GetOptions(source: Source.server));
+  }
+
+  Stream<bool> watchAllFromCache() {
+    return freshnessFromCacheFlags(
+      watchAllFromCacheFlags(),
+      confirmDogsServer,
+    );
   }
 
   @override
@@ -122,8 +133,19 @@ class FirestorePhotoRepository implements PhotoRepository {
     });
   }
 
-  Stream<bool> watchCoversFromCache() {
+  Stream<bool> watchCoversFromCacheFlags() {
     return _coverSnaps.snapshots().map((snap) => snap.metadata.isFromCache);
+  }
+
+  Future<void> confirmCoversServer() {
+    return _col.limit(1).get(const GetOptions(source: Source.server));
+  }
+
+  Stream<bool> watchCoversFromCache() {
+    return freshnessFromCacheFlags(
+      watchCoversFromCacheFlags(),
+      confirmCoversServer,
+    );
   }
 
   Future<void> saveMeta(Photo photo) async {
