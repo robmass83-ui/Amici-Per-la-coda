@@ -27,6 +27,16 @@ void main() {
     },
   );
 
+  test('anno massimo resta 2100 quando l orologio segna 2100', () {
+    final now = DateTime(2100, 9, 26);
+    expect(massimoAnno(now), 2100);
+    expect(erroreAnno('2100', now: now, esistenti: {}), isNull);
+    expect(
+      erroreAnno('2101', now: now, esistenti: {}),
+      "L'anno deve essere fra il 1990 e il 2100.",
+    );
+  });
+
   test('tetti 400 e 700', () {
     const mib = 1024 * 1024;
     expect(valutaQuota(usato: 400 * mib, nuova: 1).avviso, isFalse);
@@ -129,6 +139,19 @@ void main() {
     expect(csv.contains('Fattura'), isTrue);
     expect(csv.contains('1240,50'), isTrue);
     expect(csv.contains('"dice ""ciao"";\nok"'), isTrue);
+  });
+
+  test('i nomi zip restano univoci anche se un suffisso è già un nome', () {
+    final nomi = assegnaNomiZip([
+      doc(id: 'a', nome: 'foo'),
+      doc(id: 'b', nome: 'foo'),
+      doc(id: 'c', nome: 'foo_2'),
+    ]);
+    expect(nomi.map((e) => e.fileName), [
+      '2026-03-12_fattura_foo.pdf',
+      '2026-03-12_fattura_foo_2.pdf',
+      '2026-03-12_fattura_foo_2_2.pdf',
+    ]);
   });
 
   test('la data fuori dalla cartella non è un errore di modello', () {

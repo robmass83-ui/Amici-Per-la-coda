@@ -27,7 +27,7 @@ int massimoAnno(DateTime now) {
   if (!orologioAnnoUsabile(now)) {
     throw StateError('Anno di sistema non valido');
   }
-  return now.year + 1;
+  return now.year < 2100 ? now.year + 1 : 2100;
 }
 
 String? erroreAnno(
@@ -37,13 +37,11 @@ String? erroreAnno(
 }) {
   final valore = raw.trim();
   final anno = int.tryParse(valore);
-  final massimo = now.year + 1;
-  if (!orologioAnnoUsabile(now) ||
-      valore.length != 4 ||
-      anno == null ||
-      anno < 1990 ||
-      anno > massimo ||
-      anno > 2100) {
+  if (!orologioAnnoUsabile(now)) {
+    return messaggioAnnoFuori(now.year + 1);
+  }
+  final massimo = massimoAnno(now);
+  if (valore.length != 4 || anno == null || anno < 1990 || anno > massimo) {
     return messaggioAnnoFuori(massimo);
   }
   if (esistenti.contains(anno)) {
@@ -192,13 +190,16 @@ List<({DocumentoContabile doc, String fileName})> assegnaNomiZip(
       final perData = a.data.toUtc().compareTo(b.data.toUtc());
       return perData != 0 ? perData : a.id.compareTo(b.id);
     });
-  final occorrenze = <String, int>{};
+  final nomiUsati = <String>{};
   return ordinati.map((doc) {
-    final primoNome = nomeFileZip(doc, 1);
-    final nomeBase = primoNome.substring(0, primoNome.lastIndexOf('.'));
-    final occorrenza = (occorrenze[nomeBase] ?? 0) + 1;
-    occorrenze[nomeBase] = occorrenza;
-    return (doc: doc, fileName: nomeFileZip(doc, occorrenza));
+    var occorrenza = 1;
+    var fileName = nomeFileZip(doc, occorrenza);
+    while (nomiUsati.contains(fileName)) {
+      occorrenza++;
+      fileName = nomeFileZip(doc, occorrenza);
+    }
+    nomiUsati.add(fileName);
+    return (doc: doc, fileName: fileName);
   }).toList();
 }
 
