@@ -34,6 +34,75 @@ void main() {
     expect(await repository.watchAnni().first, hasLength(1));
   });
 
+  test('ogni ascolto riceve subito lo snapshot e gli aggiornamenti', () async {
+    final original = _documento();
+    await repository.createAnno(
+      anno: original.anno,
+      uid: 'uid-1',
+      now: original.data,
+    );
+    await repository.saveNuovo(original, Uint8List.fromList([1, 2, 3, 4]));
+
+    final firstAnniListener = repository.watchAnni().first;
+    final secondAnniListener = repository.watchAnni().first;
+    final firstTuttiListener = repository.watchTutti().first;
+    final secondTuttiListener = repository.watchTutti().first;
+
+    final initialAnniSnapshots = await Future.wait([
+      firstAnniListener,
+      secondAnniListener,
+    ]).timeout(const Duration(seconds: 1));
+    expect(initialAnniSnapshots[0].single.anno, original.anno);
+    expect(
+      initialAnniSnapshots[1].single.toMap(),
+      initialAnniSnapshots[0].single.toMap(),
+    );
+
+    final initialDocumentSnapshots = await Future.wait([
+      firstTuttiListener,
+      secondTuttiListener,
+    ]).timeout(const Duration(seconds: 1));
+    expect(initialDocumentSnapshots[0].single.toMap(), {
+      ...original.toMap(),
+      'chunkCount': 1,
+    });
+    expect(
+      initialDocumentSnapshots[1].single.toMap(),
+      initialDocumentSnapshots[0].single.toMap(),
+    );
+
+    final firstAnniUpdates = repository.watchAnni().take(2).toList();
+    final secondAnniUpdates = repository.watchAnni().take(2).toList();
+    final firstAnnoUpdates = repository
+        .watchAnno(original.anno)
+        .take(2)
+        .toList();
+    final secondAnnoUpdates = repository
+        .watchAnno(original.anno)
+        .take(2)
+        .toList();
+    await repository.createAnno(anno: 2027, uid: 'uid-1', now: original.data);
+    await repository.saveMeta(original.copyWith(nome: 'Nome aggiornato'));
+
+    final anniUpdateSnapshots = await Future.wait([
+      firstAnniUpdates,
+      secondAnniUpdates,
+    ]).timeout(const Duration(seconds: 1));
+    for (final snapshots in anniUpdateSnapshots) {
+      expect(snapshots.first, hasLength(1));
+      expect(snapshots.last, hasLength(2));
+    }
+
+    final annoUpdateSnapshots = await Future.wait([
+      firstAnnoUpdates,
+      secondAnnoUpdates,
+    ]).timeout(const Duration(seconds: 1));
+    for (final snapshots in annoUpdateSnapshots) {
+      expect(snapshots.first.single.nome, original.nome);
+      expect(snapshots.last.single.nome, 'Nome aggiornato');
+    }
+  });
+
   test('saveNuovo salva metadati e un pezzo senza esporre i byte', () async {
     final doc = _documento(dimensione: 999);
     final bytes = Uint8List.fromList([1, 2, 3, 4]);

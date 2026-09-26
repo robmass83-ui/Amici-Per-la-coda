@@ -9,12 +9,9 @@ import 'package:amici_per_la_coda/features/contabilita/contabilita_bytes.dart';
 
 class InMemoryContabilitaRepository implements ContabilitaRepository {
   InMemoryContabilitaRepository() {
-    _anniController = StreamController<List<AnnoContabile>>.broadcast(
-      onListen: _emitAnni,
-    );
-    _documentiController = StreamController<List<DocumentoContabile>>.broadcast(
-      onListen: _emitDocumenti,
-    );
+    _anniController = StreamController<List<AnnoContabile>>.broadcast();
+    _documentiController =
+        StreamController<List<DocumentoContabile>>.broadcast();
   }
 
   final Map<String, AnnoContabile> _anni = {};
@@ -26,10 +23,14 @@ class InMemoryContabilitaRepository implements ContabilitaRepository {
   bool failNextReplaceWrite = false;
 
   @override
-  Stream<List<AnnoContabile>> watchAnni() => _anniController.stream;
+  Stream<List<AnnoContabile>> watchAnni() =>
+      _watchCurrent(_anniController, () => List.unmodifiable(_anni.values));
 
   @override
-  Stream<List<DocumentoContabile>> watchTutti() => _documentiController.stream;
+  Stream<List<DocumentoContabile>> watchTutti() => _watchCurrent(
+    _documentiController,
+    () => List.unmodifiable(_documenti.values),
+  );
 
   @override
   Stream<List<DocumentoContabile>> watchAnno(int anno) => watchTutti().map(
@@ -125,5 +126,20 @@ class InMemoryContabilitaRepository implements ContabilitaRepository {
     if (!_documentiController.isClosed) {
       _documentiController.add(List.unmodifiable(_documenti.values));
     }
+  }
+
+  Stream<List<T>> _watchCurrent<T>(
+    StreamController<List<T>> source,
+    List<T> Function() current,
+  ) {
+    return Stream<List<T>>.multi((listener) {
+      final subscription = source.stream.listen(
+        listener.add,
+        onError: listener.addError,
+        onDone: listener.close,
+      );
+      listener.onCancel = subscription.cancel;
+      listener.add(current());
+    }, isBroadcast: true);
   }
 }
