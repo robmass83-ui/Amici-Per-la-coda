@@ -27,13 +27,6 @@
       ]
     },
     {
-      "collectionGroup": "health",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "prossimaScadenza", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "weights",
       "queryScope": "COLLECTION",
       "fields": [
@@ -71,13 +64,6 @@
       "fields": [
         { "fieldPath": "dogId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "appointments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "inizio", "order": "ASCENDING" }
       ]
     },
     {
