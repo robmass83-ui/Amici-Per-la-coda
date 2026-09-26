@@ -21,7 +21,7 @@ import 'new_item_sheet.dart';
 // AppScaffold(logo) + AppBottomNav  oppure Scaffold su scheda cane
 // ───────────────────────────────────────────────────────────────────────────
 
-/// Contenitore delle 4 sezioni con header logo e bottom nav.
+/// Contenitore delle 5 sezioni con header logo e bottom nav.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 

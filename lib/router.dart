@@ -21,6 +21,7 @@ import 'features/auth/change_password_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/boxes/boxes_page.dart';
 import 'features/calendar/calendar_page.dart';
+import 'features/contabilita/anni_page.dart';
 import 'features/dashboard/home_page.dart';
 import 'features/notifications/app_runtime_listener.dart';
 import 'features/notifications/notifications_page.dart';
@@ -50,6 +51,7 @@ abstract final class AppRoutes {
   static const login = '/login';
   static const animali = '/animali';
   static const calendario = '/calendario';
+  static const contabilita = '/contabilita';
   static const altro = '/altro';
   static const debugUi = '/debug/ui';
   static const nuovo = '/nuovo';
@@ -71,6 +73,9 @@ abstract final class AppRoutes {
   static const fornitoreNuovo = '/fornitori/nuovo';
   static const richieste = '/richieste';
   static const nuovaRichiesta = '/richieste/nuova';
+  static String contabilitaAnno(int anno) => '$contabilita/$anno';
+  static String contabilitaDocumento(int anno, String id) =>
+      '$contabilita/$anno/$id';
 
   static String dog(String id, {String? from}) {
     final path = '$animali/$id';
@@ -418,6 +423,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.calendario,
                 builder: (context, state) => const CalendarPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.contabilita,
+                builder: (context, state) => const AnniContabiliPage(),
               ),
             ],
           ),

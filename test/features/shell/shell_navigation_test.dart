@@ -1,6 +1,7 @@
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/features/affido/affido_page.dart';
 import 'package:amici_per_la_coda/features/calendar/calendar_page.dart';
+import 'package:amici_per_la_coda/features/contabilita/anni_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/home_page.dart';
 import 'package:amici_per_la_coda/features/dashboard/placeholder_feature_page.dart';
 import 'package:amici_per_la_coda/features/dogs/dog_detail_page.dart';
@@ -50,6 +51,10 @@ void main() {
     expect(find.byType(CalendarPage), findsOneWidget);
     expect(find.text('Prossimi giorni'), findsOneWidget);
 
+    await tester.tap(find.text('Contabilità'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AnniContabiliPage), findsOneWidget);
+
     await tester.tap(find.text('Altro'));
     await tester.pumpAndSettle();
     expect(find.byType(AltroPage), findsOneWidget);
@@ -66,6 +71,7 @@ void main() {
     expect(find.text('Richiesta di adozione'), findsOneWidget);
     expect(find.text('Trattamento sanitario'), findsOneWidget);
     expect(find.text('Spesa'), findsOneWidget);
+    expect(find.text('Documento contabile'), findsNothing);
     expect(find.text('Appuntamento'), findsOneWidget);
     expect(find.text('Foto rapida'), findsOneWidget);
   });
@@ -148,9 +154,16 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Animali'), findsOneWidget);
       expect(find.text('Calendario'), findsOneWidget);
+      expect(find.text('Contabilità'), findsOneWidget);
       expect(find.text('Altro'), findsOneWidget);
 
-      for (final label in ['Animali', 'Calendario', 'Altro', 'Home']) {
+      for (final label in [
+        'Animali',
+        'Calendario',
+        'Contabilità',
+        'Altro',
+        'Home',
+      ]) {
         await tester.tap(find.text(label));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
@@ -195,10 +208,7 @@ void main() {
   testWidgets('il tasto indietro di sistema chiude la scheda cane', (
     tester,
   ) async {
-    await pumpLoggedIn(
-      tester,
-      dogs: InMemoryDogRepository(testListDogs()),
-    );
+    await pumpLoggedIn(tester, dogs: InMemoryDogRepository(testListDogs()));
 
     await tester.tap(find.text('Animali'));
     await tester.pumpAndSettle();
@@ -214,10 +224,7 @@ void main() {
   testWidgets('il tasto indietro di sistema chiude una scorciatoia', (
     tester,
   ) async {
-    await pumpLoggedIn(
-      tester,
-      dogs: InMemoryDogRepository(testListDogs()),
-    );
+    await pumpLoggedIn(tester, dogs: InMemoryDogRepository(testListDogs()));
 
     await tester.tap(find.byTooltip('Nuovo'));
     await tester.pumpAndSettle();

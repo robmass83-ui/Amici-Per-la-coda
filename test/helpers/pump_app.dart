@@ -12,6 +12,7 @@ import 'package:amici_per_la_coda/data/documents/file_actions.dart';
 import 'package:amici_per_la_coda/data/documents/template_assets.dart';
 import 'package:amici_per_la_coda/features/dogs/export/gallery_saver.dart';
 import 'package:amici_per_la_coda/data/photos/photo_picker.dart';
+import 'package:amici_per_la_coda/data/repositories/contabilita_repository.dart';
 import 'package:amici_per_la_coda/data/repositories/data_repositories.dart';
 import 'package:amici_per_la_coda/data/seed/seed_cleanup.dart';
 import 'package:amici_per_la_coda/data/search_recents_store.dart';
@@ -60,6 +61,7 @@ Future<void> pumpApp(
   DogRepository? dogs,
   HealthRepository? health,
   ExpenseRepository? expenses,
+  ContabilitaRepository? contabilita,
   AdoptionRepository? adoptions,
   NoteRepository? notes,
   DocumentRepository? documents,
@@ -145,6 +147,8 @@ Future<void> pumpApp(
           healthRepositoryProvider.overrideWith((ref) => health),
         if (expenses != null)
           expenseRepositoryProvider.overrideWith((ref) => expenses),
+        if (contabilita != null)
+          contabilitaRepositoryProvider.overrideWith((ref) => contabilita),
         adoptionRepositoryProvider.overrideWith((ref) => adoptionRepo),
         if (notes != null) noteRepositoryProvider.overrideWith((ref) => notes),
         if (documents != null)

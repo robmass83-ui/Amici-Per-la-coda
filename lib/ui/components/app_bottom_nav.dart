@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../tokens.dart';
 
-/// Bottom nav a 4 voci + FAB centrale sporgente.
+/// Bottom nav a 5 voci + FAB centrale sporgente.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -11,7 +11,7 @@ class AppBottomNav extends StatelessWidget {
     this.onFab,
   });
 
-  /// 0 Home, 1 Animali, 2 Calendario, 3 Altro.
+  /// 0 Home, 1 Animali, 2 Calendario, 3 Contabilità, 4 Altro.
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback? onFab;
@@ -22,8 +22,7 @@ class AppBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: AppDim.bottomNavH +
-            (showFab ? AppDim.gapXl + AppDim.gapS : 0),
+        height: AppDim.bottomNavH + (showFab ? AppDim.gapXl + AppDim.gapS : 0),
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
@@ -68,19 +67,21 @@ class AppBottomNav extends StatelessWidget {
                     onTap: () => onSelect(2),
                   ),
                   _NavItem(
-                    icon: Icons.menu_rounded,
-                    label: 'Altro',
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Contabilità',
                     selected: currentIndex == 3,
                     onTap: () => onSelect(3),
+                  ),
+                  _NavItem(
+                    icon: Icons.menu_rounded,
+                    label: 'Altro',
+                    selected: currentIndex == 4,
+                    onTap: () => onSelect(4),
                   ),
                 ],
               ),
             ),
-            if (showFab)
-              Positioned(
-                top: 0,
-                child: _FabButton(onTap: onFab!),
-              ),
+            if (showFab) Positioned(top: 0, child: _FabButton(onTap: onFab!)),
           ],
         ),
       ),
