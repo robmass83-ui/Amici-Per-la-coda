@@ -21,6 +21,7 @@ import 'features/auth/change_password_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/boxes/boxes_page.dart';
 import 'features/calendar/calendar_page.dart';
+import 'features/contabilita/anno_page.dart';
 import 'features/contabilita/anni_page.dart';
 import 'features/dashboard/home_page.dart';
 import 'features/notifications/app_runtime_listener.dart';
@@ -431,6 +432,20 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.contabilita,
                 builder: (context, state) => const AnniContabiliPage(),
+                routes: [
+                  GoRoute(
+                    path: ':anno',
+                    builder: (context, state) {
+                      final anno = int.tryParse(
+                        state.pathParameters['anno'] ?? '',
+                      );
+                      if (anno == null) {
+                        return const Center(child: Text('Anno non valido.'));
+                      }
+                      return AnnoContabilePage(anno: anno);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
