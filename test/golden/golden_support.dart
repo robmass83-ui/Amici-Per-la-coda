@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:amici_per_la_coda/data/repositories/contabilita_repository.dart';
 import 'package:amici_per_la_coda/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +27,7 @@ bool skipUntilPng(String fileName) {
 Future<void> pumpGolden(
   WidgetTester tester, {
   required String location,
+  ContabilitaRepository? contabilita,
 }) async {
   tester.view.physicalSize = goldenSize;
   tester.view.devicePixelRatio = 1.0;
@@ -43,6 +45,7 @@ Future<void> pumpGolden(
     size: goldenSize,
     dogs: InMemoryDogRepository(testListDogs()),
     dogListNow: now,
+    contabilita: contabilita,
   );
 }
 
