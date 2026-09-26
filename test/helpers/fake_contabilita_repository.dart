@@ -22,6 +22,18 @@ class InMemoryContabilitaRepository implements ContabilitaRepository {
 
   bool failNextReplaceWrite = false;
 
+  List<DocumentoContabile> get documents =>
+      List.unmodifiable(_documenti.values);
+
+  Uint8List bytesOf(String id) {
+    final doc = _documenti[id];
+    final chunks = doc == null ? null : _pezzi[id]?[doc.generation];
+    if (chunks == null) {
+      throw StateError('File del documento $id non trovato.');
+    }
+    return joinDocumentChunks(chunks);
+  }
+
   @override
   Stream<List<AnnoContabile>> watchAnni() =>
       _watchCurrent(_anniController, () => List.unmodifiable(_anni.values));

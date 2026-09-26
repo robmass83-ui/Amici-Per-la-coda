@@ -13,8 +13,11 @@ import '../../ui/components/icon_badge.dart';
 import '../../ui/icons.dart';
 import '../../ui/tokens.dart';
 import '../affido/affido_providers.dart';
+import '../dashboard/home_providers.dart';
 import '../dogs/edit_permissions.dart';
 import 'contabilita_logic.dart';
+import 'contabilita_zip.dart';
+import 'documento_sheet.dart';
 import 'filtri_sheet.dart';
 
 // AnnoContabilePage
@@ -59,6 +62,7 @@ class AnnoContabilePage extends ConsumerStatefulWidget {
 
 class _AnnoContabilePageState extends ConsumerState<AnnoContabilePage> {
   String _ricerca = '';
+  String? _erroreExport;
   FiltriContabilita _filtri = const FiltriContabilita(
     nome: '',
     tipologia: null,
@@ -90,6 +94,33 @@ class _AnnoContabilePageState extends ConsumerState<AnnoContabilePage> {
           al: risultato.al,
         );
       });
+    }
+  }
+
+  Future<void> _esporta(List<DocumentoContabile> documenti) async {
+    final repo = ref.read(contabilitaRepositoryProvider);
+    if (repo == null) {
+      return;
+    }
+    setState(() => _erroreExport = null);
+    try {
+      final bytes = await esportaZipAnno(
+        repo: repo,
+        documenti: documenti,
+        offline: ref.read(homeOfflineProvider),
+      );
+      await ref
+          .read(fileShareProvider)
+          .shareFile(
+            bytes: bytes,
+            fileName: nomeZipAnno(widget.anno),
+            mime: 'application/zip',
+            text: 'Documentazione contabile ${widget.anno}',
+          );
+    } catch (error) {
+      if (mounted) {
+        setState(() => _erroreExport = error.toString());
+      }
     }
   }
 
@@ -146,10 +177,26 @@ class _AnnoContabilePageState extends ConsumerState<AnnoContabilePage> {
                       label: 'Esporta documentazione annuale',
                       variant: AppButtonVariant.ghost,
                       expand: false,
-                      onPressed: documentiDellAnno.isEmpty ? null : () {},
+                      onPressed: documentiDellAnno.isEmpty
+                          ? null
+                          : () => _esporta(documentiDellAnno),
                     ),
                 ],
               ),
+              if (_erroreExport != null) ...[
+                const SizedBox(height: AppDim.gapS),
+                Text(
+                  _erroreExport!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: AppText.caption,
+                    color: AppColor.red,
+                    height: AppDim.lineH,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppDim.gapM),
               SizedBox(
                 height: AppDim.minTouch,
@@ -240,7 +287,8 @@ class _AnnoContabilePageState extends ConsumerState<AnnoContabilePage> {
                 AppButton(
                   key: AnnoContabilePage.aggiungiKey,
                   label: 'Aggiungi documento',
-                  onPressed: () {},
+                  onPressed: () =>
+                      DocumentoContabileSheet.open(context, anno: widget.anno),
                 ),
               ],
             ],

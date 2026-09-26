@@ -23,6 +23,7 @@ import 'features/boxes/boxes_page.dart';
 import 'features/calendar/calendar_page.dart';
 import 'features/contabilita/anno_page.dart';
 import 'features/contabilita/anni_page.dart';
+import 'features/contabilita/documento_page.dart';
 import 'features/dashboard/home_page.dart';
 import 'features/notifications/app_runtime_listener.dart';
 import 'features/notifications/notifications_page.dart';
@@ -444,6 +445,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                       }
                       return AnnoContabilePage(anno: anno);
                     },
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => DocumentoContabilePage(
+                          anno: int.parse(state.pathParameters['anno']!),
+                          id: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
