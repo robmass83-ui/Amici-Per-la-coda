@@ -87,6 +87,7 @@ docs/archive/csv-anagrafe.zip
 docs/archive/Cani_Amici_per_la_Coda_IMPORT.xlsx
 import/anagrafe_src/
 /.superpowers/
+/.worktrees/
 
 # Backup Firestore locale (dati personali + authTokens)
 /backups/
