@@ -27,10 +27,10 @@ class _FileContabileRifiutato implements Exception {
 bool fileContabileAccettato(String mime, String name) {
   final mimeNormalizzato = mime.toLowerCase();
   final nomeNormalizzato = name.toLowerCase();
-  return mimeNormalizzato.contains('pdf') ||
-      mimeNormalizzato.contains('jpeg') ||
-      mimeNormalizzato.contains('jpg') ||
-      mimeNormalizzato.contains('png') ||
+  return mimeNormalizzato == 'application/pdf' ||
+      mimeNormalizzato == 'image/jpeg' ||
+      mimeNormalizzato == 'image/jpg' ||
+      mimeNormalizzato == 'image/png' ||
       nomeNormalizzato.endsWith('.pdf') ||
       nomeNormalizzato.endsWith('.jpg') ||
       nomeNormalizzato.endsWith('.jpeg') ||
@@ -47,7 +47,7 @@ Future<FileContabilePreparato> preparaFileContabile(
   final mimeNormalizzato = file.mime.toLowerCase();
   final nomeNormalizzato = file.name.toLowerCase();
   final pdf =
-      mimeNormalizzato.contains('pdf') || nomeNormalizzato.endsWith('.pdf');
+      mimeNormalizzato == 'application/pdf' || nomeNormalizzato.endsWith('.pdf');
   if (pdf) {
     return FileContabilePreparato(
       bytes: file.bytes,

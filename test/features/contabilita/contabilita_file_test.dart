@@ -56,5 +56,7 @@ void main() {
       ),
       isFalse,
     );
+    expect(fileContabileAccettato('application/notpdf', 'a.bin'), isFalse);
+    expect(fileContabileAccettato('image/png-template', 'a.bin'), isFalse);
   });
 }
