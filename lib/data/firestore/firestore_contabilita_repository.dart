@@ -103,9 +103,6 @@ class FirestoreContabilitaRepository implements ContabilitaRepository {
       'tipologia': doc.tipologia.wire,
       'descrizione': doc.descrizione,
       'importo': doc.importo ?? FieldValue.delete(),
-      'mime': doc.mime,
-      'nomeFile': doc.nomeFile,
-      'dimensione': doc.dimensione,
       ...doc.audit.toMap(),
     });
   }

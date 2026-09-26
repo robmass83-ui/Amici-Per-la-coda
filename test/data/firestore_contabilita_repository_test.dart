@@ -231,4 +231,27 @@ void main() {
     expect(parent.data()!.containsKey('importo'), isFalse);
     expect(await repo.loadBytes('c1'), Uint8List.fromList([5, 6]));
   });
+
+  test('saveMeta non ripristina i dati file da uno snapshot obsoleto', () async {
+    final db = FakeFirebaseFirestore();
+    final repo = FirestoreContabilitaRepository(db);
+    final stale = sample(
+      dimensione: 4,
+    ).copyWith(mime: 'application/pdf', nomeFile: 'originale.pdf');
+    await repo.saveNuovo(stale, Uint8List.fromList([1, 2, 3, 4]));
+    final replacement = stale.copyWith(
+      dimensione: 3,
+      mime: 'image/jpeg',
+      nomeFile: 'sostituzione.jpg',
+    );
+    await repo.replaceFile(replacement, Uint8List.fromList([5, 6, 7]));
+
+    await repo.saveMeta(stale.copyWith(nome: 'Metadati aggiornati'));
+
+    final parent = await db.collection('contabilita').doc('c1').get();
+    expect(parent.data()!['dimensione'], 3);
+    expect(parent.data()!['mime'], 'image/jpeg');
+    expect(parent.data()!['nomeFile'], 'sostituzione.jpg');
+    expect(parent.data()!['generation'], 2);
+  });
 }

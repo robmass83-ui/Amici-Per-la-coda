@@ -130,6 +130,31 @@ void main() {
     expect(await repository.loadBytes(original.id), bytes);
   });
 
+  test('saveMeta conserva i dati file della generazione corrente', () async {
+    final stale = _documento();
+    await repository.saveNuovo(stale, Uint8List.fromList([1, 2, 3, 4]));
+    await repository.replaceFile(
+      stale.copyWith(
+        dimensione: 3,
+        mime: 'image/jpeg',
+        nomeFile: 'sostituzione.jpg',
+      ),
+      Uint8List.fromList([9, 8, 7]),
+    );
+
+    await repository.saveMeta(
+      stale.copyWith(nome: 'Nome aggiornato', chunkCount: 99),
+    );
+
+    final saved = (await repository.watchTutti().first).single;
+    expect(saved.nome, 'Nome aggiornato');
+    expect(saved.dimensione, 3);
+    expect(saved.mime, 'image/jpeg');
+    expect(saved.nomeFile, 'sostituzione.jpg');
+    expect(saved.generation, 2);
+    expect(saved.chunkCount, 1);
+  });
+
   test(
     'replaceFile pubblica il nuovo file con generation incrementata',
     () async {

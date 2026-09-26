@@ -76,7 +76,13 @@ class InMemoryContabilitaRepository implements ContabilitaRepository {
     if (current == null) {
       throw StateError('Documento ${doc.id} non trovato.');
     }
-    _documenti[doc.id] = doc.copyWith(generation: current.generation);
+    _documenti[doc.id] = doc.copyWith(
+      generation: current.generation,
+      chunkCount: current.chunkCount,
+      dimensione: current.dimensione,
+      mime: current.mime,
+      nomeFile: current.nomeFile,
+    );
     _emitDocumenti();
   }
 
