@@ -143,6 +143,15 @@ void main() {
     );
   });
 
+  test('loadBytes lancia se manca un pezzo atteso', () async {
+    final db = FakeFirebaseFirestore();
+    final repo = FirestoreContabilitaRepository(db);
+    await repo.saveNuovo(sample(), Uint8List.fromList([1, 2, 3, 4]));
+    await db.collection('contabilita').doc('c1').update({'chunkCount': 2});
+
+    await expectLater(repo.loadBytes('c1'), throwsA(isA<StateError>()));
+  });
+
   test('deleteDocumento cancella padre e pezzi della generazione', () async {
     final db = FakeFirebaseFirestore();
     final repo = FirestoreContabilitaRepository(db);
@@ -203,5 +212,23 @@ void main() {
     expect(parent.data()!['nome'], 'Aggiornata');
     expect(parent.data()!['chunkCount'], 1);
     expect(await repo.loadBytes('c1'), Uint8List.fromList([1, 2, 3, 4]));
+  });
+
+  test('saveMeta non cambia la generazione corrente', () async {
+    final db = FakeFirebaseFirestore();
+    final repo = FirestoreContabilitaRepository(db);
+    final stale = sample().copyWith(importo: 12.50);
+    await repo.saveNuovo(stale, Uint8List.fromList([1, 2, 3, 4]));
+    await repo.replaceFile(stale, Uint8List.fromList([5, 6]));
+
+    await repo.saveMeta(
+      stale.copyWith(nome: 'Metadati aggiornati', clearImporto: true),
+    );
+
+    final parent = await db.collection('contabilita').doc('c1').get();
+    expect(parent.data()!['generation'], 2);
+    expect(parent.data()!['chunkCount'], 1);
+    expect(parent.data()!.containsKey('importo'), isFalse);
+    expect(await repo.loadBytes('c1'), Uint8List.fromList([5, 6]));
   });
 }

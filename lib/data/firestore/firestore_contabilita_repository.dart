@@ -84,7 +84,7 @@ class FirestoreContabilitaRepository implements ContabilitaRepository {
         'dimensione': doc.dimensione,
       });
     } catch (_) {
-      await _deleteGenerationIgnoringErrors(doc.id, doc.generation);
+      await _deleteGeneration(doc.id, doc.generation);
       rethrow;
     }
   }
@@ -96,12 +96,17 @@ class FirestoreContabilitaRepository implements ContabilitaRepository {
     if (!current.exists) {
       throw StateError('Documento contabile non trovato.');
     }
-    final data = current.data()!;
-    await reference.set({
-      ...doc.toMap(),
-      'chunkCount': data['chunkCount'],
-      'dimensione': data['dimensione'],
-      'generation': data['generation'],
+    await reference.update({
+      'anno': doc.anno,
+      'nome': doc.nome,
+      'data': dateTimeTo(doc.data),
+      'tipologia': doc.tipologia.wire,
+      'descrizione': doc.descrizione,
+      'importo': doc.importo ?? FieldValue.delete(),
+      'mime': doc.mime,
+      'nomeFile': doc.nomeFile,
+      'dimensione': doc.dimensione,
+      ...doc.audit.toMap(),
     });
   }
 
@@ -121,7 +126,7 @@ class FirestoreContabilitaRepository implements ContabilitaRepository {
         'dimensione': doc.dimensione,
       });
     } catch (_) {
-      await _deleteGenerationIgnoringErrors(doc.id, newGeneration);
+      await _deleteGeneration(doc.id, newGeneration);
       rethrow;
     }
 
@@ -140,7 +145,12 @@ class FirestoreContabilitaRepository implements ContabilitaRepository {
     final chunks = <Uint8List>[];
     for (var index = 0; index < chunkCount; index++) {
       final chunk = await _chunks(id, generation).doc('$index').get();
-      final encoded = chunk.data()?['b64'] as String? ?? '';
+      final encoded = chunk.data()?['b64'];
+      if (encoded is! String) {
+        throw StateError(
+          'Pezzo $index mancante per il documento contabile $id.',
+        );
+      }
       chunks.add(base64Decode(encoded));
     }
     return joinDocumentChunks(chunks);
