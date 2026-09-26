@@ -12,7 +12,9 @@ import 'documents/file_actions.dart';
 import 'documents/file_actions_factory.dart'
     if (dart.library.html) 'documents/file_actions_factory_web.dart';
 import 'documents/template_assets.dart';
+import 'firestore/firestore_contabilita_repository.dart';
 import 'firestore/firestore_repositories.dart';
+import 'repositories/contabilita_repository.dart';
 import 'repositories/data_repositories.dart';
 
 final firestoreProvider = Provider<FirebaseFirestore?>((ref) {
@@ -108,6 +110,11 @@ final noteRepositoryProvider = Provider<NoteRepository?>((ref) {
 final documentRepositoryProvider = Provider<DocumentRepository?>((ref) {
   final db = ref.watch(firestoreProvider);
   return db == null ? null : FirestoreDocumentRepository(db);
+});
+
+final contabilitaRepositoryProvider = Provider<ContabilitaRepository?>((ref) {
+  final db = ref.watch(firestoreProvider);
+  return db == null ? null : FirestoreContabilitaRepository(db);
 });
 
 final photoRepositoryProvider = Provider<PhotoRepository?>((ref) {
