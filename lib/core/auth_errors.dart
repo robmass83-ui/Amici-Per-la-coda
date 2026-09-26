@@ -29,6 +29,15 @@ class AuthFailure implements Exception {
   String toString() => message;
 }
 
+const authDeleteNeedsLoginMessage =
+    'Non è stato possibile eliminare l\'accesso. '
+    'Chiedi a questa persona di accedere una volta con l\'app, poi riprova.';
+
+bool isUnusableAuthDeleteToken(AuthFailure error) {
+  return error.message == authDeleteNeedsLoginMessage ||
+      error.message == italianAuthMessage('invalid-refresh-token');
+}
+
 bool isEmailAlreadyInUse(AuthFailure error) {
   return error.message == italianAuthMessage('email-already-in-use');
 }

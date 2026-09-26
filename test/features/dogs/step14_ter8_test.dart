@@ -701,6 +701,93 @@ void main() {
     expect(volunteers.items, hasLength(2));
   });
 
+  test('senza token Auth il profilo si elimina comunque', () async {
+    final auth = FakeAuthRepository();
+    await auth.signIn(
+      email: 'giovanna@amiciperlacoda.it',
+      password: 'corretta',
+    );
+    final target = testVolunteer(
+      id: 'uid-vecchio',
+      nome: 'Paolo',
+      cognome: 'Rossi',
+      email: 'paolo@amiciperlacoda.it',
+      ruolo: VolunteerRuolo.volontario,
+    );
+    final volunteers = InMemoryVolunteerRepository([
+      testVolunteer(),
+      target,
+    ]);
+    final service = VolunteerAccountService(
+      auth: auth,
+      volunteers: volunteers,
+    );
+    await service.deleteVolunteer(
+      volunteer: target,
+      editorUid: 'uid-1',
+      all: volunteers.items,
+    );
+    expect(volunteers.items.where((item) => item.id == 'uid-vecchio'), isEmpty);
+  });
+
+  test('con token Auth scaduto il profilo si elimina comunque', () async {
+    final auth = FakeAuthRepository();
+    await auth.signIn(
+      email: 'giovanna@amiciperlacoda.it',
+      password: 'corretta',
+    );
+    final target = testVolunteer(
+      id: 'uid-scaduto',
+      nome: 'Sara',
+      cognome: 'Neri',
+      email: 'sara@amiciperlacoda.it',
+      ruolo: VolunteerRuolo.referente,
+    );
+    final volunteers = InMemoryVolunteerRepository([
+      testVolunteer(),
+      target,
+    ])..authTokens['uid-scaduto'] = 'stale-old';
+    final service = VolunteerAccountService(
+      auth: auth,
+      volunteers: volunteers,
+    );
+    await service.deleteVolunteer(
+      volunteer: target,
+      editorUid: 'uid-1',
+      all: volunteers.items,
+    );
+    expect(volunteers.items.where((item) => item.id == 'uid-scaduto'), isEmpty);
+  });
+
+  test('un errore Auth generico non blocca l\'eliminazione del profilo', () async {
+    final auth = FakeAuthRepository();
+    await auth.signIn(
+      email: 'giovanna@amiciperlacoda.it',
+      password: 'corretta',
+    );
+    final target = testVolunteer(
+      id: 'uid-roby',
+      nome: 'roby',
+      cognome: 'boby',
+      email: 'robmass83+vol@gmail.com',
+      ruolo: VolunteerRuolo.referente,
+    );
+    final volunteers = InMemoryVolunteerRepository([
+      testVolunteer(),
+      target,
+    ])..authTokens['uid-roby'] = 'unknown-fail';
+    final service = VolunteerAccountService(
+      auth: auth,
+      volunteers: volunteers,
+    );
+    await service.deleteVolunteer(
+      volunteer: target,
+      editorUid: 'uid-1',
+      all: volunteers.items,
+    );
+    expect(volunteers.items.where((item) => item.id == 'uid-roby'), isEmpty);
+  });
+
   testWidgets(
     '7. il presidente non vede Disattiva né il ruolo su sé stesso',
     (tester) async {

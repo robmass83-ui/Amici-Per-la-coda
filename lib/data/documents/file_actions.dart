@@ -14,6 +14,8 @@ abstract interface class FileShare {
     required String mime,
     required String text,
   });
+
+  Future<void> shareText(String text);
 }
 
 abstract interface class FileOpener {

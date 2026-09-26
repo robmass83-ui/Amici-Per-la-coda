@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/app_update/app_update_controller.dart';
 import '../../core/app_version.dart';
+import '../../core/web_app.dart';
 import '../../core/web_surface.dart';
 import '../../router.dart';
 import '../../ui/components.dart';
@@ -17,6 +18,7 @@ import '../dashboard/home_providers.dart';
 import '../dogs/edit_permissions.dart';
 import '../volunteers/volunteer_labels.dart';
 import 'share_installed_apk.dart';
+import 'share_web_app.dart';
 
 // ── CONTRATTO DI LAYOUT · Menu Altro (Step 17-bis, schermata 25) ──────────
 // ListView padding=12
@@ -36,6 +38,7 @@ import 'share_installed_apk.dart';
 // ├ SizedBox 12
 // └ APP  Statistiche · Notifiche · Impostazioni · Esci rosso
 //    Aggiornamenti e Condividi app solo se non web
+//    Condividi web app solo presidente, sotto Condividi app
 //    Catalogo UI solo kDebugMode
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -56,6 +59,7 @@ class AltroPage extends ConsumerWidget {
   static const notificheKey = Key('altro-notifiche');
   static const aggiornamentiKey = Key('altro-aggiornamenti');
   static const condividiAppKey = Key('altro-condividi-app');
+  static const condividiWebAppKey = Key('altro-condividi-web-app');
   static const impostazioniKey = Key('altro-impostazioni');
   static const esciKey = Key('altro-esci');
   static const catalogoKey = Key('altro-catalogo');
@@ -64,6 +68,7 @@ class AltroPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final volunteer = ref.watch(currentVolunteerProvider);
     final canWrite = canWriteRecords(volunteer);
+    final isProprietario = canManageSettings(volunteer);
     final nome = volunteer == null
         ? ref.watch(homeVolunteerNameProvider)
         : volunteerDisplayName(volunteer);
@@ -253,6 +258,14 @@ class AltroPage extends ConsumerWidget {
                 title: 'Condividi app',
                 subtitle: 'Invia l\'APK via WhatsApp o email',
                 onTap: () => unawaited(shareInstalledApk(context, ref)),
+              ),
+            if (isProprietario)
+              _menuRow(
+                key: condividiWebAppKey,
+                icon: AppIcons.link,
+                title: 'Condividi web app',
+                subtitle: webAppUrl,
+                onTap: () => unawaited(shareWebApp(context, ref)),
               ),
             _menuRow(
               key: impostazioniKey,

@@ -387,6 +387,7 @@ class _VolunteerDetailPageState extends ConsumerState<VolunteerDetailPage> {
       setState(() => _error = 'Archivio non disponibile.');
       return;
     }
+    setState(() => _error = null);
     try {
       await service.deleteVolunteer(
         volunteer: volunteer,

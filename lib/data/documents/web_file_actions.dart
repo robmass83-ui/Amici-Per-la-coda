@@ -27,6 +27,11 @@ class WebFileShare implements FileShare {
   }) {
     return Share.share(text);
   }
+
+  @override
+  Future<void> shareText(String text) {
+    return Share.share(text);
+  }
 }
 
 class WebFileOpener implements FileOpener {

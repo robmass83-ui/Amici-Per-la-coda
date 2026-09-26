@@ -50,4 +50,23 @@ void main() {
     );
     expect(italianAuthMessage('unknown-code'), 'Accesso non riuscito. Riprova.');
   });
+
+  test('token Auth assente o scaduto non blocca la cancellazione del profilo', () {
+    expect(
+      isUnusableAuthDeleteToken(const AuthFailure(authDeleteNeedsLoginMessage)),
+      isTrue,
+    );
+    expect(
+      isUnusableAuthDeleteToken(
+        AuthFailure(italianAuthMessage('invalid-refresh-token')),
+      ),
+      isTrue,
+    );
+    expect(
+      isUnusableAuthDeleteToken(
+        AuthFailure(italianAuthMessage('network-request-failed')),
+      ),
+      isFalse,
+    );
+  });
 }

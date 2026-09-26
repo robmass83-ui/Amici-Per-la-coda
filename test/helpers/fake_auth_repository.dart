@@ -127,6 +127,16 @@ class FakeAuthRepository implements AuthRepository {
     required String uid,
     String? refreshToken,
   }) async {
+    final token = refreshToken?.trim() ?? '';
+    if (uid.isEmpty || token.isEmpty) {
+      throw const AuthFailure(authDeleteNeedsLoginMessage);
+    }
+    if (token.startsWith('stale-')) {
+      throw AuthFailure(italianAuthMessage('invalid-refresh-token'));
+    }
+    if (token.startsWith('unknown-')) {
+      throw const AuthFailure('Accesso non riuscito. Riprova.');
+    }
     _accounts.removeWhere((_, account) => account.uid == uid);
   }
 

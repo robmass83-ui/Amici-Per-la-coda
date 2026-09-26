@@ -40,6 +40,11 @@ class SharePlusFileShare implements FileShare {
       text: text,
     );
   }
+
+  @override
+  Future<void> shareText(String text) {
+    return Share.share(text);
+  }
 }
 
 class OpenFilexOpener implements FileOpener {

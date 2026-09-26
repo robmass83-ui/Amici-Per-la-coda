@@ -1,25 +1,21 @@
 ---
-description: After app changes that need testing, publish one signed release APK to GitHub and ADB-install the same build if a phone is connected
+description: Dopo una modifica all'app, pubblica APK e sito web senza chiedere
 alwaysApply: true
 ---
 
-# Consegna delle build di test
+# Pubblicazione APK + web
 
-Quando una modifica all'app (UI, risorse, icone, codice Dart/Android) è pronta da testare sul telefono, **non** usare `flutter run` né una build debug.
-
-Esegui, senza chiedere conferma:
+Quando una modifica all'app è pronta (UI, risorse, icone, codice Dart/Android/web), **non** usare `flutter run` né una build debug. Lancia **entrambi**, senza chiedere conferma, in quest'ordine:
 
 ```
 powershell -File tool/publish_test_release.ps1
+powershell -File tool/deploy_hosting.ps1
 ```
 
-PC e GitHub devono avere **lo stesso file** (stesso `versionCode` e stesso SHA-256), non due APK con lo stesso numero.
+Se pubspec e GitHub Latest hanno già lo stesso `versionCode` ma il binario Android è cambiato: `publish_test_release.ps1 -Force` (un solo `versionCode` nuovo). Altrimenti lo script non incrementa e allinea ADB alla Latest.
 
-- Se `pubspec` è già uguale alla GitHub Release Latest: **non incrementare**. ADB installa gli APK di quella release (hash verificato). Collegare il telefono non crea una versione nuova.
-- Se pubspec o GitHub è più indietro: un solo `versionCode` nuovo = `max(pubspec, Latest) + 1`, un solo build, upload, poi ADB di **quei** file dopo che GitHub ha lo stesso SHA-256.
+PC e GitHub devono avere **lo stesso APK** (stesso `versionCode` e stesso SHA-256). Non lanciare `.github/workflows/release-apk.yml`: CI ricostruirebbe un altro file. Non disinstallare: `adb install -r`.
 
-Non lanciare `.github/workflows/release-apk.yml` (né `flutter run`) per la stessa modifica: CI su `main` ricostruirebbe un altro binario. Non disinstallare prima: `adb install -r` tiene i dati.
+`deploy_hosting.ps1` pubblica solo Hosting (`flutter build web` + `--only hosting`). Non tocca regole Firestore. Chi ha la PWA deve riaprire l'icona o fare refresh.
 
-**Perché non `flutter run`:** il debug ha un `versionCode` più basso; Android rifiuta un APK uguale/più vecchio e l'in-app updater (GitHub Releases API all'avvio/ripresa) mostrerebbe "Nuova versione". A parità di `versionCode` il foglio non compare: il telefono ADB è già allineato; gli altri volontari vedono la notifica e installano dall'app.
-
-**Eccezioni (non pubblicare):** richiesta solo git/GitHub (commit, push, PR); solo docs/regole/test che non cambiano il binario; modifica ancora a metà.
+**Eccezioni (non pubblicare niente):** solo git/GitHub (commit, push, PR); solo docs/regole/test che non cambiano APK né sito; modifica ancora a metà.

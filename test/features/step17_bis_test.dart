@@ -122,9 +122,24 @@ void main() {
     expect(find.byKey(AltroPage.catalogoKey), findsNothing);
     expect(find.byKey(AltroPage.aggiornamentiKey), findsOneWidget);
     expect(find.byKey(AltroPage.condividiAppKey), findsOneWidget);
+    expect(find.byKey(AltroPage.condividiWebAppKey), findsNothing);
     expect(find.byKey(AltroPage.anagrafeKey), findsOneWidget);
     expect(find.byKey(AltroPage.famiglieKey), findsOneWidget);
     expect(find.byKey(AltroPage.impostazioniKey), findsOneWidget);
+  });
+
+  testWidgets('Altro: il responsabile non vede Condividi web app', (
+    tester,
+  ) async {
+    await pumpLogged(
+      tester,
+      location: AppRoutes.altro,
+      volunteers: InMemoryVolunteerRepository([
+        testVolunteer(ruolo: VolunteerRuolo.referente),
+      ]),
+    );
+    expect(find.byKey(AltroPage.condividiWebAppKey), findsNothing);
+    expect(find.byKey(AltroPage.condividiAppKey), findsOneWidget);
   });
 
   testWidgets('Altro: ogni voce di menu apre la schermata giusta', (
@@ -169,11 +184,13 @@ void main() {
     expect(find.text('Notifiche'), findsOneWidget);
     expect(find.text('Aggiornamenti'), findsOneWidget);
     expect(find.text('Condividi app'), findsOneWidget);
+    expect(find.text('Condividi web app'), findsOneWidget);
     expect(find.text('Impostazioni'), findsWidgets);
     expect(find.text('Esci'), findsOneWidget);
     expect(find.text('Catalogo UI'), findsOneWidget);
     expect(find.byKey(AltroPage.aggiornamentiKey), findsOneWidget);
     expect(find.byKey(AltroPage.condividiAppKey), findsOneWidget);
+    expect(find.byKey(AltroPage.condividiWebAppKey), findsOneWidget);
     expect(find.byKey(AltroPage.catalogoKey), findsOneWidget);
   });
 
@@ -211,6 +228,25 @@ void main() {
     expect(share.lastMime, 'application/vnd.android.package-archive');
     expect(share.lastText, contains('1.0.0'));
     expect(share.lastText, contains('12'));
+  });
+
+  testWidgets('Altro: il proprietario condivide l\'indirizzo della web app', (
+    tester,
+  ) async {
+    final share = RecordingFileShare();
+    await pumpLogged(
+      tester,
+      location: AppRoutes.altro,
+      fileShare: share,
+    );
+    await tester.ensureVisible(find.byKey(AltroPage.condividiWebAppKey));
+    expect(find.text('https://amici-per-la-coda.web.app'), findsOneWidget);
+    tester.widget<OptionRow>(find.byKey(AltroPage.condividiWebAppKey)).onTap();
+    await tester.pumpAndSettle();
+    expect(share.lastText, contains('https://amici-per-la-coda.web.app'));
+    expect(share.lastText, contains('Amici per la Coda'));
+    expect(share.lastPath, isNull);
+    expect(share.lastBytes, isNull);
   });
 
   testWidgets('Altro: Aggiornamenti avvia il controllo versione', (

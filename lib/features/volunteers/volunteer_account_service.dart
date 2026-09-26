@@ -155,12 +155,21 @@ class VolunteerAccountService {
         'Deve restare almeno un presidente attivo.',
       );
     }
-    final token = await volunteers.getAuthRefreshToken(volunteer.id);
-    await auth.deleteUserAccount(uid: volunteer.id, refreshToken: token);
+    String? token;
+    try {
+      token = await volunteers.getAuthRefreshToken(volunteer.id);
+    } catch (_) {
+      token = null;
+    }
+    try {
+      await auth.deleteUserAccount(uid: volunteer.id, refreshToken: token);
+    } catch (_) {
+      // Proprietario: il profilo si toglie anche se Firebase Auth fallisce.
+    }
     try {
       await volunteers.deleteAuthRefreshToken(volunteer.id);
     } catch (_) {
-      // L'accesso Auth è già stato rimosso.
+      // L'accesso Auth è già stato rimosso o il token non c'era.
     }
     await volunteers.delete(volunteer.id);
   }

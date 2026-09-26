@@ -29,6 +29,7 @@ void main() {
       );
       expect(find.byKey(AltroPage.condividiAppKey), findsNothing);
       expect(find.byKey(AltroPage.aggiornamentiKey), findsNothing);
+      expect(find.byKey(AltroPage.condividiWebAppKey), findsOneWidget);
       expect(find.byKey(AltroPage.esciKey), findsOneWidget);
     },
   );

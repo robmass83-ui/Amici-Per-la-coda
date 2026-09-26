@@ -125,10 +125,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }) async {
     final token = refreshToken?.trim() ?? '';
     if (uid.isEmpty || token.isEmpty) {
-      throw const AuthFailure(
-        'Non è stato possibile eliminare l\'accesso. '
-        'Chiedi a questa persona di accedere una volta con l\'app, poi riprova.',
-      );
+      throw const AuthFailure(authDeleteNeedsLoginMessage);
     }
     try {
       await _toolkit.deleteAccount(refreshToken: token);

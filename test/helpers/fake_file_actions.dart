@@ -67,6 +67,15 @@ class RecordingFileShare implements FileShare {
     lastMime = mime;
     lastText = text;
   }
+
+  @override
+  Future<void> shareText(String text) async {
+    lastBytes = null;
+    lastPath = null;
+    lastFileName = null;
+    lastMime = null;
+    lastText = text;
+  }
 }
 
 class RecordingGallerySaver implements GallerySaver {
