@@ -79,6 +79,14 @@
       "fields": [
         { "fieldPath": "inizio", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "contabilita",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "anno", "order": "ASCENDING" },
+        { "fieldPath": "data", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
