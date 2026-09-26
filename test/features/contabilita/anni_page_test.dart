@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:amici_per_la_coda/core/firestore_codec.dart';
+import 'package:amici_per_la_coda/core/format_it.dart';
 import 'package:amici_per_la_coda/data/models/documento_contabile.dart';
 import 'package:amici_per_la_coda/features/contabilita/anni_page.dart';
 import 'package:amici_per_la_coda/features/contabilita/contabilita_logic.dart';
@@ -41,6 +42,74 @@ void main() {
     expect(find.byKey(AnniContabiliPage.archivioKey), findsOneWidget);
   });
 
+  testWidgets('non genera overflow alle larghezze supportate', (tester) async {
+    for (final width in [320.0, 360.0, 411.0, 430.0]) {
+      final auth = FakeAuthRepository();
+      await auth.signIn(
+        email: 'giovanna@amiciperlacoda.it',
+        password: 'corretta',
+      );
+
+      await pumpApp(
+        tester,
+        auth: auth,
+        contabilita: InMemoryContabilitaRepository(),
+        initialLocation: AppRoutes.contabilita,
+        size: Size(width, 640),
+      );
+
+      expect(tester.takeException(), isNull, reason: 'larghezza $width');
+    }
+  });
+
+  testWidgets('mostra importi e anni dal piu recente', (tester) async {
+    final repo = InMemoryContabilitaRepository();
+    await repo.createAnno(
+      anno: 2020,
+      uid: 'uid-1',
+      now: DateTime.utc(2020, 1, 1),
+    );
+    await repo.createAnno(
+      anno: 2024,
+      uid: 'uid-1',
+      now: DateTime.utc(2024, 1, 1),
+    );
+    await repo.saveNuovo(
+      DocumentoContabile(
+        id: 'documento-2024',
+        anno: 2024,
+        nome: 'Fattura',
+        data: DateTime.utc(2024, 1, 2),
+        tipologia: TipologiaContabile.fattura,
+        descrizione: '',
+        importo: 12.5,
+        mime: 'application/pdf',
+        nomeFile: 'fattura.pdf',
+        dimensione: 1,
+        chunkCount: 1,
+        generation: 1,
+        audit: Audit.seed(DateTime.utc(2024, 1, 2), by: 'uid-1'),
+      ),
+      Uint8List.fromList([1]),
+    );
+
+    await pumpContabilita(tester, repo);
+
+    expect(find.text(formatEuro(12.5)), findsOneWidget);
+    final riga2020 = find.ancestor(
+      of: find.text('2020'),
+      matching: find.byType(InkWell),
+    );
+    expect(
+      find.descendant(of: riga2020, matching: find.text(formatEuro(0))),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.text('2024')).dy,
+      lessThan(tester.getTopLeft(find.text('2020')).dy),
+    );
+  });
+
   testWidgets('aggiungere un anno doppio mostra il messaggio', (tester) async {
     final repo = InMemoryContabilitaRepository();
     await repo.createAnno(
@@ -72,6 +141,7 @@ void main() {
 
     expect(find.byKey(AnniContabiliPage.avvisoKey), findsOneWidget);
     expect(find.text(contabilitaAvviso400), findsOneWidget);
+    expect(find.byKey(AnniContabiliPage.archivioKey), findsOneWidget);
   });
 }
 
