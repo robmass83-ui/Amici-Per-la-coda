@@ -8,6 +8,18 @@ import '../../ui/components/app_text_field.dart';
 import '../../ui/tokens.dart';
 import 'contabilita_logic.dart';
 
+// FiltriContabilitaSheet — contenuto di AppSheet, senza padding proprio
+// Column min, stretch
+//   Wrap spacing/runSpacing gapS
+//     AppChip h=chipH: Tutte (tipologia null) + le cinque etichette
+//   SizedBox gapM
+//   Row: Expanded AppTextField «Dal» | gapS | Expanded AppTextField «Al»
+//     readOnly, hint gg/mm/aaaa, tap apre showDatePicker, testo formatItalianDate
+//   SizedBox gapM
+//   Row h=40: Expanded AppButton ghost «Azzera» | gapS | Expanded AppButton «Applica»
+// Azzera rimette tipologia e date a null. Applica chiude il foglio.
+// I chip vanno a capo: niente scroll orizzontale.
+
 class FiltriContabilitaSheet extends StatefulWidget {
   const FiltriContabilitaSheet({super.key, required this.initial});
 

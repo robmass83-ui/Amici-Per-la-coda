@@ -18,14 +18,30 @@ import 'contabilita_logic.dart';
 import 'filtri_sheet.dart';
 
 // AnnoContabilePage
-// Column
-//   Wrap: anno | AppButton ghost «Esporta documentazione annuale»
-//   Row h=40: Expanded AppTextField h=38 | gapS | Filtri 40x40
+// Padding pagePad, Column stretch
+//   Wrap spaceBetween, spacing/runSpacing gapS, cross center
+//     anno: title, maxLines 1, ellipsis
+//     se canWriteRecords: AppButton ghost expand false h=40
+//       «Esporta documentazione annuale»
+//       onPressed null se l'anno non ha documenti (ignora i filtri)
+//   SizedBox gapM
+//   Row h=minTouch 40
+//     Expanded AppTextField h=searchH 38, niente etichetta, hint «Cerca per nome»
+//     SizedBox gapS
+//     Filtri 40x40, IconBadge regolazioni, tooltip «Filtri»
 //   SizedBox gapS
-//   riepilogo 1 riga: conteggio e formatEuro dei visibili
-//   Expanded ListView: card documento, nome Expanded maxLines=1
-//   AppButton primary «Aggiungi documento»
-// Ricerca + gap + riepilogo: 40 + gapS + una riga caption, sotto 120 dp.
+//   riepilogo caption, maxLines 1, ellipsis: conteggio e formatEuro dei visibili
+//   SizedBox gapM
+//   Expanded ListView.separated, gapM fra le card
+//     card: Material card, bordo line, raggio radCard, padding cardPad
+//       Column stretch
+//         nome Expanded, h2, maxLines 1, ellipsis
+//         SizedBox gapXs
+//         Row: data caption | gapS | tipologia Expanded ellipsis | importo se non null
+//         se nota non vuota: gapXs + caption maxLines 1 ellipsis
+//   se canCreateNotes: gapM + AppButton primary «Aggiungi documento»
+// Ricerca + gapS + riepilogo: 40 + gapS + una riga caption, sotto 120 dp.
+// Niente scroll orizzontale: l'intestazione va a capo nel Wrap.
 
 class AnnoContabilePage extends ConsumerStatefulWidget {
   const AnnoContabilePage({super.key, required this.anno});
